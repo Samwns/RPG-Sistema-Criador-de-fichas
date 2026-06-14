@@ -5,10 +5,43 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RPG Criador de Fichas</title>
   <link rel="stylesheet" href="styles.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://esm.sh/three@0.160.0",
+        "three/addons/": "https://esm.sh/three@0.160.0/examples/jsm/",
+        "cannon-es": "https://esm.sh/cannon-es@0.20.0"
+      }
+    }
+  </script>
 </head>
 <body>
+  <div id="ui-container">
+    <div class="top-bar">
+      <p class="bar-text">DADOS</p>
+      <label class="select">
+        <select id="diceCount">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3" selected>3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="10">10</option>
+          <option value="20">20</option>
+        </select>
+      </label>
+    </div>
+
+    <div id="result-board">
+      <span id="total-score">0</span>
+      <span class="sub-text" id="detail-score"></span>
+    </div>
+
+    <div class="hint">Clique para rolar dados</div>
+  </div>
+
   <main class="app-shell">
-    <header class="hero">
       <div>
         <p class="eyebrow">RPG Criador de Fichas</p>
         <h1>Ficha de Personagem Interativa</h1>
@@ -21,13 +54,13 @@
     </header>
 
     <nav class="tabs" role="tablist">
-      <button class="tab-button active" data-target="tab-ficha" type="button">Ficha</button>
-      <button class="tab-button" data-target="tab-saved" type="button">Personagens</button>
-      <button class="tab-button" data-target="tab-livro1" type="button">Livro 1</button>
-      <button class="tab-button" data-target="tab-livro2" type="button">Livro 2</button>
-      <button class="tab-button" data-target="tab-livro3" type="button">Livro 3</button>
-      <button class="tab-button" data-target="tab-referencia" type="button">Referência</button>
-      <button class="tab-button" data-target="tab-preferencia" type="button">Preferências</button>
+      <button class="tab-button active" data-target="tab-ficha" type="button">Criar Ficha</button>
+      <button class="tab-button" data-target="tab-saved" type="button">Meu Baú</button>
+      <button class="tab-button" data-target="tab-livro1" type="button">Raças & Origens</button>
+      <button class="tab-button" data-target="tab-livro2" type="button">Classe & Magia</button>
+      <button class="tab-button" data-target="tab-livro3" type="button">Perícias & Combate</button>
+      <button class="tab-button" data-target="tab-referencia" type="button">Sistema</button>
+      <button class="tab-button" data-target="tab-preferencia" type="button">Configurações</button>
     </nav>
 
     <section class="tab-panel active" id="tab-ficha">
@@ -388,6 +421,6 @@
       </section>
     </section>
   </main>
-  <script type="module" src="app.js"></script>
+  <script type="module" src="js/app.js"></script>
 </body>
 </html>

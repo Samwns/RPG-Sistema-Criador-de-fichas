@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Bungee&display=swap');
+
 :root {
   color-scheme: dark;
   color: #1f2937;
@@ -615,4 +617,170 @@ section textarea {
 
 .saved-card button:hover {
   background: #2563eb;
+}
+
+/* ===== Dice Roller UI Styles ===== */
+#ui-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(29, 78, 216, 0.1) 0%, rgba(37, 99, 235, 0.08) 100%);
+  pointer-events: none;
+  z-index: 1000;
+}
+
+.top-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 12px 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  pointer-events: all;
+  font-family: 'Bungee', sans-serif;
+}
+
+.bar-text {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #1d4ed8;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.select {
+  position: relative;
+  display: inline-block;
+}
+
+.select select {
+  appearance: none;
+  background: #f3f4f6;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 8px 32px 8px 12px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1f2937;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.select select:hover {
+  border-color: #1d4ed8;
+  background: #eff6ff;
+}
+
+.select select:focus {
+  outline: none;
+  border-color: #1d4ed8;
+  box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.1);
+}
+
+.select::after {
+  content: '▼';
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.6rem;
+  color: #1d4ed8;
+  pointer-events: none;
+}
+
+#result-board {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 20px 40px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  pointer-events: all;
+  font-family: 'Bungee', sans-serif;
+  min-width: 180px;
+  text-align: center;
+}
+
+#total-score {
+  font-size: 3.5rem;
+  font-weight: 900;
+  color: #1d4ed8;
+  line-height: 1;
+}
+
+.sub-text {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-weight: 500;
+}
+
+.hint {
+  font-size: 0.875rem;
+  color: #9ca3af;
+  font-style: italic;
+  pointer-events: all;
+  text-align: center;
+  max-width: 300px;
+  line-height: 1.4;
+}
+
+/* Canvas element for dice visualization */
+canvas {
+  display: block;
+  pointer-events: all;
+  touch-action: none;
+  cursor: grab;
+}
+
+canvas:active {
+  cursor: grabbing;
+}
+
+/* Responsive dice UI for mobile */
+@media (max-width: 768px) {
+  #ui-container {
+    padding: 16px;
+  }
+
+  .top-bar {
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    max-width: 280px;
+  }
+
+  .bar-text {
+    text-align: center;
+    width: 100%;
+  }
+
+  .select {
+    width: 100%;
+  }
+
+  .select select {
+    width: 100%;
+    padding: 10px 32px 10px 12px;
+  }
+
+  #result-board {
+    padding: 16px 24px;
+    min-width: 140px;
+  }
+
+  #total-score {
+    font-size: 2.5rem;
+  }
 }

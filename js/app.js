@@ -8,7 +8,7 @@ import {
   computeModifier,
   getRemainingPoints,
   requiredMagicLife
-} from './mechanics.js';
+} from './modules/mechanics.js';
 import {
   elements,
   populateSelect,
@@ -18,7 +18,8 @@ import {
   renderSummary,
   setupTabs,
   animateRollButton
-} from './ui.js';
+} from './modules/ui.js';
+import { initDiceRoller } from './modules/diceRoller.js';
 
 function getInputValues() {
   return distInputs.map(item => Number(document.getElementById(item.id).value || 0));
@@ -376,6 +377,7 @@ function init() {
   });
 
   setupTabs();
+  initDiceRoller();
   toggleMulticlassFields();
   loadSavedCharacters();
   synchronize();
