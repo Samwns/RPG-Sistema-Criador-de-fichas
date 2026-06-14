@@ -15,6 +15,7 @@
         <p>Transforme o script da planilha em um criador de fichas responsivo para celular.</p>
       </div>
       <div class="hero-actions">
+        <button id="createSheetButton" type="button" class="secondary-button">Crie a sua ficha</button>
         <button id="resetButton" type="button">Resetar ficha</button>
       </div>
     </header>
@@ -59,6 +60,25 @@
           <div class="photo-preview" id="photoPreview">Preview da foto</div>
           <label class="full-width"><span>História</span><textarea id="historia" rows="4" placeholder="Conte a história do personagem..."></textarea></label>
           <label class="full-width"><span>Habilidades especiais</span><textarea id="habilidades" rows="4" placeholder="Liste habilidades, talentos e poderes..."></textarea></label>
+          <label><span>Título da habilidade</span><input id="tituloHabilidade" type="text" placeholder="Nome da habilidade" /></label>
+          <label class="full-width"><span>Descrição da habilidade</span><textarea id="descricaoHabilidade" rows="3" placeholder="Descreva a habilidade do personagem."></textarea></label>
+          <label class="full-width"><span>Descrição da classe</span><textarea id="descricaoClasse" rows="3" placeholder="Descreva a habilidade exclusiva da classe."></textarea></label>
+        </div>
+      </section>
+
+      <section class="card summary-card">
+        <div class="summary-header">
+          <span class="summary-tag">Ficha Criada</span>
+          <h3 id="summaryNome">Nome do personagem</h3>
+        </div>
+        <div class="summary-body">
+          <div class="summary-image" id="summaryImage">Sem imagem</div>
+          <div class="summary-details">
+            <p class="summary-title" id="summaryAbilityTitle">Título da habilidade</p>
+            <p id="summaryAbilityDesc">A descrição da habilidade do personagem aparecerá aqui.</p>
+            <p class="summary-title">Descrição da classe</p>
+            <p id="summaryClassDesc">A descrição da classe personalizada aparecerá aqui.</p>
+          </div>
         </div>
       </section>
 
@@ -368,6 +388,6 @@
       </section>
     </section>
   </main>
-  <script src="script.js"></script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>

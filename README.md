@@ -6,11 +6,11 @@
   **Criador de fichas responsivo para D&D e sistemas semelhantes.**
 
   [![Release](https://img.shields.io/github/v/release/Samwns/RPG-Sistema-Criador-de-fichas?display_name=tag&sort=semver)](https://github.com/Samwns/RPG-Sistema-Criador-de-fichas/releases/latest)
-  [![Pages](https://github.com/Samwns/RPG-Sistema-Criador-de-fichas/actions/workflows/pages.yml/badge.svg)](https://samwns.github.io/RPG-Sistema-Criador-de-fichas/)
+  [![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-live-blue?logo=github)](https://samwns.github.io/RPG-Sistema-Criador-de-fichas/)
   [![Demo](https://img.shields.io/badge/demo-local-blue)](index.html)
   [![License](https://img.shields.io/github/license/Samwns/RPG-Sistema-Criador-de-fichas)](LICENSE)
 
-  [**Demo Local**](index.html)
+  [**Demo Local**](index.html) · [**Crie a sua ficha**](index.html)
 </div>
 
 ## Sobre
