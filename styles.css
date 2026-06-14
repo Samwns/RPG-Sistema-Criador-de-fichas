@@ -31,8 +31,8 @@ body {
   min-height: 100vh;
   margin: 0;
   background:
-    radial-gradient(circle at 18% 8%, rgba(240, 160, 111, .4), transparent 28rem),
-    radial-gradient(circle at 86% 35%, rgba(126, 186, 238, .35), transparent 32rem),
+    radial-gradient(circle at 18% 8%, color-mix(in srgb, var(--orange) 42%, transparent), transparent 28rem),
+    radial-gradient(circle at 86% 35%, color-mix(in srgb, var(--blue) 38%, transparent), transparent 32rem),
     linear-gradient(160deg, #dbc5b2, #a7acb1 60%, #8f969d);
   background-attachment: fixed;
 }
@@ -56,7 +56,7 @@ button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 3px solid rgba(126, 186, 238, .55);
+  outline: 3px solid color-mix(in srgb, var(--blue) 58%, transparent);
   outline-offset: 2px;
 }
 
@@ -97,6 +97,9 @@ textarea:focus-visible {
   overflow: hidden;
   border-radius: 18px;
   background: var(--ink);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--blue) 35%, transparent),
+    12px 14px 0 color-mix(in srgb, var(--orange) 18%, transparent);
 }
 
 .stat-sidebar {
@@ -107,7 +110,8 @@ textarea:focus-visible {
   overflow: hidden;
   color: #e4e4e4;
   background:
-    radial-gradient(circle at 130% 95%, rgba(240, 160, 111, .22), transparent 42%),
+    radial-gradient(circle at 130% 95%, color-mix(in srgb, var(--orange) 28%, transparent), transparent 42%),
+    linear-gradient(110deg, color-mix(in srgb, var(--blue) 10%, transparent), transparent 45%),
     linear-gradient(155deg, #474747, #3d3d3d);
 }
 
@@ -118,9 +122,9 @@ textarea:focus-visible {
   bottom: -65px;
   width: 250px;
   aspect-ratio: 1;
-  border: 24px solid rgba(126, 186, 238, .08);
+  border: 24px solid color-mix(in srgb, var(--blue) 13%, transparent);
   border-radius: 50%;
-  box-shadow: 0 0 0 24px rgba(240, 160, 111, .05);
+  box-shadow: 0 0 0 24px color-mix(in srgb, var(--orange) 9%, transparent);
   pointer-events: none;
 }
 
@@ -147,13 +151,13 @@ textarea:focus-visible {
 .stat-block {
   position: relative;
   display: grid;
-  grid-template-columns: 84px 1fr;
+  grid-template-columns: 98px minmax(0, 1fr);
   min-height: 112px;
   margin-top: 22px;
 }
 
 .stat-score {
-  width: 100px;
+  width: 112px;
   height: 100px;
   margin-left: -25px;
   overflow: hidden;
@@ -164,7 +168,8 @@ textarea:focus-visible {
   font: italic 800 4.8rem/1.35 var(--serif);
   text-align: right;
   letter-spacing: -7px;
-  padding-right: 5px;
+  padding-right: 12px;
+  border-right: 2px solid color-mix(in srgb, var(--blue) 55%, transparent);
 }
 
 .stat-copy {
@@ -172,7 +177,7 @@ textarea:focus-visible {
   z-index: 1;
   align-self: center;
   min-width: 0;
-  padding-left: 12px;
+  padding-left: 10px;
   font: 600 .72rem/1.65 var(--mono);
   letter-spacing: .08em;
   text-transform: uppercase;
@@ -183,7 +188,10 @@ textarea:focus-visible {
   display: inline-flex;
   gap: 5px;
   max-width: 100%;
-  margin: 0 0 6px -94px;
+  position: absolute;
+  top: -4px;
+  left: -98px;
+  margin: 0;
   padding: 5px 8px 5px 10px;
   border-radius: 10px;
   background: var(--gradient);
@@ -199,7 +207,7 @@ textarea:focus-visible {
 }
 
 .stat-copy p {
-  margin: 0;
+  margin: 30px 0 0;
   white-space: nowrap;
 }
 
@@ -517,7 +525,7 @@ select:focus,
 textarea:focus {
   border-color: var(--blue);
   background: #f8f8f6;
-  box-shadow: 0 0 0 3px rgba(126, 186, 238, .16);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 18%, transparent);
   outline: 0;
 }
 
@@ -549,6 +557,35 @@ input[type="file"] {
 
 .full-width {
   grid-column: 1 / -1;
+}
+
+.xp-progress {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--blue) 10%, #e8e8e6);
+}
+
+.xp-progress div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font: 700 .7rem/1.2 var(--mono);
+  text-transform: uppercase;
+}
+
+.xp-progress progress {
+  width: 100%;
+  height: 10px;
+  accent-color: var(--orange);
+}
+
+.warning {
+  min-height: 1em;
+  margin: 0;
+  color: #a33f35;
+  font: 700 .72rem/1.5 var(--mono);
 }
 
 .hidden {
@@ -1036,7 +1073,7 @@ input[type="file"] {
   color: #eee;
 }
 
-.dice-toolbar {
+.dice-pool-builder {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 8px;
@@ -1044,10 +1081,72 @@ input[type="file"] {
   background: #dededb;
 }
 
-.dice-toolbar button {
+.pool-die {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: #f4f4f2;
+  box-shadow: 2px 2px 0 rgba(68, 68, 68, .16);
+}
+
+.pool-die.active {
+  border-color: var(--blue);
+  box-shadow: 3px 3px 0 var(--orange);
+}
+
+.pool-die b {
+  grid-column: 1 / -1;
+  color: #444;
+  font: 900 .8rem/1 var(--mono);
+  text-transform: uppercase;
+}
+
+.pool-die button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 6px;
+  padding: 0;
+  background: #444;
+  color: #eee;
+  font-weight: 900;
+}
+
+.pool-die span {
+  min-width: 24px;
+  color: #444;
+  font: 900 .9rem/1 var(--mono);
+  text-align: center;
+}
+
+.pool-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 0 12px 12px;
+  background: #dededb;
+}
+
+.pool-actions span {
+  margin-right: auto;
+  color: #555;
+  font: 800 .75rem/1.2 var(--mono);
+  text-transform: uppercase;
+}
+
+.pool-actions button,
+.spell-card button {
   border: 0;
   border-radius: 7px;
-  padding: 12px 8px;
+  padding: 11px 13px;
   background: #f4f4f2;
   color: #444;
   font: 800 .72rem/1 var(--mono);
@@ -1055,7 +1154,7 @@ input[type="file"] {
   box-shadow: 2px 2px 0 rgba(68, 68, 68, .22);
 }
 
-.dice-toolbar button.active {
+.pool-actions #rollPoolButton {
   background: #444;
   color: #eee;
   box-shadow: 2px 2px 0 var(--orange);
@@ -1101,9 +1200,56 @@ input[type="file"] {
   height: 520px;
   overflow: hidden;
   background:
-    radial-gradient(circle at center, rgba(126, 186, 238, .18), transparent 45%),
+    repeating-linear-gradient(135deg, transparent 0 42px, color-mix(in srgb, var(--blue) 8%, transparent) 42px 44px),
+    radial-gradient(circle at center, color-mix(in srgb, var(--blue) 22%, transparent), transparent 45%),
     linear-gradient(145deg, #f1f1ef, #d9d9d6);
   cursor: grab;
+}
+
+.spell-library {
+  margin-top: 20px;
+}
+
+.spell-filters {
+  display: flex;
+  gap: 10px;
+}
+
+.spell-catalog {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.spell-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  border-top: 3px solid var(--blue);
+  border-radius: 10px;
+  background: #e4e4e2;
+}
+
+.spell-card span {
+  color: #777;
+  font: 800 .6rem/1.2 var(--mono);
+  text-transform: uppercase;
+}
+
+.spell-card h4 {
+  flex: 1;
+  margin: 0;
+  color: #444;
+  font: italic 800 1.2rem/1.1 var(--serif);
+}
+
+.spell-card button {
+  align-self: flex-start;
+  background: #444;
+  color: #eee;
 }
 
 .dice-canvas-area:active {
@@ -1572,6 +1718,7 @@ input[type="file"] {
 
   .stat-copy h2 {
     display: block;
+    position: static;
     margin: 8px 0 0;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1579,6 +1726,7 @@ input[type="file"] {
 
   .stat-copy p {
     display: none;
+    margin: 0;
   }
 
   .sheet-hero {
@@ -1640,7 +1788,7 @@ input[type="file"] {
     grid-template-columns: 1fr;
   }
 
-  .dice-toolbar {
+  .dice-pool-builder {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
@@ -1711,6 +1859,20 @@ input[type="file"] {
   .multiclass-grid,
   .magic-stats {
     grid-template-columns: 1fr;
+  }
+
+  .spell-catalog {
+    grid-template-columns: 1fr;
+  }
+
+  .spell-filters,
+  .pool-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .pool-actions span {
+    margin: 0;
   }
 
   .equipment-shop {

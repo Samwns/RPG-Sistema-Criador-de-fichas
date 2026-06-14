@@ -7,8 +7,14 @@ import {
   computeProfBonus,
   computeModifier,
   getRemainingPoints,
-  requiredMagicLife
+  requiredMagicLife,
+  classData,
+  xpThresholds,
+  getXpProgress,
+  getSubclassOptions,
+  getMulticlassRequirement
 } from './modules/mechanics.js';
+import { spellCatalog, spellcastingClasses } from './modules/gameData.js';
 import {
   elements,
   populateSelect,
@@ -175,7 +181,7 @@ function resetFicha() {
   elements.nome.value = '';
   elements.jogador.value = '';
   elements.sistema.value = 'D&D';
-  elements.nivel.value = 5;
+  elements.nivel.value = 1;
   elements.xp.value = 0;
   elements.vidaMaxima.value = 30;
   document.getElementById('currentHp').value = 30;
@@ -186,9 +192,9 @@ function resetFicha() {
   document.getElementById('castingStat').value = 'int';
   document.getElementById('spellSlots').value = 0;
   elements.multiclasse.checked = false;
-  elements.nivelC1.value = 5;
+  elements.nivelC1.value = 1;
   elements.nivelC2.value = 1;
-  elements.nivelC3.value = 1;
+  elements.nivelC3.value = 0;
   distInputs.forEach(input => document.getElementById(input.id).value = 0);
   raceBonusInputs.forEach(input => document.getElementById(input.id).value = 0);
   elements.tituloHabilidade.value = '';
@@ -555,6 +561,109 @@ function applyDynamicTheme(primary, secondary) {
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', primary);
 }
 
+function updateProgression() {
+  const progress = getXpProgress(elements.xp.value);
+  elements.nivel.value = progress.level;
+  const bar = document.getElementById('xpProgress');
+  bar.max = progress.needed;
+  bar.value = progress.level === 20 ? progress.needed : progress.earned;
+  document.getElementById('xpLevelLabel').textContent = `Nível ${progress.level}`;
+  document.getElementById('xpNextLabel').textContent = progress.level === 20
+    ? 'Nível máximo alcançado'
+    : `${progress.remaining.toLocaleString('pt-BR')} XP para o nível ${progress.level + 1}`;
+  if (!elements.multiclasse.checked) elements.nivelC1.value = progress.level;
+}
+
+function updateSubclassSelect(classSelect, levelInput, subclassSelect) {
+  const previous = subclassSelect.value;
+  const classLevel = Math.max(0, Number(levelInput.value) || 0);
+  const unlocked = classLevel >= 3;
+  subclassSelect.innerHTML = unlocked
+    ? getSubclassOptions(classSelect.value).map(option => `<option value="${option}">${option}</option>`).join('')
+    : `<option value="">${classLevel === 0 ? 'Classe opcional inativa' : 'Liberada no nível 3 da classe'}</option>`;
+  subclassSelect.disabled = !unlocked;
+  if (unlocked && [...subclassSelect.options].some(option => option.value === previous)) {
+    subclassSelect.value = previous;
+  }
+}
+
+function updateClassProgression() {
+  const groups = [
+    [elements.classe1, elements.nivelC1, document.getElementById('subclasse1')],
+    [elements.classe2, elements.nivelC2, document.getElementById('subclasse2')],
+    [elements.classe3, elements.nivelC3, document.getElementById('subclasse3')]
+  ];
+  groups.forEach(group => updateSubclassSelect(...group));
+
+  const activeGroups = elements.multiclasse.checked
+    ? groups.filter(([, input], index) => index < 2 || Number(input.value) > 0)
+    : groups.slice(0, 1);
+  const levelSum = activeGroups.reduce((sum, [, input]) => sum + (Number(input.value) || 0), 0);
+  const totalLevel = Number(elements.nivel.value) || 1;
+  const totals = getTotals();
+  const scores = { for: totals[0], dex: totals[1], con: totals[2], int: totals[3], sab: totals[4], car: totals[5] };
+  const problems = [];
+
+  if (levelSum !== totalLevel) {
+    problems.push(`Distribua exatamente ${totalLevel} nível(is) entre as classes; agora a soma é ${levelSum}.`);
+  }
+  if (new Set(activeGroups.map(([select]) => select.value)).size !== activeGroups.length) {
+    problems.push('Escolha classes diferentes para a multiclasse.');
+  }
+  if (elements.multiclasse.checked) {
+    activeGroups.forEach(([select]) => {
+      const requirements = getMulticlassRequirement(select.value);
+      const requiredAll = requirements.all || [];
+      const requiredAny = requirements.any || [];
+      const valid = requiredAll.every(attribute => scores[attribute] >= 13)
+        && (!requiredAny.length || requiredAny.some(attribute => scores[attribute] >= 13));
+      if (!valid) {
+        const labels = requiredAll.length
+          ? requiredAll.map(attribute => attribute.toUpperCase()).join(' e ')
+          : requiredAny.map(attribute => attribute.toUpperCase()).join(' ou ');
+        problems.push(`${select.value} exige ${labels} 13 para multiclasse.`);
+      }
+    });
+  }
+
+  document.getElementById('multiclassWarning').textContent = problems.join(' ');
+  document.getElementById('hitDie').value = classData[elements.classe1.value]?.hitDie || 'd10';
+}
+
+function renderSpellCatalog() {
+  const className = document.getElementById('spellClassFilter').value;
+  const levelFilter = document.getElementById('spellLevelFilter').value;
+  const catalog = document.getElementById('spellCatalog');
+  const spells = spellCatalog.filter(spell => {
+    return spell.classes.includes(className) && (levelFilter === 'all' || spell.level === Number(levelFilter));
+  });
+  catalog.innerHTML = '';
+  if (!spells.length) {
+    catalog.innerHTML = '<p class="system-rule">Nenhuma magia disponível para esse filtro.</p>';
+    return;
+  }
+  spells.forEach(spell => {
+    const card = document.createElement('article');
+    card.className = 'spell-card';
+    card.innerHTML = `<span>${spell.level === 0 ? 'Truque' : `${spell.level}º círculo`} · ${spell.school}</span><h4>${spell.name}</h4>`;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = 'Preparar';
+    button.addEventListener('click', () => prepareSpell(spell));
+    card.appendChild(button);
+    catalog.appendChild(card);
+  });
+}
+
+function prepareSpell(spell) {
+  const textarea = document.querySelector(`[data-store="spell-${spell.level}"]`);
+  if (!textarea) return;
+  const current = textarea.value.split('\n').map(value => value.trim()).filter(Boolean);
+  if (!current.includes(spell.name)) current.push(spell.name);
+  textarea.value = current.join('\n');
+  textarea.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
 function extractThemeFromImage(source) {
   if (!source) return;
   const image = new Image();
@@ -619,6 +728,7 @@ function updateSpellStats() {
 }
 
 function synchronize() {
+  updateProgression();
   elements.profBonus.value = computeProfBonus(elements.nivel.value);
   updateBudgetText(getRemainingPoints(elements.nivel.value, getInputValues()));
   updateDistribuicaoLimits();
@@ -628,6 +738,7 @@ function synchronize() {
   updateFeaturedSkillSummary();
   updateSkillBudget();
   updateSpellStats();
+  updateClassProgression();
   renderEquipment();
 
   const combatHp = document.getElementById('combatHp');
@@ -742,11 +853,14 @@ function getCharacterData() {
     origem: elements.origem.value,
     classe1: elements.classe1.value,
     nivelC1: elements.nivelC1.value,
+    subclasse1: document.getElementById('subclasse1').value,
     multiclasse: elements.multiclasse.checked,
     classe2: elements.classe2.value,
     nivelC2: elements.nivelC2.value,
+    subclasse2: document.getElementById('subclasse2').value,
     classe3: elements.classe3.value,
     nivelC3: elements.nivelC3.value,
+    subclasse3: document.getElementById('subclasse3').value,
     distFor: document.getElementById('distFor').value,
     distDex: document.getElementById('distDex').value,
     distCon: document.getElementById('distCon').value,
@@ -810,7 +924,11 @@ function loadCharacter(index) {
   elements.classe2.value = character.classe2 || 'Bárbaro';
   elements.nivelC2.value = character.nivelC2 || 1;
   elements.classe3.value = character.classe3 || 'Bárbaro';
-  elements.nivelC3.value = character.nivelC3 || 1;
+  elements.nivelC3.value = character.nivelC3 || 0;
+  updateClassProgression();
+  document.getElementById('subclasse1').value = character.subclasse1 || document.getElementById('subclasse1').value;
+  document.getElementById('subclasse2').value = character.subclasse2 || document.getElementById('subclasse2').value;
+  document.getElementById('subclasse3').value = character.subclasse3 || document.getElementById('subclasse3').value;
   document.getElementById('distFor').value = character.distFor || 0;
   document.getElementById('distDex').value = character.distDex || 0;
   document.getElementById('distCon').value = character.distCon || 0;
@@ -865,6 +983,8 @@ function loadCharacter(index) {
 
 function toggleMulticlassFields() {
   elements.multiclasseFields.classList.toggle('hidden', !elements.multiclasse.checked);
+  if (!elements.multiclasse.checked) elements.nivelC1.value = elements.nivel.value;
+  synchronize();
 }
 
 function handlePhotoUpload(event) {
@@ -910,18 +1030,46 @@ function init() {
   populateSelect(elements.classe1, classOptions);
   populateSelect(elements.classe2, classOptions);
   populateSelect(elements.classe3, classOptions);
+  populateSelect(document.getElementById('spellClassFilter'), spellcastingClasses);
+  document.getElementById('spellClassFilter').value = spellcastingClasses.includes(elements.classe1.value)
+    ? elements.classe1.value
+    : 'Mago';
 
-  elements.nivel.addEventListener('input', () => {
-    if (Number(elements.nivel.value) < 1) elements.nivel.value = 1;
+  elements.xp.addEventListener('input', () => {
+    if (Number(elements.xp.value) < 0) elements.xp.value = 0;
     synchronize();
   });
 
-  elements.nivelC1.addEventListener('input', () => { if (Number(elements.nivelC1.value) < 1) elements.nivelC1.value = 1; });
-  elements.nivelC2.addEventListener('input', () => { if (Number(elements.nivelC2.value) < 1) elements.nivelC2.value = 1; });
-  elements.nivelC3.addEventListener('input', () => { if (Number(elements.nivelC3.value) < 1) elements.nivelC3.value = 1; });
+  elements.nivel.addEventListener('change', () => {
+    const requestedLevel = Math.min(20, Math.max(1, Number(elements.nivel.value) || 1));
+    elements.xp.value = xpThresholds[requestedLevel - 1];
+    synchronize();
+  });
+
+  [elements.nivelC1, elements.nivelC2].forEach(input => {
+    input.addEventListener('input', () => {
+      if (Number(input.value) < 1) input.value = 1;
+      synchronize();
+    });
+  });
+  elements.nivelC3.addEventListener('input', () => {
+    if (Number(elements.nivelC3.value) < 0) elements.nivelC3.value = 0;
+    synchronize();
+  });
 
   elements.multiclasse.addEventListener('change', toggleMulticlassFields);
   elements.raca.addEventListener('change', applySelectedRaceBonuses);
+  [elements.classe1, elements.classe2, elements.classe3].forEach(select => {
+    select.addEventListener('change', () => {
+      if (select === elements.classe1 && spellcastingClasses.includes(select.value)) {
+        document.getElementById('spellClassFilter').value = select.value;
+        renderSpellCatalog();
+      }
+      synchronize();
+    });
+  });
+  document.getElementById('spellClassFilter').addEventListener('change', renderSpellCatalog);
+  document.getElementById('spellLevelFilter').addEventListener('change', renderSpellCatalog);
 
   [
     elements.nome,
@@ -995,6 +1143,7 @@ function init() {
   applySelectedRaceBonuses();
   loadSavedCharacters();
   renderSkillCollection();
+  renderSpellCatalog();
   synchronize();
 }
 

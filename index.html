@@ -130,8 +130,12 @@
                   <label><span>Nome do personagem</span><input id="nome" type="text" placeholder="Nome"></label>
                   <label><span>Jogador</span><input id="jogador" type="text" placeholder="Nome do jogador"></label>
                   <label><span>Sistema</span><select id="sistema"><option value="D&D">D&amp;D</option><option value="Outro">Outro</option></select></label>
-                  <label><span>Nível atual</span><input id="nivel" type="number" min="1" max="20" value="5"></label>
+                  <label><span>Nível total</span><input id="nivel" type="number" min="1" max="20" value="1"></label>
                   <label><span>Experiência</span><input id="xp" type="number" min="0" value="0"></label>
+                  <div class="xp-progress full-width">
+                    <div><span id="xpLevelLabel">Nível 1</span><b id="xpNextLabel">300 XP para o nível 2</b></div>
+                    <progress id="xpProgress" max="300" value="0"></progress>
+                  </div>
                   <label><span>Proficiência</span><input id="profBonus" type="text" readonly value="+3"></label>
                   <label><span>Vida máxima</span><input id="vidaMaxima" type="number" min="1" value="30"></label>
                   <label><span>Classe de armadura</span><input id="armorClass" type="number" min="0" value="10"></label>
@@ -141,7 +145,8 @@
                   <label><span>Raça</span><select id="raca"></select></label>
                   <label><span>Origem</span><select id="origem"></select></label>
                   <label><span>Classe principal</span><select id="classe1"></select></label>
-                  <label><span>Nível da classe</span><input id="nivelC1" type="number" min="1" max="20" value="5"></label>
+                  <label><span>Nível da classe</span><input id="nivelC1" type="number" min="1" max="20" value="1"></label>
+                  <label><span>Subclasse</span><select id="subclasse1"></select></label>
                   <label class="toggle-row"><span>Ativar multiclasse</span><input id="multiclasse" type="checkbox"></label>
                 </div>
               </section>
@@ -149,8 +154,11 @@
               <section id="multiclasseFields" class="content-card multiclass-grid hidden">
                 <label><span>Classe 2</span><select id="classe2"></select></label>
                 <label><span>Nível C2</span><input id="nivelC2" type="number" min="1" max="20" value="1"></label>
+                <label><span>Subclasse 2</span><select id="subclasse2"></select></label>
                 <label><span>Classe 3</span><select id="classe3"></select></label>
-                <label><span>Nível C3</span><input id="nivelC3" type="number" min="1" max="20" value="1"></label>
+                <label><span>Nível C3 (opcional)</span><input id="nivelC3" type="number" min="0" max="20" value="0"></label>
+                <label><span>Subclasse 3</span><select id="subclasse3"></select></label>
+                <p id="multiclassWarning" class="warning full-width"></p>
               </section>
 
               <section class="content-card">
@@ -308,11 +316,23 @@
               </section>
 
               <section class="spellbook">
+                <article><span>Truques</span><label>À vontade</label><textarea data-store="spell-0" placeholder="Escolha truques no catálogo abaixo..."></textarea></article>
                 <article><span>1º círculo</span><label>Usados / Total <input class="slot-counter" data-store="slots-1" data-slot-level="1" type="text" value="0 / 0"></label><textarea data-store="spell-1" placeholder="Escreva suas magias aqui..."></textarea></article>
                 <article><span>2º círculo</span><label>Usados / Total <input class="slot-counter" data-store="slots-2" data-slot-level="2" type="text" value="0 / 0"></label><textarea data-store="spell-2"></textarea></article>
                 <article><span>3º círculo</span><label>Usados / Total <input class="slot-counter" data-store="slots-3" data-slot-level="3" type="text" value="0 / 0"></label><textarea data-store="spell-3"></textarea></article>
                 <article><span>4º círculo</span><label>Usados / Total <input class="slot-counter" data-store="slots-4" data-slot-level="4" type="text" value="0 / 0"></label><textarea data-store="spell-4"></textarea></article>
                 <article><span>5º círculo</span><label>Usados / Total <input class="slot-counter" data-store="slots-5" data-slot-level="5" type="text" value="0 / 0"></label><textarea data-store="spell-5"></textarea></article>
+              </section>
+
+              <section class="content-card spell-library">
+                <div class="section-title">
+                  <div><p class="panel-kicker">Catálogo do SRD</p><h3>Magias prontas por classe</h3></div>
+                  <div class="spell-filters">
+                    <label><span>Classe</span><select id="spellClassFilter"></select></label>
+                    <label><span>Círculo</span><select id="spellLevelFilter"><option value="all">Todos</option><option value="0">Truques</option><option value="1">1º</option><option value="2">2º</option><option value="3">3º</option><option value="4">4º</option><option value="5">5º</option></select></label>
+                  </div>
+                </div>
+                <div id="spellCatalog" class="spell-catalog"></div>
               </section>
             </section>
 
@@ -343,33 +363,22 @@
               <section id="ui-container" class="dice-roller-section">
                 <div class="dice-stage-copy">
                   <div>
-                    <span id="diceTypeBadge" class="dice-type-badge">D20</span>
-                    <h3>Arraste, solte ou escolha um dado</h3>
+                    <span id="diceTypeBadge" class="dice-type-badge">1D20</span>
+                    <h3>Monte, arraste e role sua combinação</h3>
                     <p>Ataques, danos e testes feitos nas outras abas aparecem neste mesmo tabuleiro.</p>
                   </div>
-                  <label class="dice-label">
-                    <span>Quantidade</span>
-                    <select id="diceCount" class="dice-select">
-                      <option value="1" selected>1</option>
-                      <option value="2">2</option>
-                      <option value="3">3</option>
-                      <option value="4">4</option>
-                      <option value="5">5</option>
-                      <option value="6">6</option>
-                      <option value="10">10</option>
-                    </select>
-                  </label>
                 </div>
 
-                <div class="dice-toolbar" aria-label="Escolha o dado">
-                  <button type="button" data-die="100">d100</button>
-                  <button type="button" data-die="20" class="active">d20</button>
-                  <button type="button" data-die="12">d12</button>
-                  <button type="button" data-die="10">d10</button>
-                  <button type="button" data-die="8">d8</button>
-                  <button type="button" data-die="6">d6</button>
-                  <button type="button" data-die="4">d4</button>
+                <div class="dice-pool-builder" aria-label="Monte sua combinação de dados">
+                  <div class="pool-die" data-pool-die="100"><b>d100</b><button type="button" data-pool-action="remove">−</button><span>0</span><button type="button" data-pool-action="add">+</button></div>
+                  <div class="pool-die" data-pool-die="20"><b>d20</b><button type="button" data-pool-action="remove">−</button><span>1</span><button type="button" data-pool-action="add">+</button></div>
+                  <div class="pool-die" data-pool-die="12"><b>d12</b><button type="button" data-pool-action="remove">−</button><span>0</span><button type="button" data-pool-action="add">+</button></div>
+                  <div class="pool-die" data-pool-die="10"><b>d10</b><button type="button" data-pool-action="remove">−</button><span>0</span><button type="button" data-pool-action="add">+</button></div>
+                  <div class="pool-die" data-pool-die="8"><b>d8</b><button type="button" data-pool-action="remove">−</button><span>0</span><button type="button" data-pool-action="add">+</button></div>
+                  <div class="pool-die" data-pool-die="6"><b>d6</b><button type="button" data-pool-action="remove">−</button><span>0</span><button type="button" data-pool-action="add">+</button></div>
+                  <div class="pool-die" data-pool-die="4"><b>d4</b><button type="button" data-pool-action="remove">−</button><span>0</span><button type="button" data-pool-action="add">+</button></div>
                 </div>
+                <div class="pool-actions"><span id="poolSummary">1d20</span><button id="rollPoolButton" type="button">Rolar combinação</button><button id="clearPoolButton" type="button" class="button-muted">Limpar</button></div>
 
                 <div class="dice-canvas-area" aria-label="Área interativa dos dados 3D"></div>
 
@@ -409,7 +418,7 @@
 
               <div class="system-panel active" id="system-start">
                 <div class="book-grid">
-                  <article class="book-card"><span>Passo 1</span><h3>Crie a identidade</h3><p>Escolha nome, raça, origem, classe e nível. Retrato e banner são imagens diferentes: o retrato identifica o personagem; o banner define a apresentação e as cores do tema.</p></article>
+                  <article class="book-card"><span>Passo 1</span><h3>Crie a identidade</h3><p>Escolha nome, raça, origem e classe. A experiência calcula o nível automaticamente. Retrato e banner são imagens diferentes; o banner também define as cores do tema.</p></article>
                   <article class="book-card"><span>Passo 2</span><h3>Distribua atributos</h3><p>FOR mede força, DEX agilidade, CON resistência, INT raciocínio, SAB percepção e CAR presença. O modificador é calculado automaticamente a partir do total.</p></article>
                   <article class="book-card"><span>Passo 3</span><h3>Compre recursos</h3><p>Cada 3 pontos distribuídos liberam uma habilidade, limitada pelo nível. Equipamentos usam outro orçamento: 10 + 2 pontos por nível.</p></article>
                   <article class="book-card"><span>Passo 4</span><h3>Jogue</h3><p>Testes e ataques usam d20. Clique nos botões de ação ou nos dados para ver a rolagem no tabuleiro 3D. Danos usam o dado indicado pela arma.</p></article>
@@ -447,6 +456,7 @@
               </div>
 
               <div class="system-panel" id="system-classes">
+                <article class="rule-example"><span>XP, subclasse e multiclasse</span><p>A XP define o nível total, que controla proficiência, pontos de atributos, habilidades e loja. A subclasse abre no nível 3 daquela classe. Em multiclasse, a soma dos níveis de classe deve ser igual ao nível total e cada classe exige atributo 13: Paladino usa FOR e CAR; Patrulheiro e Monge usam DEX e SAB; Guerreiro aceita FOR ou DEX.</p></article>
                 <div class="reference-grid">
                   <article><h3>Bárbaro</h3><b>d12 · FOR</b><p>Fúria, resistência e grande dano corpo a corpo.</p></article>
                   <article><h3>Guerreiro</h3><b>d10 · FOR/DEX</b><p>Versátil, resistente e especialista em múltiplos ataques.</p></article>
@@ -480,7 +490,7 @@
                   <article class="book-card"><span>CD</span><h3>Resistência</h3><p>CD = 8 + proficiência + modificador do atributo de conjuração. O alvo precisa igualar ou superar esse valor.</p></article>
                   <article class="book-card"><span>Ataque</span><h3>Bônus mágico</h3><p>Proficiência + modificador de INT, SAB ou CAR. Role d20 e some esse bônus.</p></article>
                   <article class="book-card"><span>Espaços</span><h3>Uso diário</h3><p>Cada feitiço consome um espaço do círculo correspondente ou superior. Registre usados e total na aba Magias.</p></article>
-                  <article class="book-card"><span>Preparação</span><h3>Lista conhecida</h3><p>Escreva as magias por círculo. Algumas classes preparam uma lista por descanso; outras conhecem um número fixo.</p></article>
+                  <article class="book-card"><span>Preparação</span><h3>Lista conhecida</h3><p>Filtre o catálogo por classe e círculo e clique em Preparar. A magia entra automaticamente na lista correspondente; truques ficam na lista de uso livre.</p></article>
                 </div>
               </div>
 
