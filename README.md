@@ -15,12 +15,15 @@
 
 ## Sobre
 
-Este projeto fornece um criador de fichas para RPG com foco em D&D, usando uma interface web responsiva e abas separadas para:
+Este projeto fornece um criador de fichas para RPG com foco em D&D, usando uma interface responsiva inspirada em fichas editoriais. O sistema inclui:
 
-- Ficha do personagem
-- Livro 1: Raças e Origens
-- Livro 2: Classes
-- Livro 3: Perícias
-- Referência do sistema
+- Criação e salvamento local de personagens
+- Distribuição de atributos, classes, perícias, magia e vida
+- Compra de habilidades com nome, descrição e imagem
+- Uma habilidade liberada a cada 3 pontos distribuídos, limitada pelo nível
+- Edição e exclusão das habilidades compradas
+- Rolagens rápidas de combate
+- Rolador físico de dados d20 em 3D em uma aba própria
+- Livros de referência do sistema
 
-O design é pensado para dispositivos móveis e desktop.
+O design funciona em dispositivos móveis e desktop.

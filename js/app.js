@@ -21,6 +21,10 @@ import {
 } from './modules/ui.js';
 import { initDiceRoller } from './modules/diceRoller.js';
 
+let purchasedSkills = [];
+let skillPhoto = '';
+let editingSkillIndex = -1;
+
 function getInputValues() {
   return distInputs.map(item => Number(document.getElementById(item.id).value || 0));
 }
@@ -114,6 +118,8 @@ function resetFicha() {
   elements.tituloHabilidade.value = '';
   elements.descricaoHabilidade.value = '';
   elements.descricaoClasse.value = '';
+  purchasedSkills = [];
+  resetSkillEditor();
   document.getElementById('skillRaca').value = '';
   document.getElementById('skillClasse1').value = '';
   document.getElementById('skillClasse2').value = '';
@@ -131,6 +137,158 @@ function resetFicha() {
   synchronize();
 }
 
+function getSkillLimit() {
+  const level = Math.max(1, Number(elements.nivel.value) || 1);
+  const distributedPoints = getInputValues().reduce((sum, value) => sum + value, 0);
+  return Math.min(level, Math.floor(distributedPoints / 3));
+}
+
+function updateSkillBudget() {
+  const limit = getSkillLimit();
+  const used = purchasedSkills.length;
+  const available = Math.max(0, limit - used);
+  document.getElementById('skillLimit').textContent = limit;
+  document.getElementById('skillUsed').textContent = used;
+  document.getElementById('skillAvailable').textContent = available;
+
+  const addButton = document.getElementById('addSkill');
+  addButton.disabled = editingSkillIndex < 0 && available === 0;
+  addButton.title = available === 0 && editingSkillIndex < 0
+    ? 'Distribua mais pontos de atributo ou aumente o nível.'
+    : '';
+}
+
+function resetSkillEditor() {
+  skillPhoto = '';
+  editingSkillIndex = -1;
+  elements.tituloHabilidade.value = '';
+  elements.descricaoHabilidade.value = '';
+  document.getElementById('skillPhotoInput').value = '';
+  document.getElementById('skillPhotoPreview').textContent = 'Foto da habilidade';
+  document.getElementById('addSkill').textContent = 'Adicionar habilidade';
+  document.getElementById('cancelSkillEdit').classList.add('hidden');
+  document.getElementById('skillMessage').textContent = '';
+}
+
+function renderSkillCollection() {
+  const collection = document.getElementById('skillCollection');
+  collection.innerHTML = '';
+
+  if (purchasedSkills.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'system-rule';
+    empty.textContent = 'Nenhuma habilidade comprada ainda.';
+    collection.appendChild(empty);
+  }
+
+  purchasedSkills.forEach((skill, index) => {
+    const card = document.createElement('article');
+    card.className = 'skill-card';
+
+    const image = document.createElement('div');
+    image.className = 'skill-card-image';
+    if (skill.photo) {
+      const img = document.createElement('img');
+      img.src = skill.photo;
+      img.alt = `Imagem da habilidade ${skill.name}`;
+      image.appendChild(img);
+    } else {
+      image.textContent = String(index + 1).padStart(2, '0');
+    }
+
+    const copy = document.createElement('div');
+    copy.className = 'skill-card-copy';
+    const title = document.createElement('h4');
+    title.textContent = skill.name;
+    const description = document.createElement('p');
+    description.textContent = skill.description;
+
+    const actions = document.createElement('div');
+    actions.className = 'skill-card-actions';
+    const editButton = document.createElement('button');
+    editButton.type = 'button';
+    editButton.textContent = 'Editar';
+    editButton.addEventListener('click', () => editSkill(index));
+    const deleteButton = document.createElement('button');
+    deleteButton.type = 'button';
+    deleteButton.textContent = 'Excluir';
+    deleteButton.addEventListener('click', () => {
+      purchasedSkills.splice(index, 1);
+      if (editingSkillIndex === index) resetSkillEditor();
+      renderSkillCollection();
+      updateSkillBudget();
+    });
+
+    actions.append(editButton, deleteButton);
+    copy.append(title, description, actions);
+    card.append(image, copy);
+    collection.appendChild(card);
+  });
+
+  const featured = purchasedSkills[0];
+  if (featured) {
+    elements.summaryAbilityTitle.textContent = featured.name;
+    elements.summaryAbilityDesc.textContent = featured.description;
+  }
+}
+
+function updateFeaturedSkillSummary() {
+  const featured = purchasedSkills[0];
+  if (!featured) return;
+  elements.summaryAbilityTitle.textContent = featured.name;
+  elements.summaryAbilityDesc.textContent = featured.description;
+}
+
+function editSkill(index) {
+  const skill = purchasedSkills[index];
+  if (!skill) return;
+  editingSkillIndex = index;
+  skillPhoto = skill.photo || '';
+  elements.tituloHabilidade.value = skill.name;
+  elements.descricaoHabilidade.value = skill.description;
+  const preview = document.getElementById('skillPhotoPreview');
+  preview.innerHTML = skillPhoto
+    ? `<img src="${skillPhoto}" alt="Imagem da habilidade">`
+    : 'Foto da habilidade';
+  document.getElementById('addSkill').textContent = 'Salvar alterações';
+  document.getElementById('cancelSkillEdit').classList.remove('hidden');
+  document.getElementById('skillMessage').textContent = '';
+  document.querySelector('.skill-builder').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  updateSkillBudget();
+}
+
+function saveSkillFromEditor() {
+  const name = elements.tituloHabilidade.value.trim();
+  const description = elements.descricaoHabilidade.value.trim();
+  const message = document.getElementById('skillMessage');
+
+  if (!name || !description) {
+    message.textContent = 'Preencha o nome e a descrição da habilidade.';
+    return;
+  }
+
+  if (editingSkillIndex < 0 && purchasedSkills.length >= getSkillLimit()) {
+    message.textContent = 'Sem pontos disponíveis. Distribua 3 pontos de atributo ou aumente o nível.';
+    return;
+  }
+
+  const skill = {
+    id: editingSkillIndex >= 0
+      ? purchasedSkills[editingSkillIndex].id
+      : (crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`),
+    name,
+    description,
+    photo: skillPhoto
+  };
+
+  if (editingSkillIndex >= 0) purchasedSkills[editingSkillIndex] = skill;
+  else purchasedSkills.push(skill);
+
+  resetSkillEditor();
+  renderSkillCollection();
+  updateSkillBudget();
+}
+
 function synchronize() {
   elements.profBonus.value = computeProfBonus(elements.nivel.value);
   updateBudgetText(getRemainingPoints(elements.nivel.value, getInputValues()));
@@ -138,6 +296,19 @@ function synchronize() {
   updateTotals(getTotals());
   updateMagicLifeUI(elements.pontosMagia.value, elements.pontosVida.value, elements.nivel.value);
   renderSummary();
+  updateFeaturedSkillSummary();
+  updateSkillBudget();
+
+  const combatHp = document.getElementById('combatHp');
+  const combatProf = document.getElementById('combatProf');
+  const combatInit = document.getElementById('combatInit');
+  const combatDefense = document.getElementById('combatDefense');
+  if (combatHp) combatHp.textContent = elements.vidaMaxima.value || 0;
+  if (combatProf) combatProf.textContent = elements.profBonus.value;
+  if (combatInit) combatInit.textContent = elements.modDex.textContent;
+  if (combatDefense) {
+    combatDefense.textContent = 10 + Number(elements.modDex.textContent.replace('+', ''));
+  }
 }
 
 function loadSavedCharacters() {
@@ -252,6 +423,13 @@ function getCharacterData() {
     tituloHabilidade: elements.tituloHabilidade.value,
     descricaoHabilidade: elements.descricaoHabilidade.value,
     descricaoClasse: elements.descricaoClasse.value,
+    purchasedSkills,
+    skillRaca: document.getElementById('skillRaca').value,
+    skillClasse1: document.getElementById('skillClasse1').value,
+    skillClasse2: document.getElementById('skillClasse2').value,
+    skillClasse3: document.getElementById('skillClasse3').value,
+    pericia1: document.getElementById('pericia1').value,
+    pericia2: document.getElementById('pericia2').value,
     photo: elements.photoPreview.dataset.photo || ''
   };
 }
@@ -294,6 +472,15 @@ function loadCharacter(index) {
   elements.tituloHabilidade.value = character.tituloHabilidade || '';
   elements.descricaoHabilidade.value = character.descricaoHabilidade || '';
   elements.descricaoClasse.value = character.descricaoClasse || '';
+  purchasedSkills = Array.isArray(character.purchasedSkills) ? character.purchasedSkills : [];
+  resetSkillEditor();
+  renderSkillCollection();
+  document.getElementById('skillRaca').value = character.skillRaca || '';
+  document.getElementById('skillClasse1').value = character.skillClasse1 || '';
+  document.getElementById('skillClasse2').value = character.skillClasse2 || '';
+  document.getElementById('skillClasse3').value = character.skillClasse3 || '';
+  document.getElementById('pericia1').value = character.pericia1 || '';
+  document.getElementById('pericia2').value = character.pericia2 || '';
 
   if (character.photo) {
     elements.photoPreview.innerHTML = `<img src="${character.photo}" alt="Personagem" />`;
@@ -323,6 +510,18 @@ function handlePhotoUpload(event) {
   reader.readAsDataURL(file);
 }
 
+function handleSkillPhotoUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    skillPhoto = reader.result;
+    document.getElementById('skillPhotoPreview').innerHTML = `<img src="${reader.result}" alt="Imagem da habilidade">`;
+  };
+  reader.readAsDataURL(file);
+}
+
 function init() {
   populateSelect(elements.raca, raceOptions);
   populateSelect(elements.origem, originOptions);
@@ -340,6 +539,19 @@ function init() {
   elements.nivelC3.addEventListener('input', () => { if (Number(elements.nivelC3.value) < 1) elements.nivelC3.value = 1; });
 
   elements.multiclasse.addEventListener('change', toggleMulticlassFields);
+
+  [
+    elements.nome,
+    elements.raca,
+    elements.classe1,
+    elements.vidaMaxima,
+    elements.tituloHabilidade,
+    elements.descricaoHabilidade,
+    elements.descricaoClasse
+  ].forEach(input => {
+    input.addEventListener('input', synchronize);
+    input.addEventListener('change', synchronize);
+  });
 
   distInputs.forEach(item => {
     const input = document.getElementById(item.id);
@@ -367,6 +579,9 @@ function init() {
   });
 
   elements.photoInput.addEventListener('change', handlePhotoUpload);
+  document.getElementById('skillPhotoInput').addEventListener('change', handleSkillPhotoUpload);
+  document.getElementById('addSkill').addEventListener('click', saveSkillFromEditor);
+  document.getElementById('cancelSkillEdit').addEventListener('click', resetSkillEditor);
   elements.saveButton.addEventListener('click', saveCharacter);
   elements.newButton.addEventListener('click', resetFicha);
   elements.clearAll.addEventListener('click', clearAllCharacters);
@@ -376,26 +591,19 @@ function init() {
     if (tab) tab.click();
   });
 
-  const diceWidget = document.getElementById('ui-container');
-  const dicePanel = document.getElementById('dicePanel');
-  const diceToggle = document.getElementById('diceToggle');
-  const diceClose = document.getElementById('diceClose');
-
-  const setDicePanelOpen = open => {
-    diceWidget.classList.toggle('open', open);
-    diceToggle.setAttribute('aria-expanded', String(open));
-    dicePanel.setAttribute('aria-hidden', String(!open));
-  };
-
-  diceToggle.addEventListener('click', () => {
-    setDicePanelOpen(!diceWidget.classList.contains('open'));
+  document.querySelectorAll('[data-store]').forEach(input => {
+    const key = `input-${input.dataset.store}`;
+    input.value = localStorage.getItem(key) || '';
+    input.addEventListener('input', event => {
+      localStorage.setItem(key, event.target.value);
+    });
   });
-  diceClose.addEventListener('click', () => setDicePanelOpen(false));
 
   setupTabs();
   initDiceRoller();
   toggleMulticlassFields();
   loadSavedCharacters();
+  renderSkillCollection();
   synchronize();
 }
 

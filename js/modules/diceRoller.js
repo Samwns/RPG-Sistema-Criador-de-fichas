@@ -1,5 +1,4 @@
 import * as THREE from "https://esm.sh/three";
-import { RoundedBoxGeometry } from "https://esm.sh/three/addons/geometries/RoundedBoxGeometry.js";
 import * as CANNON from "https://esm.sh/cannon-es";
 
 let scene, camera, renderer, world;
@@ -9,6 +8,7 @@ let needsResultCheck = false;
 let mouse = new THREE.Vector2();
 let raycaster = new THREE.Raycaster();
 let canvasContainer = null;
+let resultFallbackTimer = null;
 
 const FRUSTUM_SIZE = 23;
 let dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -15);
@@ -23,10 +23,29 @@ const palette = [
 ];
 
 const commonColors = {
-  dots: "#FFFFFF",
   outline: "#725349",
   shadow: "#F3BD2E"
 };
+
+const GOLDEN_RATIO = (1 + Math.sqrt(5)) / 2;
+const D20_RAW_VERTICES = [
+  [-1, GOLDEN_RATIO, 0], [1, GOLDEN_RATIO, 0], [-1, -GOLDEN_RATIO, 0], [1, -GOLDEN_RATIO, 0],
+  [0, -1, GOLDEN_RATIO], [0, 1, GOLDEN_RATIO], [0, -1, -GOLDEN_RATIO], [0, 1, -GOLDEN_RATIO],
+  [GOLDEN_RATIO, 0, -1], [GOLDEN_RATIO, 0, 1], [-GOLDEN_RATIO, 0, -1], [-GOLDEN_RATIO, 0, 1]
+];
+const D20_FACES = [
+  [0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11],
+  [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8],
+  [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9],
+  [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1]
+];
+const D20_FACE_VALUES = [
+  20, 2, 14, 8, 12,
+  6, 16, 4, 18, 10,
+  7, 15, 3, 19, 11,
+  13, 5, 17, 1, 9
+];
+let d20FaceNormals = [];
 
 export function initDiceRoller() {
   canvasContainer = document.querySelector('.dice-canvas-area');
@@ -119,7 +138,7 @@ function createPhysicsWalls(material) {
   createWall(0, wallDistance, Math.PI);
 }
 
-function createVectorDiceTexture(number, colorHex) {
+function createD20FaceTexture(number, colorHex) {
   const size = 256;
   const canvas = document.createElement("canvas");
   canvas.width = size;
@@ -129,35 +148,57 @@ function createVectorDiceTexture(number, colorHex) {
   ctx.fillStyle = colorHex;
   ctx.fillRect(0, 0, size, size);
 
-  const isTraditional = (colorHex === "#FFFFFF");
-  let dotColor = commonColors.dots;
-  if (isTraditional) {
-    if (number === 1) dotColor = "#E03E3E";
-    else if (number === 4) dotColor = "#E03E3E"; 
-    else dotColor = "#331e18"; 
-  }
+  const gradient = ctx.createLinearGradient(0, 0, size, size);
+  gradient.addColorStop(0, "rgba(255,255,255,.28)");
+  gradient.addColorStop(1, "rgba(0,0,0,.18)");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, size, size);
 
-  ctx.fillStyle = dotColor;
-  const dotSize = size / 5;
-  const currentDotSize = (isTraditional && number === 1) ? dotSize * 1.5 : dotSize;
+  ctx.strokeStyle = "rgba(114,83,73,.65)";
+  ctx.lineWidth = 12;
+  ctx.strokeRect(6, 6, size - 12, size - 12);
 
-  const center = size / 2;
-  const q1 = size / 4;
-  const q3 = (size * 3) / 4;
+  ctx.fillStyle = colorHex === "#FFFFFF" ? "#331e18" : "#FFFFFF";
+  ctx.font = "900 104px Inter, Arial, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(String(number), size / 2, size * 0.58);
 
-  function drawDot(x, y) {
-    ctx.beginPath();
-    ctx.arc(x, y, currentDotSize / 2, 0, Math.PI * 2);
-    ctx.fill();
-  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
 
-  if (number === 1) drawDot(center, center);
-  else if (number === 2) { drawDot(q1, q1); drawDot(q3, q3); }
-  else if (number === 3) { drawDot(q1, q1); drawDot(center, center); drawDot(q3, q3); }
-  else if (number === 4) { drawDot(q1, q1); drawDot(q3, q1); drawDot(q1, q3); drawDot(q3, q3); }
-  else if (number === 5) { drawDot(q1, q1); drawDot(center, center); drawDot(q1, q3); drawDot(q3, q3); drawDot(q3, q1); }
-  else if (number === 6) { drawDot(q1, q1); drawDot(q3, q1); drawDot(q1, center); drawDot(q3, center); drawDot(q1, q3); drawDot(q3, q3); }
-  return new THREE.CanvasTexture(canvas);
+function createD20Geometry(radius) {
+  const normalizedVertices = D20_RAW_VERTICES.map(([x, y, z]) => {
+    const length = Math.hypot(x, y, z);
+    return new THREE.Vector3(
+      (x / length) * radius,
+      (y / length) * radius,
+      (z / length) * radius
+    );
+  });
+  const positions = [];
+  const uvs = [];
+
+  d20FaceNormals = D20_FACES.map(face => {
+    const [a, b, c] = face.map(index => normalizedVertices[index]);
+    positions.push(
+      a.x, a.y, a.z,
+      b.x, b.y, b.z,
+      c.x, c.y, c.z
+    );
+    uvs.push(.5, 1, 0, 0, 1, 0);
+    return a.clone().add(b).add(c).normalize();
+  });
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.computeVertexNormals();
+  D20_FACES.forEach((_, index) => geometry.addGroup(index * 3, 3, index));
+
+  return { geometry, normalizedVertices };
 }
 
 function updateDiceCount(count) {
@@ -176,28 +217,24 @@ function updateDiceCount(count) {
   diceObjects = [];
   if(uiResult) uiResult.classList.remove("show");
 
-  const boxSize = 2.5;
-  const geometry = new RoundedBoxGeometry(boxSize, boxSize, boxSize, 4, 0.4);
+  const radius = 2.05;
+  const { geometry, normalizedVertices } = createD20Geometry(radius);
   const outlineGeo = geometry.clone();
-  const shadowGeo = new THREE.CircleGeometry(boxSize * 0.6, 32);
-  const shape = new CANNON.Box(new CANNON.Vec3(boxSize / 2, boxSize / 2, boxSize / 2));
+  const shadowGeo = new THREE.CircleGeometry(radius * 0.75, 32);
+  const shape = new CANNON.ConvexPolyhedron({
+    vertices: normalizedVertices.map(vertex => new CANNON.Vec3(vertex.x, vertex.y, vertex.z)),
+    faces: D20_FACES.map(face => [...face])
+  });
   
   const outlineMat = new THREE.MeshBasicMaterial({ color: commonColors.outline, side: THREE.BackSide });
   const shadowMat = new THREE.MeshBasicMaterial({ color: commonColors.shadow, transparent: true, opacity: 0.2 });
 
   for (let i = 0; i < count; i++) {
     const randomColor = palette[Math.floor(Math.random() * palette.length)];
-    const diceMaterials = [];
-    for (let j = 1; j <= 6; j++) {
-      diceMaterials.push(new THREE.MeshBasicMaterial({ map: createVectorDiceTexture(j, randomColor) }));
-    }
-    
-    const matArray = [
-      diceMaterials[0], diceMaterials[5], diceMaterials[1], 
-      diceMaterials[4], diceMaterials[2], diceMaterials[3]
-    ];
-
-    const mesh = new THREE.Mesh(geometry, matArray);
+    const diceMaterials = D20_FACE_VALUES.map(value => new THREE.MeshBasicMaterial({
+      map: createD20FaceTexture(value, randomColor)
+    }));
+    const mesh = new THREE.Mesh(geometry, diceMaterials);
     scene.add(mesh);
 
     const outline = new THREE.Mesh(outlineGeo, outlineMat);
@@ -210,11 +247,16 @@ function updateDiceCount(count) {
     shadow.position.y = 0.01;
     scene.add(shadow);
 
-    const startX = (i - (count - 1) / 2) * 2.5;
+    const columns = Math.min(count, 5);
+    const row = Math.floor(i / columns);
+    const column = i % columns;
+    const rowCount = Math.min(columns, count - row * columns);
+    const startX = (column - (rowCount - 1) / 2) * 3.15;
+    const startZ = (row - Math.floor((count - 1) / columns) / 2) * 3.15;
     const body = new CANNON.Body({
       mass: 5,
       shape: shape,
-      position: new CANNON.Vec3(startX, boxSize, 0),
+      position: new CANNON.Vec3(startX, radius + 1, startZ),
       sleepSpeedLimit: 0.5
     });
     body.quaternion.setFromEuler(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
@@ -300,6 +342,11 @@ function releaseDice() {
   setTimeout(() => {
     needsResultCheck = true;
   }, 500);
+
+  clearTimeout(resultFallbackTimer);
+  resultFallbackTimer = setTimeout(() => {
+    if (!isHolding && needsResultCheck) calculateResult();
+  }, 4500);
 }
 
 function applyThrowForce(body) {
@@ -322,23 +369,16 @@ function applyThrowForce(body) {
 function calculateResult() {
   let total = 0;
   let details = [];
-  
-  const faceNormals = [
-    new THREE.Vector3(1, 0, 0), new THREE.Vector3(-1, 0, 0),
-    new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, -1, 0),
-    new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, -1)
-  ];
-  const faceValues = [1, 6, 2, 5, 3, 4];
 
   diceObjects.forEach(({ mesh }) => {
     let maxDot = -Infinity;
     let resultValue = 1;
 
-    faceNormals.forEach((normal, index) => {
+    d20FaceNormals.forEach((normal, index) => {
       const worldNormal = normal.clone().applyQuaternion(mesh.quaternion);
       if (worldNormal.y > maxDot) {
         maxDot = worldNormal.y;
-        resultValue = faceValues[index];
+        resultValue = D20_FACE_VALUES[index];
       }
     });
 
@@ -350,6 +390,7 @@ function calculateResult() {
   if(uiDetail) uiDetail.innerText = details.length > 1 ? `(${details.join(" + ")})` : "";
   if(uiResult) uiResult.classList.add("show");
   needsResultCheck = false;
+  clearTimeout(resultFallbackTimer);
 }
 
 function animate() {

@@ -5,452 +5,375 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RPG Criador de Fichas</title>
   <link rel="stylesheet" href="styles.css">
-  <script type="importmap">
-    {
-      "imports": {
-        "three": "https://esm.sh/three@0.160.0",
-        "three/addons/": "https://esm.sh/three@0.160.0/examples/jsm/",
-        "cannon-es": "https://esm.sh/cannon-es@0.20.0"
-      }
-    }
-  </script>
 </head>
 <body>
-  <div id="ui-container" class="dice-widget">
-    <button
-      id="diceToggle"
-      class="dice-toggle"
-      type="button"
-      aria-expanded="false"
-      aria-controls="dicePanel"
-    >
-      <span class="dice-toggle-icon" aria-hidden="true">20</span>
-      <span>Rolar dados</span>
-    </button>
+  <div class="riche-app">
+    <div class="page-texture" aria-hidden="true"></div>
 
-    <div id="dicePanel" class="dice-roller-section" aria-hidden="true">
-      <div class="dice-roller-header">
-        <div>
-          <h2 class="dice-roller-title">Rolar Dados</h2>
-          <p class="dice-roller-subtitle">Clique e arraste os dados para rolar</p>
-        </div>
-        <button id="diceClose" class="dice-close" type="button" aria-label="Fechar rolador de dados">×</button>
-      </div>
-      
-      <div class="dice-roller-wrapper">
-        <div class="dice-canvas-area">
-          <!-- Canvas será inserido aqui pelo JavaScript -->
-        </div>
-        
-        <div class="dice-controls">
-          <label class="dice-label">
-            <span class="label-text">Quantidade</span>
-            <select id="diceCount" class="dice-select">
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3" selected>3</option>
-              <option value="4">4</option>
-              <option value="5">5</option>
-              <option value="6">6</option>
-              <option value="10">10</option>
-              <option value="20">20</option>
-            </select>
-          </label>
-        </div>
-      </div>
+    <div class="sheet-frame">
+      <div class="character-sheet">
+        <aside class="stat-sidebar">
+          <div class="stat-sidebar-title"><span>atributos</span></div>
 
-      <div class="dice-result-container">
-        <div class="result-card">
-          <span class="result-label">Total</span>
-          <span id="total-score" class="result-value">0</span>
-          <span class="sub-text" id="detail-score"></span>
-        </div>
-        <p class="dice-hint">Clique no dado para rolar</p>
+          <article class="stat-block">
+            <div class="stat-score" id="sideFor">10</div>
+            <div class="stat-copy">
+              <h2><span id="sideModFor">+0</span> Força</h2>
+              <p>Salvaguarda</p>
+              <p>Atletismo</p>
+            </div>
+          </article>
+
+          <article class="stat-block">
+            <div class="stat-score" id="sideDex">10</div>
+            <div class="stat-copy">
+              <h2><span id="sideModDex">+0</span> Destreza</h2>
+              <p>Acrobacia</p>
+              <p>Furtividade</p>
+              <p>Prestidigitação</p>
+            </div>
+          </article>
+
+          <article class="stat-block">
+            <div class="stat-score" id="sideCon">10</div>
+            <div class="stat-copy">
+              <h2><span id="sideModCon">+0</span> Constituição</h2>
+              <p>Salvaguarda</p>
+              <p>Resistência</p>
+            </div>
+          </article>
+
+          <article class="stat-block">
+            <div class="stat-score" id="sideInt">10</div>
+            <div class="stat-copy">
+              <h2><span id="sideModInt">+0</span> Inteligência</h2>
+              <p>Arcanismo</p>
+              <p>História</p>
+              <p>Investigação</p>
+            </div>
+          </article>
+
+          <article class="stat-block">
+            <div class="stat-score" id="sideSab">10</div>
+            <div class="stat-copy">
+              <h2><span id="sideModSab">+0</span> Sabedoria</h2>
+              <p>Percepção</p>
+              <p>Medicina</p>
+              <p>Sobrevivência</p>
+            </div>
+          </article>
+
+          <article class="stat-block">
+            <div class="stat-score">10</div>
+            <div class="stat-copy">
+              <h2><span>+0</span> Carisma</h2>
+              <p>Persuasão</p>
+              <p>Intimidação</p>
+              <p>Atuação</p>
+            </div>
+          </article>
+        </aside>
+
+        <main class="sheet-main">
+          <header class="sheet-hero">
+            <div class="hero-wave" aria-hidden="true"></div>
+            <div class="hero-copy">
+              <p class="eyebrow">RPG · ficha interativa</p>
+              <h1 id="heroCharacterName">novo personagem</h1>
+              <p id="heroCharacterMeta">Escolha raça, classe e nível</p>
+            </div>
+            <div class="hero-actions">
+              <button id="createSheetButton" type="button">Criar ficha</button>
+              <button id="resetButton" type="button">Resetar</button>
+            </div>
+          </header>
+
+          <nav class="sheet-tabs" role="tablist" aria-label="Seções da ficha">
+            <button class="tab-button active" data-target="tab-ficha" type="button">Ficha</button>
+            <button class="tab-button" data-target="tab-combate" type="button">Combate</button>
+            <button class="tab-button" data-target="tab-magia" type="button">Magia</button>
+            <button class="tab-button" data-target="tab-dados" type="button">Dados 3D</button>
+            <button class="tab-button" data-target="tab-saved" type="button">Meu Baú</button>
+            <button class="tab-button" data-target="tab-livros" type="button">Livros</button>
+          </nav>
+
+          <div class="sheet-content">
+            <section class="tab-panel active" id="tab-ficha">
+              <div class="panel-heading">
+                <div>
+                  <p class="panel-kicker">Identidade</p>
+                  <h2>Ficha do personagem</h2>
+                </div>
+                <div class="action-buttons">
+                  <button id="saveCharacter" type="button">Salvar personagem</button>
+                  <button id="newCharacter" type="button" class="button-muted">Nova ficha</button>
+                </div>
+              </div>
+
+              <section class="content-card identity-grid">
+                <div class="portrait-column">
+                  <div class="photo-preview" id="photoPreview">Adicione a imagem do personagem</div>
+                  <label class="file-field">
+                    <span>Retrato</span>
+                    <input id="photoInput" type="file" accept="image/*">
+                  </label>
+                </div>
+
+                <div class="form-grid">
+                  <label><span>Nome do personagem</span><input id="nome" type="text" placeholder="Nome"></label>
+                  <label><span>Jogador</span><input id="jogador" type="text" placeholder="Nome do jogador"></label>
+                  <label><span>Sistema</span><select id="sistema"><option value="D&D">D&amp;D</option><option value="Outro">Outro</option></select></label>
+                  <label><span>Nível atual</span><input id="nivel" type="number" min="1" max="20" value="5"></label>
+                  <label><span>Experiência</span><input id="xp" type="number" min="0" value="0"></label>
+                  <label><span>Proficiência</span><input id="profBonus" type="text" readonly value="+3"></label>
+                  <label><span>Vida máxima</span><input id="vidaMaxima" type="number" min="1" value="30"></label>
+                  <label><span>Raça</span><select id="raca"></select></label>
+                  <label><span>Origem</span><select id="origem"></select></label>
+                  <label><span>Classe principal</span><select id="classe1"></select></label>
+                  <label><span>Nível da classe</span><input id="nivelC1" type="number" min="1" max="20" value="5"></label>
+                  <label class="toggle-row"><span>Ativar multiclasse</span><input id="multiclasse" type="checkbox"></label>
+                </div>
+              </section>
+
+              <section id="multiclasseFields" class="content-card multiclass-grid hidden">
+                <label><span>Classe 2</span><select id="classe2"></select></label>
+                <label><span>Nível C2</span><input id="nivelC2" type="number" min="1" max="20" value="1"></label>
+                <label><span>Classe 3</span><select id="classe3"></select></label>
+                <label><span>Nível C3</span><input id="nivelC3" type="number" min="1" max="20" value="1"></label>
+              </section>
+
+              <section class="content-card">
+                <div class="section-title">
+                  <div>
+                    <p class="panel-kicker">Distribuição</p>
+                    <h3 id="budgetLabel">Distribua 40 pontos</h3>
+                  </div>
+                  <div class="point-counter">
+                    <span>Usados <b id="usedPoints">0</b></span>
+                    <span>Restantes <b id="remainingPoints">40</b></span>
+                  </div>
+                </div>
+
+                <div class="attribute-editor">
+                  <label><span>FOR</span><input id="distFor" class="dist-input" type="number" min="0" max="15" value="0"><small>Bônus racial</small><input id="raceFor" type="number" min="0" max="5" value="0"></label>
+                  <label><span>DEX</span><input id="distDex" class="dist-input" type="number" min="0" max="15" value="0"><small>Bônus racial</small><input id="raceDex" type="number" min="0" max="5" value="0"></label>
+                  <label><span>CON</span><input id="distCon" class="dist-input" type="number" min="0" max="15" value="0"><small>Bônus racial</small><input id="raceCon" type="number" min="0" max="5" value="0"></label>
+                  <label><span>INT</span><input id="distInt" class="dist-input" type="number" min="0" max="15" value="0"><small>Bônus racial</small><input id="raceInt" type="number" min="0" max="5" value="0"></label>
+                  <label><span>SAB</span><input id="distSab" class="dist-input" type="number" min="0" max="15" value="0"><small>Bônus racial</small><input id="raceSab" type="number" min="0" max="5" value="0"></label>
+                </div>
+
+                <div class="totals-grid">
+                  <div><span>FOR</span><strong id="totalFor">10</strong><small id="modFor">+0</small></div>
+                  <div><span>DEX</span><strong id="totalDex">10</strong><small id="modDex">+0</small></div>
+                  <div><span>CON</span><strong id="totalCon">10</strong><small id="modCon">+0</small></div>
+                  <div><span>INT</span><strong id="totalInt">10</strong><small id="modInt">+0</small></div>
+                  <div><span>SAB</span><strong id="totalSab">10</strong><small id="modSab">+0</small></div>
+                </div>
+                <p class="warning" id="budgetWarning"></p>
+              </section>
+
+              <section class="content-card skill-builder">
+                <div class="section-title">
+                  <div>
+                    <p class="panel-kicker">Progressão</p>
+                    <h3>Habilidades compradas</h3>
+                  </div>
+                  <div class="skill-points">
+                    <span>Limite <b id="skillLimit">0</b></span>
+                    <span>Usadas <b id="skillUsed">0</b></span>
+                    <span>Disponíveis <b id="skillAvailable">0</b></span>
+                  </div>
+                </div>
+                <p class="system-rule">A cada 3 pontos distribuídos em atributos você libera 1 habilidade, até o limite do nível do personagem.</p>
+
+                <div class="skill-editor-grid">
+                  <div class="skill-photo-column">
+                    <div id="skillPhotoPreview" class="skill-photo-preview">Foto da habilidade</div>
+                    <label><span>Imagem da habilidade</span><input id="skillPhotoInput" type="file" accept="image/*"></label>
+                  </div>
+                  <div class="skill-fields">
+                    <label><span>Nome da habilidade</span><input id="tituloHabilidade" type="text" placeholder="Ex.: Golpe flamejante"></label>
+                    <label><span>Descrição</span><textarea id="descricaoHabilidade" rows="5" placeholder="Explique efeito, custo e alcance..."></textarea></label>
+                    <div class="skill-editor-actions">
+                      <button id="cancelSkillEdit" type="button" class="button-muted hidden">Cancelar edição</button>
+                      <button id="addSkill" type="button">Adicionar habilidade</button>
+                    </div>
+                    <p id="skillMessage" class="warning"></p>
+                  </div>
+                </div>
+                <div id="skillCollection" class="skill-collection"></div>
+              </section>
+
+              <section class="content-card narrative-grid">
+                <label><span>História</span><textarea id="historia" rows="6" placeholder="Conte a história do personagem..."></textarea></label>
+                <label><span>Habilidades especiais</span><textarea id="habilidades" rows="6" placeholder="Talentos, poderes e características..."></textarea></label>
+                <label class="full-width"><span>Descrição da classe</span><textarea id="descricaoClasse" rows="3"></textarea></label>
+              </section>
+
+              <section class="content-card summary-card">
+                <div class="summary-image" id="summaryImage">Sem imagem</div>
+                <div>
+                  <p class="panel-kicker">Prévia</p>
+                  <h3 id="summaryNome">Nome do personagem</h3>
+                  <strong id="summaryAbilityTitle">Título da habilidade</strong>
+                  <p id="summaryAbilityDesc">A descrição da habilidade aparecerá aqui.</p>
+                  <strong>Descrição da classe</strong>
+                  <p id="summaryClassDesc">A descrição da classe aparecerá aqui.</p>
+                </div>
+              </section>
+            </section>
+
+            <section class="tab-panel" id="tab-combate">
+              <div class="panel-heading">
+                <div><p class="panel-kicker">Ações</p><h2>Combate e perícias</h2></div>
+              </div>
+
+              <section class="combat-vitals">
+                <div><span>PV máximo</span><strong id="combatHp">30</strong></div>
+                <div><span>Proficiência</span><strong id="combatProf">+3</strong></div>
+                <div><span>Iniciativa</span><strong id="combatInit">+0</strong></div>
+                <div><span>Defesa base</span><strong id="combatDefense">10</strong></div>
+              </section>
+
+              <section class="content-card">
+                <h3>Habilidades e perícias</h3>
+                <div class="form-grid">
+                  <label><span>Raça / perícia</span><input id="skillRaca" type="text"></label>
+                  <label><span>Classe 1 / perícia</span><input id="skillClasse1" type="text"></label>
+                  <label><span>Classe 2 / perícia</span><input id="skillClasse2" type="text"></label>
+                  <label><span>Classe 3 / perícia</span><input id="skillClasse3" type="text"></label>
+                  <label><span>Perícia 1</span><input id="pericia1" type="text"></label>
+                  <label><span>Perícia 2</span><input id="pericia2" type="text"></label>
+                </div>
+              </section>
+
+              <section class="content-card">
+                <h3>Rolagens rápidas</h3>
+                <div class="roll-list">
+                  <button type="button" data-action="dados" data-type="for" class="roll-button">Ataque físico · FOR + Prof</button>
+                  <button type="button" data-action="dados" data-type="dex" class="roll-button">Ataque à distância · DEX + Prof</button>
+                  <button type="button" data-action="dados" data-type="dexNoProf" class="roll-button">Esquiva · somente DEX</button>
+                  <button type="button" data-action="dados" data-type="int" class="roll-button">Feitiço · INT + Prof</button>
+                </div>
+                <div class="roll-output">
+                  <span>Resultado</span>
+                  <div id="rollResult">Clique em uma rolagem para ver o resultado.</div>
+                </div>
+              </section>
+            </section>
+
+            <section class="tab-panel" id="tab-magia">
+              <div class="panel-heading">
+                <div><p class="panel-kicker">Recursos</p><h2>Magia e vida</h2></div>
+              </div>
+
+              <section class="magic-stats">
+                <div><strong id="requiredMagicLife">30</strong><span>Meta total</span></div>
+                <div><strong id="totalMagiaVida">30</strong><span>Total atual</span></div>
+                <div><strong id="magicDifference">OK</strong><span>Diferença</span></div>
+              </section>
+
+              <section class="content-card">
+                <div class="form-grid">
+                  <label><span>Pontos para magia</span><input id="pontosMagia" type="number" min="0" value="15"></label>
+                  <label><span>Pontos para vida</span><input id="pontosVida" type="number" min="0" value="15"></label>
+                </div>
+                <p class="magic-note" id="magicNote">O total deve respeitar o limite do sistema.</p>
+              </section>
+
+              <section class="spellbook">
+                <article><span>1º círculo</span><h3>Magias preparadas</h3><textarea data-store="spell-1" placeholder="Escreva suas magias aqui..."></textarea></article>
+                <article><span>2º círculo</span><h3>Magias preparadas</h3><textarea data-store="spell-2"></textarea></article>
+                <article><span>3º círculo</span><h3>Magias preparadas</h3><textarea data-store="spell-3"></textarea></article>
+              </section>
+            </section>
+
+            <section class="tab-panel" id="tab-dados">
+              <div class="panel-heading">
+                <div><p class="panel-kicker">Rolador físico</p><h2>Dados d20 em 3D</h2></div>
+              </div>
+
+              <section id="ui-container" class="dice-roller-section">
+                <div class="dice-stage-copy">
+                  <div>
+                    <span class="dice-type-badge">D20</span>
+                    <h3>Arraste e solte para rolar</h3>
+                    <p>O rolador só ocupa esta aba e não bloqueia o restante da ficha.</p>
+                  </div>
+                  <label class="dice-label">
+                    <span>Quantidade</span>
+                    <select id="diceCount" class="dice-select">
+                      <option value="1">1</option>
+                      <option value="2">2</option>
+                      <option value="3" selected>3</option>
+                      <option value="4">4</option>
+                      <option value="5">5</option>
+                      <option value="6">6</option>
+                      <option value="10">10</option>
+                      <option value="20">20</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div class="dice-canvas-area" aria-label="Área interativa dos dados d20"></div>
+
+                <div id="result-board" class="dice-result-container">
+                  <span class="result-label">Total</span>
+                  <strong id="total-score" class="result-value">0</strong>
+                  <span id="detail-score" class="sub-text"></span>
+                </div>
+              </section>
+            </section>
+
+            <section class="tab-panel" id="tab-saved">
+              <div class="panel-heading">
+                <div><p class="panel-kicker">Arquivo</p><h2>Personagens salvos</h2></div>
+                <button id="clearAll" type="button" class="button-danger">Limpar tudo</button>
+              </div>
+              <div id="savedList" class="saved-list"></div>
+            </section>
+
+            <section class="tab-panel" id="tab-livros">
+              <div class="panel-heading">
+                <div><p class="panel-kicker">Referência</p><h2>Livros do sistema</h2></div>
+              </div>
+              <div class="book-grid">
+                <article class="book-card">
+                  <span>Livro I</span>
+                  <h3>Raças e origens</h3>
+                  <p><b>Elfos:</b> destreza, visão no escuro e magia inata.</p>
+                  <p><b>Anões:</b> constituição, robustez e resistência.</p>
+                  <p><b>Dragonborn:</b> força, carisma e sopro elemental.</p>
+                  <p><b>Origens:</b> concedem contexto narrativo e uma perícia temática.</p>
+                </article>
+                <article class="book-card">
+                  <span>Livro II</span>
+                  <h3>Classes e magia</h3>
+                  <p><b>Marciais:</b> Bárbaro, Guerreiro, Paladino e Patrulheiro.</p>
+                  <p><b>Especialistas:</b> Ladino, Monge e Bardo.</p>
+                  <p><b>Conjuradores:</b> Clérigo, Mago, Feiticeiro, Bruxo e Druida.</p>
+                </article>
+                <article class="book-card">
+                  <span>Livro III</span>
+                  <h3>Perícias e combate</h3>
+                  <p>Testes usam d20 + modificador do atributo + proficiência quando treinado.</p>
+                  <p>Ataques, iniciativa, defesa e salvaguardas seguem a mesma base.</p>
+                </article>
+                <article class="book-card">
+                  <span>Sistema de habilidades</span>
+                  <h3>Compra e progressão</h3>
+                  <p>O personagem libera 1 espaço de habilidade para cada 3 pontos distribuídos nos atributos.</p>
+                  <p>O total de habilidades compradas nunca pode ultrapassar o nível atual do personagem.</p>
+                  <p>Cada habilidade salva nome, descrição e uma imagem própria, podendo ser editada depois.</p>
+                </article>
+              </div>
+            </section>
+          </div>
+        </main>
       </div>
     </div>
   </div>
 
-  <main class="app-shell">
-    <header class="hero">
-      <div>
-        <p class="eyebrow">RPG Criador de Fichas</p>
-        <h1>Ficha de Personagem Interativa</h1>
-        <p>Transforme o script da planilha em um criador de fichas responsivo para celular.</p>
-      </div>
-      <div class="hero-actions">
-        <button id="createSheetButton" type="button" class="secondary-button">Crie a sua ficha</button>
-        <button id="resetButton" type="button">Resetar ficha</button>
-      </div>
-    </header>
-
-    <nav class="tabs" role="tablist">
-      <button class="tab-button active" data-target="tab-ficha" type="button">Criar Ficha</button>
-      <button class="tab-button" data-target="tab-saved" type="button">Meu Baú</button>
-      <button class="tab-button" data-target="tab-livro1" type="button">Raças & Origens</button>
-      <button class="tab-button" data-target="tab-livro2" type="button">Classe & Magia</button>
-      <button class="tab-button" data-target="tab-livro3" type="button">Perícias & Combate</button>
-      <button class="tab-button" data-target="tab-referencia" type="button">Sistema</button>
-      <button class="tab-button" data-target="tab-preferencia" type="button">Configurações</button>
-    </nav>
-
-    <section class="tab-panel active" id="tab-ficha">
-      <section class="card">
-        <div class="section-header">
-          <div>
-            <h2>1. Informações Básicas</h2>
-            <p class="small-note">Escolha o sistema e salve quantos personagens quiser.</p>
-          </div>
-          <div class="action-buttons">
-            <button id="saveCharacter" type="button" class="secondary-button">Salvar personagem</button>
-            <button id="newCharacter" type="button" class="secondary-button">Nova ficha</button>
-          </div>
-        </div>
-        <div class="form-grid">
-          <label><span>Nome do Personagem</span><input id="nome" type="text" placeholder="Nome" /></label>
-          <label><span>Jogador</span><input id="jogador" type="text" placeholder="Nome do jogador" /></label>
-          <label><span>Sistema</span><select id="sistema"><option value="D&D">D&D</option><option value="Outro">Outro</option></select></label>
-          <label><span>Nível atual</span><input id="nivel" type="number" min="1" max="20" value="5" /></label>
-          <label><span>Experiência (XP)</span><input id="xp" type="number" min="0" value="0" /></label>
-          <label><span>Bônus de Proficiência</span><input id="profBonus" type="text" readonly value="+3" /></label>
-          <label><span>Vida Máxima</span><input id="vidaMaxima" type="number" min="1" value="30" /></label>
-        </div>
-      </section>
-
-      <section class="card">
-        <h2>1.1 Foto, História e Habilidades</h2>
-        <div class="form-grid">
-          <label class="full-width"><span>Foto do personagem</span><input id="photoInput" type="file" accept="image/*" /></label>
-          <div class="photo-preview" id="photoPreview">Preview da foto</div>
-          <label class="full-width"><span>História</span><textarea id="historia" rows="4" placeholder="Conte a história do personagem..."></textarea></label>
-          <label class="full-width"><span>Habilidades especiais</span><textarea id="habilidades" rows="4" placeholder="Liste habilidades, talentos e poderes..."></textarea></label>
-          <label><span>Título da habilidade</span><input id="tituloHabilidade" type="text" placeholder="Nome da habilidade" /></label>
-          <label class="full-width"><span>Descrição da habilidade</span><textarea id="descricaoHabilidade" rows="3" placeholder="Descreva a habilidade do personagem."></textarea></label>
-          <label class="full-width"><span>Descrição da classe</span><textarea id="descricaoClasse" rows="3" placeholder="Descreva a habilidade exclusiva da classe."></textarea></label>
-        </div>
-      </section>
-
-      <section class="card summary-card">
-        <div class="summary-header">
-          <span class="summary-tag">Ficha Criada</span>
-          <h3 id="summaryNome">Nome do personagem</h3>
-        </div>
-        <div class="summary-body">
-          <div class="summary-image" id="summaryImage">Sem imagem</div>
-          <div class="summary-details">
-            <p class="summary-title" id="summaryAbilityTitle">Título da habilidade</p>
-            <p id="summaryAbilityDesc">A descrição da habilidade do personagem aparecerá aqui.</p>
-            <p class="summary-title">Descrição da classe</p>
-            <p id="summaryClassDesc">A descrição da classe personalizada aparecerá aqui.</p>
-          </div>
-        </div>
-      </section>
-
-      <section class="card">
-        <h2>2. Raça, Origem e Classe</h2>
-        <div class="form-grid">
-          <label><span>Raça</span><select id="raca"></select></label>
-          <label><span>Origem</span><select id="origem"></select></label>
-          <label><span>Classe 1</span><select id="classe1"></select></label>
-          <label><span>Nível C1</span><input id="nivelC1" type="number" min="1" max="20" value="5" /></label>
-          <label class="toggle-row"><span>Ativar Multiclasse?</span><input id="multiclasse" type="checkbox" /></label>
-        </div>
-        <div id="multiclasseFields" class="multiclass-grid hidden">
-          <label><span>Classe 2</span><select id="classe2"></select></label>
-          <label><span>Nível C2</span><input id="nivelC2" type="number" min="1" max="20" value="1" /></label>
-          <label><span>Classe 3</span><select id="classe3"></select></label>
-          <label><span>Nível C3</span><input id="nivelC3" type="number" min="1" max="20" value="1" /></label>
-        </div>
-      </section>
-
-      <section class="card">
-        <h2>3. Atributos</h2>
-        <div class="points-overview">
-          <div><strong id="budgetLabel">Distribua 40 pontos</strong></div>
-          <div><strong>Usados:</strong> <span id="usedPoints">0</span></div>
-          <div><strong>Restantes:</strong> <span id="remainingPoints">40</span></div>
-        </div>
-        <div class="atributos-grid">
-          <label><span>FOR</span><input id="distFor" class="dist-input" type="number" min="0" max="15" value="0" /></label>
-          <label><span>DEX</span><input id="distDex" class="dist-input" type="number" min="0" max="15" value="0" /></label>
-          <label><span>CON</span><input id="distCon" class="dist-input" type="number" min="0" max="15" value="0" /></label>
-          <label><span>INT</span><input id="distInt" class="dist-input" type="number" min="0" max="15" value="0" /></label>
-          <label><span>SAB</span><input id="distSab" class="dist-input" type="number" min="0" max="15" value="0" /></label>
-        </div>
-        <div class="atributos-grid">
-          <label><span>Bônus Raça FOR</span><input id="raceFor" type="number" min="0" max="5" value="0" /></label>
-          <label><span>Bônus Raça DEX</span><input id="raceDex" type="number" min="0" max="5" value="0" /></label>
-          <label><span>Bônus Raça CON</span><input id="raceCon" type="number" min="0" max="5" value="0" /></label>
-          <label><span>Bônus Raça INT</span><input id="raceInt" type="number" min="0" max="5" value="0" /></label>
-          <label><span>Bônus Raça SAB</span><input id="raceSab" type="number" min="0" max="5" value="0" /></label>
-        </div>
-        <div class="total-grid">
-          <div class="stat-card"><strong>Total FOR</strong><span id="totalFor">10</span></div>
-          <div class="stat-card"><strong>Mod FOR</strong><span id="modFor">+0</span></div>
-          <div class="stat-card"><strong>Total DEX</strong><span id="totalDex">10</span></div>
-          <div class="stat-card"><strong>Mod DEX</strong><span id="modDex">+0</span></div>
-          <div class="stat-card"><strong>Total CON</strong><span id="totalCon">10</span></div>
-          <div class="stat-card"><strong>Mod CON</strong><span id="modCon">+0</span></div>
-          <div class="stat-card"><strong>Total INT</strong><span id="totalInt">10</span></div>
-          <div class="stat-card"><strong>Mod INT</strong><span id="modInt">+0</span></div>
-          <div class="stat-card"><strong>Total SAB</strong><span id="totalSab">10</span></div>
-          <div class="stat-card"><strong>Mod SAB</strong><span id="modSab">+0</span></div>
-        </div>
-        <div class="limit-warning"><span id="budgetWarning"></span></div>
-      </section>
-
-      <section class="card">
-        <h2>4. Magia e Vida</h2>
-        <div class="form-grid">
-          <label><span>Pontos p/ Magia</span><input id="pontosMagia" type="number" min="0" value="15" /></label>
-          <label><span>Pontos p/ Vida</span><input id="pontosVida" type="number" min="0" value="15" /></label>
-        </div>
-        <div class="magic-summary">
-          <div><span>Meta</span><strong id="requiredMagicLife">30</strong></div>
-          <div><span>Total atual</span><strong id="totalMagiaVida">30</strong></div>
-          <div><span>Diferença</span><strong id="magicDifference">0</strong></div>
-        </div>
-        <p class="hint" id="magicNote">O total deve ser 30 para manter o limite do sistema.</p>
-      </section>
-
-      <section class="card">
-        <h2>5. Habilidades e Perícias</h2>
-        <div class="form-grid">
-          <label><span>Hab. Raça / Perícia</span><input id="skillRaca" type="text" placeholder="Descreva habilidade ou perícia" /></label>
-          <label><span>Hab. Classe 1 / Perícia</span><input id="skillClasse1" type="text" placeholder="Descreva habilidade ou perícia" /></label>
-          <label><span>Hab. Classe 2 / Perícia</span><input id="skillClasse2" type="text" placeholder="Descreva habilidade ou perícia" /></label>
-          <label><span>Hab. Classe 3 / Perícia</span><input id="skillClasse3" type="text" placeholder="Descreva habilidade ou perícia" /></label>
-        </div>
-        <div class="form-grid full-width-grid">
-          <label class="full-width"><span>Perícia 1</span><input id="pericia1" type="text" placeholder="Acrobacia, Arcanismo, etc." /></label>
-          <label class="full-width"><span>Perícia 2</span><input id="pericia2" type="text" placeholder="Acrobacia, Arcanismo, etc." /></label>
-        </div>
-      </section>
-
-      <section class="card">
-        <h2>6. Rolagens Automáticas</h2>
-        <div class="roll-list">
-          <button type="button" data-action="dados" data-type="for" class="roll-button">⚔️ Ataque Físico (FOR + Prof)</button>
-          <button type="button" data-action="dados" data-type="dex" class="roll-button">🏹 Ataque Distância/Furtivo (DEX + Prof)</button>
-          <button type="button" data-action="dados" data-type="dexNoProf" class="roll-button">🛡️ Esquiva / Agilidade (Somente DEX)</button>
-          <button type="button" data-action="dados" data-type="int" class="roll-button">✨ Magia / Feitiço (INT + Prof)</button>
-        </div>
-        <div class="roll-output">
-          <strong>Resultado:</strong>
-          <div class="roll-result-badge" id="rollResult">
-            <span class="dice-icon">20</span>
-            <span>Clique em uma rolagem para ver o resultado.</span>
-          </div>
-        </div>
-      </section>
-    </section>
-
-    <section class="tab-panel" id="tab-saved">
-      <section class="card">
-        <div class="section-header">
-          <div>
-            <h2>Personagens Salvos</h2>
-            <p class="small-note">Use o armazenamento local para salvar e carregar suas fichas.</p>
-          </div>
-          <div class="action-buttons">
-            <button id="clearAll" type="button" class="secondary-button danger-button">Limpar tudo</button>
-          </div>
-        </div>
-        <div id="savedList" class="saved-list"></div>
-      </section>
-    </section>
-
-    <section class="tab-panel" id="tab-livro1">
-      <section class="card">
-        <h2>Livro 1 - Raças e Origens</h2>
-        <div class="book-grid">
-          <div class="book-card book-header">Raças</div>
-          <div class="book-card book-section">
-            <h3>Constructos</h3>
-            <p><strong>Forjado Bélico</strong>: +2 CON, +1 FOR — Imunidade a veneno, corpo metálico (+1 CA)</p>
-            <p><strong>Autognomo</strong>: +2 INT, +1 CON — Reparação própria, magia inata</p>
-          </div>
-          <div class="book-card book-section">
-            <h3>Elfos</h3>
-            <p><strong>Elfo da Floresta</strong>: +2 DEX, +1 SAB — Visão Escura, +5 pés movimento, Arcos</p>
-            <p><strong>Alto Elfo</strong>: +2 DEX, +1 INT — Magia arcana, Truque extra</p>
-            <p><strong>Drow</strong>: +2 DEX, +1 CAR — Visão Escura (120 pés), Magia drow</p>
-          </div>
-          <div class="book-card book-section">
-            <h3>Gnomos</h3>
-            <p><strong>Gnomo das Rochas</strong>: +2 INT, +1 CON — Artifice, +1 armadura</p>
-            <p><strong>Gnomo da Floresta</strong>: +2 INT, +1 SAB — Magia, Rastreamento</p>
-          </div>
-          <div class="book-card book-section">
-            <h3>Raças Bestiais</h3>
-            <p><strong>Homem-Rato</strong>: +2 DEX, +1 INT — Escuridão Perfeita, Infiltração</p>
-            <p><strong>Minotauro</strong>: +2 FOR, +1 CON — Chifres (1d6), Defesa Labírinto</p>
-            <p><strong>Lizardfolk</strong>: +2 CON, +1 FOR — Frio Sanguíneo, Cauda (reação)</p>
-            <p><strong>Tabaxi</strong>: +2 DEX, +1 CAR — Garras (1d4), +10 pés movimento</p>
-          </div>
-          <div class="book-card book-section">
-            <h3>Outras Raças</h3>
-            <p><strong>Halfling</strong>: +2 DEX, +1 SAB — Sorte, +5 pés movimento</p>
-            <p><strong>Goliata</strong>: +2 FOR, +1 CON — Gigante (7 pés), Fúria gigante</p>
-            <p><strong>Firbolg</strong>: +2 SAB, +1 INT — Gigante (8 pés), Magia druida</p>
-            <p><strong>Orc</strong>: +2 FOR, +1 CAR (negativa) — Chifres, Agressão extra</p>
-            <p><strong>Goblinoide</strong>: +2 DEX, +1 INT — Escuridão, Arco de fuga</p>
-            <p><strong>Bugbear</strong>: +2 FOR, +1 SAB — Garras, Surpresa extra (1d6)</p>
-            <p><strong>Tiefling</strong>: +2 CAR, +1 INT — Resistência fogo, Chifres, Cauda</p>
-            <p><strong>Dragonborn</strong>: +2 FOR, +1 CAR — Arma de respiração (2d6), Resistência</p>
-            <p><strong>Anão</strong>: +2 CON, +1 FOR — Visão Escura, Resiliência de Aço</p>
-          </div>
-          <div class="book-card book-header">Origens</div>
-          <div class="book-card book-section">
-            <p><strong>Acolhido</strong>: Você foi criado pela comunidade local. Vantagem em testes sociais.</p>
-            <p><strong>Aventureiro Nato</strong>: Você sempre desejou explorar. +1 perícia Sobrevivência.</p>
-            <p><strong>Criminoso Redimido</strong>: Você deixou seu passado para trás. +1 perícia Furtividade.</p>
-            <p><strong>Soldado Veterano</strong>: Você serviu em um exército. +1 perícia Intimidação.</p>
-          </div>
-        </div>
-      </section>
-    </section>
-
-    <section class="tab-panel" id="tab-livro2">
-      <section class="card">
-        <h2>Livro 2 - Classes</h2>
-        <div class="book-grid">
-          <div class="book-card book-header">Classes Marciais</div>
-          <div class="book-card book-section">
-            <p><strong>Bárbaro</strong>: d12 — FOR — Fúria (reduz dano 50%), Golpe Agressivo</p>
-            <p><strong>Guerreiro</strong>: d10 — FOR/DEX — Surto de Ação, Ataque Múltiplo (2x)</p>
-            <p><strong>Paladino</strong>: d10 — FOR/CAR — Aura de Proteção, Dano Radiante ⭐</p>
-            <p><strong>Patrulheiro</strong>: d10 — DEX/SAB — Inimigo Predileto (+4 vs Dragão), Ataque Duplo</p>
-          </div>
-          <div class="book-card book-header">Classes Especialistas</div>
-          <div class="book-card book-section">
-            <p><strong>Ladino</strong>: d8 — DEX — Ataque Furtivo (+3d6), Esquiva Sobrenatural</p>
-            <p><strong>Monge</strong>: d8 — DEX/SAB — Ataque Desarmado, Golpe Atordoante</p>
-            <p><strong>Bardo</strong>: d8 — CAR — Inspiração Bardica (d8), Cura em Área</p>
-          </div>
-          <div class="book-card book-header">Classes Conjuradores</div>
-          <div class="book-card book-section">
-            <p><strong>Clérigo</strong>: d8 — SAB/CAR — Magia Cura, Dano Radiante ⭐</p>
-            <p><strong>Mago</strong>: d6 — INT — Controle de Campo, Magia Destrutiva</p>
-            <p><strong>Feiticeiro</strong>: d6 — CAR — Dano Potente, Metamagia</p>
-            <p><strong>Bruxo</strong>: d8 — CAR — Invocação Mística, Golpe Eldritch</p>
-            <p><strong>Druida</strong>: d8 — SAB — Forma Selvagem, Magia de Controle</p>
-          </div>
-          <div class="book-card book-header">Dicas</div>
-          <div class="book-card book-section">
-            <p>⭐ Paladino e Clérigo: Dano Radiante é super efetivo contra dragões.</p>
-            <p>🎯 Patrulheiro: +4 bônus contra Ignisrath (inimigo predileto).</p>
-            <p>🛡️ Bárbaro: Reduz dano do fogo em 50% com Fúria.</p>
-            <p>⚔️ Guerreiro: Ataque múltiplo aumenta suas chances de acertar.</p>
-            <p>💨 Ladino: Evasão ajuda contra ataques de área do dragão.</p>
-          </div>
-        </div>
-      </section>
-    </section>
-
-    <section class="tab-panel" id="tab-livro3">
-      <section class="card">
-        <h2>Livro 3 - Perícias</h2>
-        <div class="book-grid">
-          <div class="book-card book-header">Perícias Disponíveis</div>
-          <div class="book-card book-section">
-            <p><strong>Acrobacia</strong> — Movimentos, equilíbrio e dança (DEX)</p>
-            <p><strong>Adestramento Animal</strong> — Lidar e controlar animais (SAB)</p>
-            <p><strong>Arcanismo</strong> — Conhecimento mágico e arcano (INT)</p>
-            <p><strong>Atletismo</strong> — Força física, corrida e nado (FOR)</p>
-            <p><strong>Atuação</strong> — Drama, teatro e dramatização (CAR)</p>
-            <p><strong>Enganação</strong> — Mentir, blefar e enganar (CAR)</p>
-            <p><strong>Escala</strong> — Subir em superfícies (FOR)</p>
-            <p><strong>Esconderijo</strong> — Se esconder e se camuflar (DEX)</p>
-            <p><strong>Esotérico</strong> — Conhecimento oculto e arcano (INT)</p>
-            <p><strong>Furtividade</strong> — Se mover silenciosamente (DEX)</p>
-            <p><strong>História</strong> — Conhecimento histórico e lendas (INT)</p>
-            <p><strong>Insight</strong> — Ler pessoas e intenções (SAB)</p>
-            <p><strong>Intimidação</strong> — Assustar e ameaçar outros (CAR)</p>
-            <p><strong>Investigação</strong> — Procurar pistas e evidências (INT)</p>
-            <p><strong>Medicina</strong> — Curar feridas e doenças (SAB)</p>
-            <p><strong>Natureza</strong> — Conhecimento da natureza selvagem (INT)</p>
-            <p><strong>Percepção</strong> — Notar coisas ao redor (SAB)</p>
-            <p><strong>Performance</strong> — Música, dança e canto (CAR)</p>
-            <p><strong>Persuasão</strong> — Convencer e negociar (CAR)</p>
-            <p><strong>Prestidigitação</strong> — Truques de mão e ilusões (DEX)</p>
-            <p><strong>Profissão</strong> — Habilidades profissionais (SAB)</p>
-            <p><strong>Punição</strong> — Detectar mentiras e enganação (SAB)</p>
-            <p><strong>Religião</strong> — Conhecimento divino e sagrado (INT)</p>
-            <p><strong>Sleight of Hand</strong> — Roubar e manipular objetos (DEX)</p>
-            <p><strong>Sobrevivência</strong> — Rastrear e acampar (SAB)</p>
-          </div>
-          <div class="book-card book-header">Perícias por Atributo</div>
-          <div class="book-card book-section">
-            <p><strong>FOR</strong>: Atletismo, Escala</p>
-            <p><strong>DEX</strong>: Acrobacia, Esconderijo, Furtividade, Prestidigitação, Sleight of Hand</p>
-            <p><strong>CON</strong>: Resistência (especial)</p>
-            <p><strong>INT</strong>: Arcanismo, Esotérico, História, Investigação, Natureza, Religião</p>
-            <p><strong>SAB</strong>: Adestramento Animal, Insight, Medicina, Percepção, Profissão, Punição, Sobrevivência</p>
-            <p><strong>CAR</strong>: Atuação, Enganação, Intimidação, Performance, Persuasão</p>
-          </div>
-        </div>
-      </section>
-    </section>
-
-    <section class="tab-panel" id="tab-referencia">
-      <section class="card">
-        <h2>Referência</h2>
-        <div class="book-grid">
-          <div class="book-card book-section">
-            <h3>Raças</h3>
-            <p><strong>Elfos</strong>: +2 DEX, +1 INT / Visão Escura, Magia inata.</p>
-            <p><strong>Anões</strong>: +2 CON, +1 FOR / Resistência a veneno, robustez.</p>
-            <p><strong>Gnomos</strong>: +2 INT, +1 SAB / Inteligência aguçada, magia sutil.</p>
-            <p><strong>Halflings</strong>: +2 DEX, +1 SAB / Sorte, furtividade.</p>
-            <p><strong>Dragonborn</strong>: +2 FOR, +1 CAR / Sopros elementais, presença marcante.</p>
-          </div>
-          <div class="book-card book-section">
-            <h3>Classes</h3>
-            <p><strong>Bárbaro</strong>: d12, FOR, fúria e resistência física.</p>
-            <p><strong>Guerreiro</strong>: d10, FOR/DEX, ataque múltiplo e defesa sólida.</p>
-            <p><strong>Mago</strong>: d6, INT, magias poderosas e frágil em combate corpo a corpo.</p>
-            <p><strong>Ladino</strong>: d8, DEX, furtividade, ataque surpresa.</p>
-            <p><strong>Clérigo</strong>: d8, SAB, cura, proteção e magia divina.</p>
-          </div>
-          <div class="book-card book-section">
-            <h3>Sistema D</h3>
-            <p>O sistema do D está atrelado ao conjunto de regras de D&D: atributos, rolagens de d20 e proficiência.</p>
-            <p>Use o valor de atributo para calcular modificadores: cada 2 pontos acima de 10 dá +1, abaixo de 10 dá -1.</p>
-            <p>O bônus de proficiência aumenta com o nível e é aplicado a ataques, perícias treinadas e testes de resistência.</p>
-            <p>O total de magia e vida deve seguir o limite de sistema baseado no nível com soma igual a 20 + nível * 2.</p>
-          </div>
-          <div class="book-card book-section">
-            <h3>Perícias</h3>
-            <p>Use d20 + Mod atributo + Proficiência se treinado.</p>
-            <p>Perícias de INT e SAB são ideais para investigação, magia e percepção de campo.</p>
-            <p>Perícias de FOR e DEX são ideais para força bruta, esportes e furtividade.</p>
-          </div>
-        </div>
-      </section>
-    </section>
-
-    <section class="tab-panel" id="tab-preferencia">
-      <section class="card">
-        <h2>Preferências</h2>
-        <div class="book-grid">
-          <div class="book-card book-section">
-            <h3>Combate</h3>
-            <p><strong>Iniciativa:</strong> d20 + Mod DEX.</p>
-            <p><strong>CA:</strong> 10 + Mod DEX + Armadura/Forma de defesa.</p>
-            <p><strong>Ataque:</strong> d20 + Mod atributo + Proficiência.</p>
-            <p><strong>Dano:</strong> Dado da arma + Mod atributo relevante.</p>
-            <p><strong>Crítico:</strong> 20 natural amplifica o dano; 1 natural falha.</p>
-          </div>
-          <div class="book-card book-section">
-            <h3>Regras do Sistema D</h3>
-            <p>O sistema D usa atributos, modificadores e rolagens de d20 para todas as ações.</p>
-            <p>A soma de magia e vida deve respeitar o limite do sistema: 20 + nível * 2.</p>
-            <p>Habilidades e perícias seguem o mesmo padrão de bônus de proficiência e modificador.</p>
-          </div>
-        </div>
-      </section>
-    </section>
-  </main>
   <script type="module" src="js/app.js"></script>
 </body>
 </html>

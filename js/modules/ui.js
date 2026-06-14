@@ -92,6 +92,14 @@ export function updateTotals(totals) {
   elements.modCon.textContent = computeModifier(totals[2]);
   elements.modInt.textContent = computeModifier(totals[3]);
   elements.modSab.textContent = computeModifier(totals[4]);
+
+  const sideValues = ['For', 'Dex', 'Con', 'Int', 'Sab'];
+  sideValues.forEach((key, index) => {
+    const score = document.getElementById(`side${key}`);
+    const modifier = document.getElementById(`sideMod${key}`);
+    if (score) score.textContent = totals[index];
+    if (modifier) modifier.textContent = computeModifier(totals[index]);
+  });
 }
 
 export function updateMagicLifeUI(magic, life, level) {
@@ -119,10 +127,22 @@ export function updateMagicLifeUI(magic, life, level) {
 }
 
 export function renderSummary() {
-  elements.summaryNome.textContent = elements.nome.value || 'Nome do personagem';
+  const characterName = elements.nome.value || 'novo personagem';
+  const characterMeta = [
+    elements.raca.value,
+    elements.classe1.value,
+    `nível ${elements.nivel.value || 1}`
+  ].filter(Boolean).join(' · ');
+
+  elements.summaryNome.textContent = characterName;
   elements.summaryAbilityTitle.textContent = elements.tituloHabilidade.value || 'Título da habilidade';
   elements.summaryAbilityDesc.textContent = elements.descricaoHabilidade.value || 'A descrição da habilidade do personagem aparecerá aqui.';
   elements.summaryClassDesc.textContent = elements.descricaoClasse.value || 'A descrição da classe personalizada aparecerá aqui.';
+
+  const heroName = document.getElementById('heroCharacterName');
+  const heroMeta = document.getElementById('heroCharacterMeta');
+  if (heroName) heroName.textContent = characterName;
+  if (heroMeta) heroMeta.textContent = characterMeta || 'Escolha raça, classe e nível';
 
   if (elements.photoPreview.dataset.photo) {
     elements.summaryImage.innerHTML = `<img src="${elements.photoPreview.dataset.photo}" alt="Foto do personagem" />`;
@@ -139,7 +159,10 @@ export function setupTabs() {
 
       button.classList.add('active');
       const target = document.getElementById(button.dataset.target);
-      if (target) target.classList.add('active');
+      if (target) {
+        target.classList.add('active');
+        window.dispatchEvent(new Event('resize'));
+      }
     });
   });
 }
