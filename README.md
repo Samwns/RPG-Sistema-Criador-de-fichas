@@ -26,7 +26,15 @@ Este projeto fornece um criador de fichas para RPG com foco em D&D, usando uma i
 - Tema dinâmico extraído das cores do banner ou retrato
 - Compra inicial de armas, armaduras e itens por pontos
 - Rolagens 3D de d4, d6, d8, d10, d12, d20 e d100
+- Combinações de vários tipos de dados na mesma rolagem
 - Ataques e danos conectados ao mesmo tabuleiro 3D
+- Progressão por XP, subclasses, validação de multiclasse e magias prontas por classe
 - Sistema com subabas didáticas para raças, classes, perícias, feitiços, habilidades e equipamentos
 
 O design funciona em dispositivos móveis e desktop.
+
+## Regras abertas
+
+Este projeto usa uma adaptação em português das regras abertas do SRD 5.2.1.
+
+This work includes material from the System Reference Document 5.2.1 (“SRD 5.2.1”) by Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD 5.2.1 is licensed under the Creative Commons Attribution 4.0 International License, available at https://creativecommons.org/licenses/by/4.0/legalcode.
