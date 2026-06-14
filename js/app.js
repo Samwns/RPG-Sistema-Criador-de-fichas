@@ -17,7 +17,7 @@ import {
   universalLevelFeatures,
   raceAbilityBySubrace
 } from './modules/mechanics.js';
-import { spellCatalog, spellcastingClasses, classGrantedSpells, raceGrantedSpells } from './modules/gameData.js';
+import { spellCatalog, spellcastingClasses, classGrantedSpells, raceGrantedSpells, abilityCatalog } from './modules/gameData.js';
 import {
   elements,
   populateSelect,
@@ -35,8 +35,11 @@ let skillPhoto = '';
 let editingSkillIndex = -1;
 let bannerPhoto = '';
 let inventory = [];
+let customItems = [];
 let purchasedSpells = [];
 let themeColors = { primary: '#7EBAEE', secondary: '#F0A06F' };
+let isRestoringCharacter = false;
+let draftTimer = null;
 
 const legacyRaceMap = {
   'Alto Elfo': ['Elfo', 'Alto Elfo'],
@@ -59,8 +62,157 @@ const equipmentCatalog = [
   { id: 'chain', name: 'Cota de malha', category: 'Armadura', cost: 9, armorBase: 16, description: 'Define a CA base como 16.' },
   { id: 'healing', name: 'Poção de cura', category: 'Consumível', cost: 3, die: 4, healing: true, description: 'Recupera 2d4 + 2 pontos de vida.' },
   { id: 'rope', name: 'Corda de 15 m', category: 'Aventura', cost: 2, description: 'Ferramenta para exploração.' },
-  { id: 'tools', name: 'Kit de ferramentas', category: 'Aventura', cost: 4, description: 'Ferramentas para testes especializados.' }
+  { id: 'tools', name: 'Kit de ferramentas', category: 'Aventura', cost: 4, description: 'Ferramentas para testes especializados.' },
+  { id: 'flame_tongue', name: 'Língua Flamejante', category: 'Arma', rarity: 'Raro', cost: 18, die: 8, attribute: 'for', damageBonus: 2, range: 'corpo a corpo', description: 'Espada mágica inspirada em D&D. +2 no dano e deixa o ataque com chama narrativa.' },
+  { id: 'moonbow', name: 'Arco da Lua Prateada', category: 'Arma', rarity: 'Raro', cost: 17, die: 8, attribute: 'dex', attackBonus: 1, damageBonus: 1, range: '45 m', description: '+1 no ataque e dano. Brilha contra criaturas das trevas.' },
+  { id: 'guardian_plate', name: 'Placa do Guardião', category: 'Armadura', rarity: 'Raro', cost: 20, armorBase: 18, armorBonus: 1, description: 'CA 18 + 1 mágico. Item pesado para linha de frente.' },
+  { id: 'cloak_stars', name: 'Manto das Estrelas', category: 'Acessório', rarity: 'Raro', cost: 14, armorBonus: 1, spellBonus: 1, description: '+1 CA e +1 em CD/ataque de magia enquanto equipado.' },
+  { id: 'boots_wind', name: 'Botas do Vento', category: 'Acessório', rarity: 'Incomum', cost: 10, speedBonus: 3, description: '+3 m de deslocamento e vantagem narrativa em saltos.' },
+  { id: 'staff_archmage', name: 'Cajado do Arquimago', category: 'Foco', rarity: 'Lendário', cost: 34, die: 6, attribute: 'int', attackBonus: 2, damageBonus: 2, spellBonus: 2, range: '1,5 m', description: '+2 em ataques, dano de arma e magia. Foco lendário.' },
+  { id: 'ring_wish', name: 'Anel do Desejo Guardado', category: 'Acessório', rarity: 'Lendário', cost: 40, spellBonus: 3, description: '+3 em magia e espaço narrativo para um milagre raro controlado pelo mestre.' },
+  { id: 'amulet_health', name: 'Amuleto da Vitalidade', category: 'Acessório', rarity: 'Raro', cost: 16, maxHpBonus: 10, description: '+10 PV máximos enquanto estiver no inventário.' }
 ];
+
+function getEquipmentCatalog() {
+  return [...equipmentCatalog, ...customItems];
+}
+
+const featureDescriptions = {
+  "Tenacidade anã: PV adicional por nível.": "Seu corpo aguenta mais punição. Some PV extra conforme o nível e descreva resistência física fora de combate.",
+  "Treinamento de armadura e porte robusto.": "Você está acostumado a equipamento pesado e marcha longa. Armaduras não atrapalham tarefas narrativas simples.",
+  "Truque arcano e treinamento élfico.": "Você conhece um truque mágico e recebe treinamento élfico com armas, percepção e tradição arcana.",
+  "Máscara da natureza e deslocamento superior.": "Você se esconde melhor em ambientes naturais e se move com leveza por terreno selvagem.",
+  "Magia drow e visão no escuro superior.": "Você enxerga longe no escuro e aprende magia ligada a sombra, luz feérica e presença subterrânea.",
+  "Furtividade natural.": "Você consegue se esconder atrás de criaturas maiores e usar sua pequena estatura como vantagem em infiltração.",
+  "Resiliência contra veneno.": "Você recebe resistência narrativa contra venenos, comida ruim e ambientes tóxicos leves.",
+  "Perícia ou talento inicial adaptado.": "Escolha uma perícia, ferramenta ou talento simples para representar a versatilidade humana.",
+  "Impulso heroico uma vez por descanso.": "Uma vez por descanso, transforme esforço decisivo em bônus narrativo para ataque, teste ou salvaguarda.",
+  "Resistência a fogo e magia infernal.": "Você resiste a fogo e aprende magia de linhagem infernal conforme avança.",
+  "Passo sobrenatural de ancestral gigante.": "Você encurta distância com um passo mágico curto, útil para reposicionamento e cenas verticais.",
+  "Retaliação trovejante.": "Quando sofre impacto, pode responder com energia trovejante ancestral em uma cena dramática.",
+  "Proteção integrada.": "Seu corpo construído funciona como defesa natural e permite acoplar armadura com aparência própria.",
+  "Ferramentas integradas.": "Você carrega ferramentas no próprio corpo e ganha vantagem narrativa em reparos, ofícios ou artifício.",
+  "Sopro elemental e resistência a fogo.": "Você exala uma rajada elemental de fogo e resiste a dano ou perigos flamejantes.",
+  "Sopro elemental e resistência a frio.": "Você exala frio cortante e suporta clima extremo, gelo e dano frio com mais facilidade.",
+  "Sopro elemental e resistência elétrica.": "Você solta descarga elétrica em área e resiste a choques, tempestades e magia elétrica.",
+  "Sopro elemental e resistência a ácido.": "Você cospe ácido corrosivo e resiste a substâncias cáusticas ou dano ácido.",
+  "Sopro elemental e resistência a veneno.": "Você libera veneno em área e resiste melhor a toxinas, doenças simples e venenos.",
+  "Ilusão menor e fala com animais pequenos.": "Você conjura pequenas ilusões e conversa de forma simples com animais miúdos.",
+  "Conhecimento de artífice.": "Você entende mecanismos, ferramentas e invenções; ótimo para investigação técnica.",
+  "Combina duas aptidões adicionais.": "Escolha duas aptidões extras para refletir a mistura de culturas e treinamento do meio-elfo.",
+  "Força e resistência física.": "Você suporta golpes fatais por pura teimosia e causa impacto maior em críticos corpo a corpo.",
+  "Mobilidade e vigor.": "Você avança com adrenalina, ignora parte do cansaço e mantém pressão física constante.",
+  "Derruba criaturas com impacto.": "Seu legado gigante permite empurrar ou derrubar inimigos quando acerta com força.",
+  "Resistência e firmeza pétrea.": "Você reduz impacto de golpes e fica difícil de mover contra sua vontade.",
+  "Resistência e legado do frio.": "Você suporta frio extremo e transforma resistência em presença calma sob pressão.",
+  "Legado ígneo.": "Seu sangue gigante carrega calor sobrenatural, útil contra frio e para efeitos de chama.",
+  "Magia natural e invisibilidade curta.": "Você usa magia silvestre para se ocultar brevemente e falar com a natureza.",
+  "Explosão de velocidade felina.": "Você dobra o ritmo em disparadas curtas, escaladas e perseguições.",
+  "Movimento evasivo.": "Você se esconde, recua ou se reposiciona rapidamente usando tamanho e astúcia.",
+  "Alcance e surpresa.": "Seus braços longos e instinto de emboscada dão vantagem narrativa no primeiro impacto.",
+  "Disciplina marcial.": "Treinamento de formação ajuda aliados e melhora decisões táticas sob pressão.",
+  "Sobrevivência anfíbia.": "Você nada bem, prende o fôlego por mais tempo e usa mordida/armadura natural.",
+  "Investida poderosa.": "Ao correr em linha reta, seus chifres transformam movimento em impacto de controle.",
+  "Fúria": "Entre em fúria para receber vantagem narrativa em força, resistir melhor a dano físico e causar mais impacto corpo a corpo.",
+  "Defesa sem Armadura": "Quando estiver sem armadura pesada, sua resistência e agilidade ajudam a compor a defesa.",
+  "Ataque Imprudente": "Você pode atacar com brutalidade, ganhando pressão ofensiva em troca de se expor até o próximo turno.",
+  "Ataque Extra": "Ao usar a ação de ataque, você pode atacar uma segunda vez quando o nível da classe liberar.",
+  "Crítico Brutal": "Seus acertos críticos ficam mais perigosos e adicionam dano extra conforme a classe avança.",
+  "Estilo de Luta": "Escolha um foco marcial como defesa, arquearia, duelo ou armas pesadas para ganhar bônus constante.",
+  "Retomar o Fôlego": "Recupere fôlego em combate e restaure parte dos PV sem depender de magia.",
+  "Surto de Ação": "Ganhe uma ação extra em um momento decisivo do combate.",
+  "Indomável": "Refaça uma salvaguarda falha e represente pura teimosia heroica.",
+  "Imposição das Mãos": "Use uma reserva de cura divina para restaurar PV ou aliviar uma condição.",
+  "Punição Divina": "Ao acertar um ataque, gaste energia sagrada para causar dano radiante extra.",
+  "Aura de Proteção": "Aliados próximos se beneficiam da sua presença e somam seu CAR em defesas importantes.",
+  "Toque Purificador": "Remova efeitos mágicos hostis com um toque abençoado.",
+  "Inimigo Favorito": "Marque ou estude uma presa para rastrear melhor e causar pressão extra contra ela.",
+  "Explorador Hábil": "Você ganha perícias de exploração, movimento e sobrevivência em terreno difícil.",
+  "Incansável": "Você resiste melhor a desgaste, cansaço e longas viagens.",
+  "Ataque Furtivo": "Uma vez por turno, cause dano extra quando tiver vantagem ou aliado ameaçando o alvo.",
+  "Especialização": "Dobre a proficiência em perícias escolhidas e vire referência naquele campo.",
+  "Ação Ardilosa": "Use ação rápida para correr, desengajar ou se esconder.",
+  "Esquiva Sobrenatural": "Reduza o dano de um ataque que você possa perceber.",
+  "Evasão": "Em efeitos de área, sua agilidade reduz ou evita totalmente o dano.",
+  "Artes Marciais": "Use DEX em golpes desarmados e ataque com fluidez após atacar.",
+  "Foco": "Gaste pontos de foco para técnicas especiais de movimento, defesa e ataque.",
+  "Movimento sem Armadura": "Sem armadura, seu deslocamento aumenta e seus movimentos ficam acrobáticos.",
+  "Inspiração de Bardo": "Conceda dado de inspiração a aliados para melhorar testes, ataques ou defesas.",
+  "Versatilidade": "Você aprende muitos truques sociais, mágicos e práticos.",
+  "Fonte de Inspiração": "Recupere inspirações com mais frequência conforme a classe avança.",
+  "Segredos Mágicos": "Aprenda magias de outras listas e amplie seu repertório.",
+  "Conjuração": "Você prepara ou conhece magias da classe e usa o atributo de conjuração indicado.",
+  "Canalizar Divindade": "Concentre energia divina em um efeito forte de domínio, cura, luz ou banimento.",
+  "Destruir Mortos-Vivos": "Sua fé pode afastar e destruir mortos-vivos fracos.",
+  "Intervenção Divina": "Peça auxílio direto da divindade em momentos extremos.",
+  "Grimório": "Seu livro guarda magias conhecidas; copiar e preparar magias é parte central do mago.",
+  "Recuperação Arcana": "Depois de descanso curto, recupere parte dos recursos mágicos.",
+  "Memorizar Magia": "Troque uma magia preparada com estudo rápido quando tiver tempo e grimório.",
+  "Maestria em Magia": "Conjure certas magias de baixo círculo com domínio superior.",
+  "Magias Características": "Escolha magias marcantes que definem sua identidade arcana.",
+  "Conjuração Inata": "Sua magia vem do sangue, pacto interno ou poder espontâneo.",
+  "Fonte de Magia": "Converta pontos mágicos e espaços para alimentar metamagia.",
+  "Metamagia": "Modifique alcance, alvo, velocidade ou forma de uma magia.",
+  "Restauração Feiticeira": "Recupere energia mágica em momentos de pausa.",
+  "Magia de Pacto": "Seus espaços de magia são poucos, fortes e voltam rapidamente.",
+  "Invocações Místicas": "Escolha melhorias permanentes dadas pelo pacto.",
+  "Dádiva do Pacto": "Receba uma arma, tomo, familiar ou talismã ligado ao patrono.",
+  "Arcanos Místicos": "Ganhe magias únicas de círculos altos concedidas pelo patrono.",
+  "Druídico": "Você conhece a linguagem secreta dos druidas e sinais naturais.",
+  "Forma Selvagem": "Assuma formas animais para combate, exploração ou infiltração.",
+  "Corpo Atemporal": "A natureza desacelera seu envelhecimento e desgaste.",
+  "Arquedruida": "Você domina Forma Selvagem e magia natural no ápice da classe."
+};
+
+const subclassDescriptions = {
+  "Caminho do Berserker": "Foco em fúria ofensiva. No nível 3, suas explosões de dano ficam mais constantes e agressivas.",
+  "Caminho do Guardião Totêmico": "Foco em resistência e proteção. Escolha um espírito-guia para ganhar defesa, mobilidade ou suporte.",
+  "Campeão": "Subclasse simples e forte: melhora acertos críticos, atletismo e consistência marcial.",
+  "Mestre de Manobras": "Use manobras para empurrar, desarmar, proteger aliados e controlar o campo.",
+  "Juramento de Devoção": "Paladino clássico de honra, luz e proteção contra corrupção.",
+  "Juramento da Aurora": "Juramento adaptado de luz e renascimento, com cura e pressão contra trevas.",
+  "Caçador": "Escolha técnicas contra presas específicas e fortaleça dano ou defesa em combate.",
+  "Guardião das Feras": "Receba vínculo com companheiro animal e ações coordenadas.",
+  "Ladrão": "Especialista em infiltração, objetos, escalada e uso criativo do cenário.",
+  "Sombra Cortante": "Ladino focado em emboscada, medo e movimentação entre sombras.",
+  "Mão Aberta": "Controle inimigos com golpes desarmados, derrubões e empurrões.",
+  "Caminho da Sombra": "Misture disciplina marcial com furtividade e técnicas de escuridão.",
+  "Colégio do Conhecimento": "Bardo perito, cheio de segredos, perícias e interrupções sociais.",
+  "Colégio do Valor": "Bardo de batalha que inspira aliados e participa da linha de frente.",
+  "Domínio da Vida": "Clérigo focado em cura, proteção e restauração.",
+  "Domínio da Luz": "Clérigo focado em fogo, revelação e expulsão das trevas.",
+  "Evocador": "Mago que molda explosões para causar dano sem destruir aliados.",
+  "Ilusionista": "Mago que distorce percepção, cria distrações e controla informação.",
+  "Feitiçaria Dracônica": "Feiticeiro com resistência, presença e dano ligados a ancestral dracônico.",
+  "Magia Selvagem Controlada": "Feiticeiro que manipula surtos caóticos com risco e recompensa.",
+  "Patrono Corruptor": "Bruxo com poder sombrio, resistência e magia destrutiva.",
+  "Patrono Feérico": "Bruxo de encanto, ilusão e barganhas com cortes feéricas.",
+  "Círculo da Terra": "Druida conjurador ligado a biomas e recuperação natural.",
+  "Círculo da Lua": "Druida focado em Forma Selvagem forte e combate animal."
+};
+
+const spellSchoolDescriptions = {
+  Abjuração: "Protege, cura, bane ou desfaz efeitos perigosos.",
+  Adivinhação: "Revela informação, rastreia ou antecipa ameaças.",
+  Conjuração: "Invoca criaturas, objetos, energia ou desloca alvos.",
+  Encantamento: "Influência mental, emoção, controle ou inspiração.",
+  Evocação: "Energia direta: fogo, luz, força, cura ou explosões.",
+  Ilusão: "Engana sentidos e cria imagens, sons ou presenças falsas.",
+  Necromancia: "Manipula vida, morte, veneno ou energia sombria.",
+  Transmutação: "Altera corpo, matéria, movimento ou propriedades."
+};
+
+function describeFeature(name) {
+  return featureDescriptions[name] || "Recurso automático já liberado na ficha. Defina o detalhe final com o mestre e registre qualquer limite de uso na descrição.";
+}
+
+function describeSubclass(name) {
+  return subclassDescriptions[name] || "Subclasse jogável com recursos no nível 3, 6, 10 e 14. Defina detalhes com o mestre antes da campanha.";
+}
+
+function describeSpell(spell) {
+  return spell.effect || spellSchoolDescriptions[spell.school] || "Magia pronta do sistema com efeito definido pelo círculo e pela classe.";
+}
 
 function getInputValues() {
   return distInputs.map(item => Number(document.getElementById(item.id).value || 0));
@@ -216,6 +368,7 @@ function resetFicha() {
   elements.descricaoClasse.value = '';
   purchasedSkills = [];
   inventory = [];
+  customItems = [];
   purchasedSpells = [];
   bannerPhoto = '';
   applyDynamicTheme('#7EBAEE', '#F0A06F');
@@ -401,18 +554,61 @@ function saveSkillFromEditor() {
   updateSkillBudget();
 }
 
+function buyCatalogAbility(ability) {
+  const message = document.getElementById('skillMessage');
+  if (purchasedSkills.some(skill => skill.name === ability.name)) {
+    message.textContent = 'Essa habilidade já foi comprada.';
+    return;
+  }
+  if (purchasedSkills.length >= getSkillLimit()) {
+    message.textContent = 'Sem espaços disponíveis para comprar habilidade.';
+    return;
+  }
+  purchasedSkills.push({
+    id: crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`,
+    name: ability.name,
+    description: ability.description,
+    photo: ''
+  });
+  renderSkillCollection();
+  updateSkillBudget();
+  renderAbilityCatalog();
+  saveDraftSoon();
+}
+
+function renderAbilityCatalog() {
+  const container = document.getElementById('abilityCatalog');
+  if (!container) return;
+  const filter = document.getElementById('abilityClassFilter').value;
+  const options = abilityCatalog.filter(ability => filter === 'Todas' || ability.className === filter || ability.className === 'Geral');
+  container.innerHTML = '';
+  options.forEach(ability => {
+    const owned = purchasedSkills.some(skill => skill.name === ability.name);
+    const card = document.createElement('article');
+    card.className = 'spell-card';
+    card.innerHTML = `<span>${ability.className}</span><h4>${ability.name}</h4><p>${ability.description}</p>`;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = owned ? 'Comprada' : 'Comprar';
+    button.disabled = owned || purchasedSkills.length >= getSkillLimit();
+    button.addEventListener('click', () => buyCatalogAbility(ability));
+    card.appendChild(button);
+    container.appendChild(card);
+  });
+}
+
 function getEquipmentBudget() {
   return 10 + (Math.max(1, Number(elements.nivel.value) || 1) * 2);
 }
 
 function getEquipmentSpent() {
   return inventory.reduce((sum, itemId) => {
-    return sum + (equipmentCatalog.find(item => item.id === itemId)?.cost || 0);
+    return sum + (getEquipmentCatalog().find(item => item.id === itemId)?.cost || 0);
   }, 0);
 }
 
 function buyEquipment(itemId) {
-  const item = equipmentCatalog.find(entry => entry.id === itemId);
+  const item = getEquipmentCatalog().find(entry => entry.id === itemId);
   if (!item || inventory.includes(itemId)) return;
   if (getEquipmentSpent() + item.cost > getEquipmentBudget()) return;
   inventory.push(itemId);
@@ -438,12 +634,12 @@ function renderEquipment() {
   document.getElementById('equipmentRemaining').textContent = Math.max(0, budget - spent);
 
   shop.innerHTML = '';
-  equipmentCatalog.forEach(item => {
+  getEquipmentCatalog().forEach(item => {
     const owned = inventory.includes(item.id);
     const card = document.createElement('article');
     card.className = 'shop-item';
     card.innerHTML = `
-      <span>${item.category}</span>
+      <span>${item.category}${item.rarity ? ` · ${item.rarity}` : ''}</span>
       <h4>${item.name}</h4>
       <p>${item.description}</p>
       <div><b>${item.cost} pts</b></div>
@@ -462,7 +658,7 @@ function renderEquipment() {
     inventoryList.innerHTML = '<p class="system-rule">Nenhum item comprado.</p>';
   }
   inventory.forEach(itemId => {
-    const item = equipmentCatalog.find(entry => entry.id === itemId);
+    const item = getEquipmentCatalog().find(entry => entry.id === itemId);
     if (!item) return;
     const row = document.createElement('article');
     row.className = 'inventory-item';
@@ -482,8 +678,8 @@ function renderWeaponList() {
   const weaponList = document.getElementById('weaponList');
   if (!weaponList) return;
   const weapons = inventory
-    .map(itemId => equipmentCatalog.find(item => item.id === itemId))
-    .filter(item => item?.category === 'Arma');
+    .map(itemId => getEquipmentCatalog().find(item => item.id === itemId))
+    .filter(item => item?.category === 'Arma' && item.die);
 
   weaponList.innerHTML = '';
   if (weapons.length === 0) {
@@ -494,14 +690,15 @@ function renderWeaponList() {
   weapons.forEach(weapon => {
     const modifier = getAttributeModifier(weapon.attribute);
     const proficiency = Number(elements.profBonus.value.replace('+', '')) || 0;
-    const attackBonus = modifier + proficiency;
+    const attackBonus = modifier + proficiency + Number(weapon.attackBonus || 0);
+    const damageBonus = modifier + Number(weapon.damageBonus || 0);
     const card = document.createElement('article');
     card.className = 'weapon-card';
     card.innerHTML = `
       <h4>${weapon.name}</h4>
       <div class="weapon-tags">
         <span>Ataque ${formatSigned(attackBonus)}</span>
-        <span>Dano 1d${weapon.die} ${formatSigned(modifier)}</span>
+        <span>Dano 1d${weapon.die} ${formatSigned(damageBonus)}</span>
         <span>${weapon.range}</span>
       </div>
     `;
@@ -530,7 +727,7 @@ function renderWeaponList() {
       rollDice({
         sides: weapon.die,
         count: 1,
-        modifier,
+        modifier: damageBonus,
         label: `Dano de ${weapon.name}`,
         onComplete: ({ results, total }) => {
           elements.rollResult.innerHTML = `<span class="dice-icon">${results[0]}</span><span>${weapon.name}: dano ${total}</span>`;
@@ -554,17 +751,69 @@ function getAttributeModifier(attribute) {
   return Number(labels[attribute]?.textContent.replace('+', '')) || 0;
 }
 
+function getItemBonus(key) {
+  return inventory.reduce((sum, itemId) => {
+    const item = getEquipmentCatalog().find(entry => entry.id === itemId);
+    return sum + Number(item?.[key] || 0);
+  }, 0);
+}
+
 function getCalculatedArmorClass() {
   const manual = Number(document.getElementById('armorClass').value) || 10;
   const dexterity = getAttributeModifier('dex');
   let calculated = manual;
   inventory.forEach(itemId => {
-    const item = equipmentCatalog.find(entry => entry.id === itemId);
+    const item = getEquipmentCatalog().find(entry => entry.id === itemId);
     if (!item) return;
     if (item.armorBase) calculated = Math.max(calculated, item.armorBase + (item.dexterity ? dexterity : 0));
     if (item.armorBonus) calculated += item.armorBonus;
   });
   return calculated;
+}
+
+function getCalculatedMaxHp() {
+  return (Number(elements.vidaMaxima.value) || 0) + getItemBonus('maxHpBonus');
+}
+
+function getCalculatedSpeed() {
+  const base = document.getElementById('speed').value || '-';
+  const bonus = getItemBonus('speedBonus');
+  return bonus ? `${base} + ${bonus} m` : base;
+}
+
+function addCustomItem() {
+  const name = document.getElementById('customItemName').value.trim();
+  const message = document.getElementById('customItemMessage');
+  if (!name) {
+    message.textContent = 'Dê um nome ao item personalizado.';
+    return;
+  }
+  const id = `custom-${crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`}`;
+  const die = Number(document.getElementById('customItemDie').value || 0);
+  const item = {
+    id,
+    custom: true,
+    name,
+    category: document.getElementById('customItemCategory').value,
+    rarity: document.getElementById('customItemRarity').value,
+    cost: Number(document.getElementById('customItemCost').value || 0),
+    description: document.getElementById('customItemDescription').value.trim() || 'Item personalizado da mesa.',
+    attribute: document.getElementById('customItemAttribute').value,
+    range: 'personalizado',
+    attackBonus: Number(document.getElementById('customItemAttack').value || 0),
+    damageBonus: Number(document.getElementById('customItemDamage').value || 0),
+    armorBonus: Number(document.getElementById('customItemArmor').value || 0),
+    spellBonus: Number(document.getElementById('customItemSpell').value || 0),
+    maxHpBonus: Number(document.getElementById('customItemHp').value || 0),
+    speedBonus: Number(document.getElementById('customItemSpeed').value || 0)
+  };
+  if (die) item.die = die;
+  customItems.push(item);
+  message.textContent = `${name} entrou na loja.`;
+  document.getElementById('customItemName').value = '';
+  document.getElementById('customItemDescription').value = '';
+  renderEquipment();
+  synchronize();
 }
 
 function applyBanner(photo) {
@@ -692,7 +941,7 @@ function renderClassProgression() {
   overview.querySelectorAll('[data-subclass-name]').forEach(button => {
     button.addEventListener('click', () => {
       overview.querySelectorAll('[data-subclass-name]').forEach(item => item.classList.toggle('active', item === button));
-      document.getElementById('classSubclassDetail').textContent = `${button.dataset.subclassName}: caminho liberado no nível 3 da classe. Use como base e personalize efeitos com seu mestre.`;
+      document.getElementById('classSubclassDetail').textContent = `${button.dataset.subclassName}: ${describeSubclass(button.dataset.subclassName)}`;
     });
   });
   overview.insertAdjacentHTML('beforeend', '<p id="classSubclassDetail" class="system-rule full-width">Selecione uma subclasse acima para ver como ela entra na evolução.</p>');
@@ -701,7 +950,7 @@ function renderClassProgression() {
     const card = document.createElement('article');
     card.className = 'progression-level';
     const classFeature = data.core[Math.min(data.core.length - 1, Math.floor((level - 1) / 4))];
-    card.innerHTML = `<span>${String(level).padStart(2, '0')}</span><div><b>Nível ${level}</b><p>${universalLevelFeatures[level]} · ${classFeature}</p></div>`;
+    card.innerHTML = `<span>${String(level).padStart(2, '0')}</span><div><b>Nível ${level}</b><p>${universalLevelFeatures[level]} · ${classFeature}</p><small>${describeFeature(classFeature)}</small></div>`;
     progression.appendChild(card);
   }
 }
@@ -726,18 +975,21 @@ function renderClassBrowser(activeClass) {
 function getAutomaticAbilities() {
   const subrace = document.getElementById('subraca').value;
   const abilities = [];
-  if (raceAbilityBySubrace[subrace]) abilities.push({ source: subrace, name: raceAbilityBySubrace[subrace] });
+  if (raceAbilityBySubrace[subrace]) {
+    const feature = raceAbilityBySubrace[subrace];
+    abilities.push({ source: subrace, name: feature, description: describeFeature(feature) });
+  }
   getClassBuild().forEach(entry => {
     const data = classData[entry.className];
     if (!data) return;
     data.core.forEach((feature, index) => {
       const unlockLevel = [1, 2, 3, 5, 9][index] || 1;
       if (entry.level >= unlockLevel) {
-        abilities.push({ source: `${entry.className} ${entry.level}`, name: feature });
+        abilities.push({ source: `${entry.className} ${entry.level}`, name: feature, description: describeFeature(feature) });
       }
     });
     if (entry.level >= 3 && entry.subclass) {
-      abilities.push({ source: 'Subclasse', name: entry.subclass });
+      abilities.push({ source: 'Subclasse', name: entry.subclass, description: describeSubclass(entry.subclass) });
     }
   });
   return abilities;
@@ -755,7 +1007,7 @@ function renderAutomaticAbilities() {
   abilities.forEach(ability => {
     const card = document.createElement('article');
     card.className = 'spell-card owned';
-    card.innerHTML = `<span>${ability.source}</span><h4>${ability.name}</h4><p>Habilidade pronta liberada pela progressão, sem gastar pontos de compra.</p>`;
+    card.innerHTML = `<span>${ability.source}</span><h4>${ability.name}</h4><p>${ability.description}</p><small>Liberada pela progressão, sem gastar pontos de compra.</small>`;
     container.appendChild(card);
   });
 }
@@ -788,7 +1040,7 @@ function renderFreeSpells() {
   spells.forEach(spell => {
     const card = document.createElement('article');
     card.className = 'spell-card owned';
-    card.innerHTML = `<span>${spell.level === 0 ? 'Truque' : `${spell.level}º círculo`} · ${spell.school}</span><h4>${spell.name}</h4><p>${spell.effect || 'Liberada por classe, subclasse ou raça.'}</p>`;
+    card.innerHTML = `<span>${spell.level === 0 ? 'Truque' : `${spell.level}º círculo`} · ${spell.school}</span><h4>${spell.name}</h4><p>${describeSpell(spell)}</p>`;
     const button = document.createElement('button');
     button.type = 'button';
     button.textContent = 'Preparar';
@@ -844,7 +1096,7 @@ function renderSpellCatalog() {
     spells.forEach(spell => {
       const card = document.createElement('article');
       card.className = 'spell-card';
-      card.innerHTML = `<span>${spell.level === 0 ? 'Truque' : `${spell.level}º círculo`} · ${spell.school}</span><h4>${spell.name}</h4><p>${spell.effect || 'Magia pronta da lista aberta do sistema.'}</p>`;
+      card.innerHTML = `<span>${spell.level === 0 ? 'Truque' : `${spell.level}º círculo`} · ${spell.school}</span><h4>${spell.name}</h4><p>${describeSpell(spell)}</p>`;
       const button = document.createElement('button');
       button.type = 'button';
       const purchased = purchasedSpells.includes(spell.name);
@@ -861,7 +1113,7 @@ function renderSpellCatalog() {
     if (!spell) return;
     const card = document.createElement('article');
     card.className = 'spell-card owned';
-    card.innerHTML = `<span>${spell.level === 0 ? 'Truque' : `${spell.level}º círculo`} · ${spell.school}</span><h4>${spell.name}</h4><p>${spell.effect || 'Magia pronta da lista aberta do sistema.'}</p>`;
+    card.innerHTML = `<span>${spell.level === 0 ? 'Truque' : `${spell.level}º círculo`} · ${spell.school}</span><h4>${spell.name}</h4><p>${describeSpell(spell)}</p>`;
     const prepareButton = document.createElement('button');
     prepareButton.type = 'button';
     prepareButton.textContent = 'Preparar';
@@ -943,7 +1195,7 @@ function renderClassReference() {
   grid.innerHTML = '';
   Object.entries(classData).forEach(([name, data]) => {
     const article = document.createElement('article');
-    article.innerHTML = `<h3>${name}</h3><b>${data.hitDie}</b><p>${data.core.join(' · ')}</p><small>Subclasses: ${data.subclasses.join(' · ')}</small>`;
+    article.innerHTML = `<h3>${name}</h3><b>${data.hitDie}</b><p>${data.core.map(feature => `${feature}: ${describeFeature(feature)}`).join(' ')}</p><small>Subclasses: ${data.subclasses.map(subclass => `${subclass} (${describeSubclass(subclass)})`).join(' · ')}</small>`;
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'inline-pill';
@@ -980,9 +1232,10 @@ function updateSpellStats() {
   const castingStat = document.getElementById('castingStat').value;
   const modifier = getAttributeModifier(castingStat);
   const proficiency = Number(elements.profBonus.value.replace('+', '')) || 0;
+  const itemMagicBonus = getItemBonus('spellBonus');
   const labels = { int: 'INT', sab: 'SAB', car: 'CAR' };
-  document.getElementById('spellSaveDc').textContent = 8 + proficiency + modifier;
-  document.getElementById('spellAttackBonus').textContent = formatSigned(proficiency + modifier).replace(' ', '');
+  document.getElementById('spellSaveDc').textContent = 8 + proficiency + modifier + itemMagicBonus;
+  document.getElementById('spellAttackBonus').textContent = formatSigned(proficiency + modifier + itemMagicBonus).replace(' ', '');
   document.getElementById('spellCastingStat').textContent = labels[castingStat];
   document.getElementById('spellSlotTotal').textContent = document.getElementById('spellSlots').value || 0;
 }
@@ -1004,18 +1257,20 @@ function synchronize() {
   renderClassProgression();
   renderAutomaticAbilities();
   renderFreeSpells();
+  renderAbilityCatalog();
 
   const combatHp = document.getElementById('combatHp');
   const combatProf = document.getElementById('combatProf');
   const combatInit = document.getElementById('combatInit');
   const combatDefense = document.getElementById('combatDefense');
-  if (combatHp) combatHp.textContent = elements.vidaMaxima.value || 0;
+  if (combatHp) combatHp.textContent = getCalculatedMaxHp();
   if (combatProf) combatProf.textContent = elements.profBonus.value;
   if (combatInit) combatInit.textContent = elements.modDex.textContent;
   if (combatDefense) combatDefense.textContent = getCalculatedArmorClass();
-  document.getElementById('combatSpeed').textContent = document.getElementById('speed').value || '-';
+  document.getElementById('combatSpeed').textContent = getCalculatedSpeed();
   document.getElementById('combatVision').textContent = document.getElementById('vision').value || '-';
   document.getElementById('combatHitDie').textContent = document.getElementById('hitDie').value;
+  saveDraftSoon();
 }
 
 function loadSavedCharacters() {
@@ -1099,6 +1354,17 @@ function clearAllCharacters() {
   loadSavedCharacters();
 }
 
+function saveDraftNow() {
+  if (isRestoringCharacter) return;
+  localStorage.setItem('lastCharacterDraft', JSON.stringify(getCharacterData()));
+}
+
+function saveDraftSoon() {
+  if (isRestoringCharacter) return;
+  clearTimeout(draftTimer);
+  draftTimer = window.setTimeout(saveDraftNow, 250);
+}
+
 function getCharacterData() {
   return {
     sistema: elements.sistema.value,
@@ -1149,6 +1415,7 @@ function getCharacterData() {
     descricaoClasse: elements.descricaoClasse.value,
     purchasedSkills,
     inventory,
+    customItems,
     purchasedSpells,
     themeColors,
     storedFields: Object.fromEntries(
@@ -1166,10 +1433,12 @@ function getCharacterData() {
 }
 
 function loadCharacter(index) {
-  const saved = JSON.parse(localStorage.getItem('savedCharacters') || '[]');
-  const character = saved[index];
+  const character = typeof index === 'object'
+    ? index
+    : JSON.parse(localStorage.getItem('savedCharacters') || '[]')[index];
   if (!character) return;
 
+  isRestoringCharacter = true;
   elements.sistema.value = character.sistema || 'D&D';
   elements.nome.value = character.nome || '';
   elements.jogador.value = character.jogador || '';
@@ -1222,6 +1491,7 @@ function loadCharacter(index) {
   elements.descricaoClasse.value = character.descricaoClasse || '';
   purchasedSkills = Array.isArray(character.purchasedSkills) ? character.purchasedSkills : [];
   inventory = Array.isArray(character.inventory) ? character.inventory : [];
+  customItems = Array.isArray(character.customItems) ? character.customItems : [];
   purchasedSpells = Array.isArray(character.purchasedSpells) ? character.purchasedSpells : [];
   themeColors = character.themeColors || { primary: '#7EBAEE', secondary: '#F0A06F' };
   resetSkillEditor();
@@ -1250,6 +1520,8 @@ function loadCharacter(index) {
   renderEquipment();
 
   synchronize();
+  isRestoringCharacter = false;
+  saveDraftSoon();
 }
 
 function toggleMulticlassFields() {
@@ -1317,12 +1589,14 @@ function setupInnerTabs() {
 }
 
 function init() {
+  isRestoringCharacter = true;
   populateSelect(elements.raca, raceOptions);
   populateSelect(elements.origem, originOptions);
   populateSelect(elements.classe1, classOptions);
   populateSelect(elements.classe2, classOptions);
   populateSelect(elements.classe3, classOptions);
   populateSelect(document.getElementById('progressionClass'), classOptions);
+  populateSelect(document.getElementById('abilityClassFilter'), ['Todas', ...classOptions]);
   populateSelect(document.getElementById('spellClassFilter'), spellcastingClasses);
   document.getElementById('spellClassFilter').value = spellcastingClasses.includes(elements.classe1.value)
     ? elements.classe1.value
@@ -1370,6 +1644,7 @@ function init() {
   });
   document.getElementById('spellClassFilter').addEventListener('change', renderSpellCatalog);
   document.getElementById('spellLevelFilter').addEventListener('change', renderSpellCatalog);
+  document.getElementById('abilityClassFilter').addEventListener('change', renderAbilityCatalog);
 
   [
     elements.nome,
@@ -1418,6 +1693,7 @@ function init() {
   elements.photoInput.addEventListener('change', handlePhotoUpload);
   document.getElementById('bannerInput').addEventListener('change', handleBannerUpload);
   document.getElementById('skillPhotoInput').addEventListener('change', handleSkillPhotoUpload);
+  document.getElementById('addCustomItem').addEventListener('click', addCustomItem);
   document.getElementById('photoUrl').addEventListener('change', event => applyImageUrl(event.target, url => {
     elements.photoPreview.innerHTML = `<img src="${url}" alt="Foto do personagem">`;
     elements.photoPreview.dataset.photo = url;
@@ -1450,6 +1726,8 @@ function init() {
       localStorage.setItem(key, event.target.value);
     });
   });
+  document.addEventListener('input', saveDraftSoon);
+  document.addEventListener('change', saveDraftSoon);
 
   setupTabs();
   setupInnerTabs();
@@ -1464,7 +1742,13 @@ function init() {
   renderSpellCatalog();
   document.getElementById('progressionClass').value = elements.classe1.value;
   renderClassProgression();
-  synchronize();
+  const draft = JSON.parse(localStorage.getItem('lastCharacterDraft') || 'null');
+  if (draft) {
+    loadCharacter(draft);
+  } else {
+    isRestoringCharacter = false;
+    synchronize();
+  }
 }
 
 init();

@@ -23,6 +23,22 @@ export const raceGrantedSpells = {
   "Gigante das Nuvens": ["Passo Nebuloso"]
 };
 
+export const abilityCatalog = [
+  { className: "Geral", name: "Talento Adaptável", description: "Escolha uma perícia ou ferramenta e ganhe proficiência narrativa nela." },
+  { className: "Bárbaro", name: "Investida Furiosa", description: "Ao entrar em fúria, avance até 3 m antes do primeiro ataque." },
+  { className: "Guerreiro", name: "Golpe Preciso", description: "Uma vez por combate, adicione +2 ao ataque depois de ver o resultado do d20." },
+  { className: "Paladino", name: "Punição Guardada", description: "Ao acertar, converta energia mágica em dano radiante extra definido pelo mestre." },
+  { className: "Patrulheiro", name: "Marca do Caçador", description: "Marque um alvo e ganhe +1 no dano contra ele até trocar de alvo." },
+  { className: "Ladino", name: "Sombra Oportunista", description: "Depois de se esconder, seu próximo ataque furtivo recebe +1 no dano." },
+  { className: "Monge", name: "Passo do Vento", description: "Gaste foco para deslocar-se sem provocar reação narrativa." },
+  { className: "Bardo", name: "Inspiração Cortante", description: "Reduza em 1d6 uma rolagem inimiga que você possa perceber." },
+  { className: "Clérigo", name: "Canalizar Milagre", description: "Use energia divina para curar ou repelir criaturas profanas." },
+  { className: "Druida", name: "Forma Selvagem Menor", description: "Assuma uma forma animal simples para exploração por curto período." },
+  { className: "Feiticeiro", name: "Metamagia: Acelerar", description: "Uma magia simples pode ser conjurada como ação rápida, se o mestre permitir." },
+  { className: "Bruxo", name: "Invocação: Visão Arcana", description: "Detecte traços mágicos próximos sem gastar espaço de magia." },
+  { className: "Mago", name: "Recuperação Arcana", description: "Recupere parte da energia mágica após um descanso curto." }
+];
+
 export const spellCatalog = [
   { name: "Luz", level: 0, school: "Evocação", classes: ["Bardo", "Clérigo", "Feiticeiro", "Mago"] },
   { name: "Mãos Mágicas", level: 0, school: "Conjuração", classes: ["Bardo", "Feiticeiro", "Bruxo", "Mago"] },

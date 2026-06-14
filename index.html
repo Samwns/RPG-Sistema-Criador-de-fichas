@@ -275,6 +275,13 @@
                 </div>
                 <div id="autoAbilities" class="spell-catalog"></div>
               </section>
+              <section class="content-card">
+                <div class="section-title">
+                  <div><p class="panel-kicker">Compra pronta</p><h3>Catálogo de habilidades</h3></div>
+                  <label class="compact-filter"><span>Classe</span><select id="abilityClassFilter"></select></label>
+                </div>
+                <div id="abilityCatalog" class="spell-catalog"></div>
+              </section>
               <div id="skillBuilderMount"></div>
             </section>
 
@@ -405,6 +412,28 @@
               <section>
                 <h3 class="subsection-title">Loja inicial</h3>
                 <div id="equipmentShop" class="equipment-shop"></div>
+              </section>
+              <section class="content-card custom-item-card">
+                <div class="section-title">
+                  <div><p class="panel-kicker">Item personalizado</p><h3>Criar item da mesa</h3></div>
+                </div>
+                <div class="form-grid">
+                  <label><span>Nome</span><input id="customItemName" type="text" placeholder="Ex.: Lâmina da Aurora"></label>
+                  <label><span>Categoria</span><select id="customItemCategory"><option>Arma</option><option>Armadura</option><option>Acessório</option><option>Foco</option><option>Consumível</option><option>Aventura</option></select></label>
+                  <label><span>Raridade</span><select id="customItemRarity"><option>Comum</option><option>Incomum</option><option>Raro</option><option>Muito raro</option><option>Lendário</option></select></label>
+                  <label><span>Custo</span><input id="customItemCost" type="number" min="0" value="8"></label>
+                  <label><span>Dado da arma</span><select id="customItemDie"><option value="">Nenhum</option><option value="4">d4</option><option value="6">d6</option><option value="8">d8</option><option value="10">d10</option><option value="12">d12</option></select></label>
+                  <label><span>Atributo</span><select id="customItemAttribute"><option value="for">FOR</option><option value="dex">DEX</option><option value="int">INT</option><option value="sab">SAB</option><option value="car">CAR</option></select></label>
+                  <label><span>Bônus ataque</span><input id="customItemAttack" type="number" value="0"></label>
+                  <label><span>Bônus dano</span><input id="customItemDamage" type="number" value="0"></label>
+                  <label><span>Bônus CA</span><input id="customItemArmor" type="number" value="0"></label>
+                  <label><span>Bônus magia</span><input id="customItemSpell" type="number" value="0"></label>
+                  <label><span>Bônus PV máx.</span><input id="customItemHp" type="number" value="0"></label>
+                  <label><span>Bônus desloc.</span><input id="customItemSpeed" type="number" value="0"></label>
+                  <label class="full-width"><span>Efeito único</span><textarea id="customItemDescription" rows="3" placeholder="Explique o efeito especial do item..."></textarea></label>
+                </div>
+                <button id="addCustomItem" type="button">Adicionar item à loja</button>
+                <p id="customItemMessage" class="warning"></p>
               </section>
               <section class="content-card">
                 <h3>Itens comprados</h3>

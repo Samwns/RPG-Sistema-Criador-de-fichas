@@ -148,18 +148,18 @@ export const xpThresholds = [
 ];
 
 export const classData = {
-  "Bárbaro": { multiclass: { all: ["for"] }, hitDie: "d12", subclasses: ["Caminho do Berserker", "Caminho Primal Personalizado"], core: ["Fúria", "Defesa sem Armadura", "Ataque Imprudente", "Ataque Extra", "Crítico Brutal"] },
-  "Guerreiro": { multiclass: { any: ["for", "dex"] }, hitDie: "d10", subclasses: ["Campeão", "Arquétipo Marcial Personalizado"], core: ["Estilo de Luta", "Retomar o Fôlego", "Surto de Ação", "Ataque Extra", "Indomável"] },
-  "Paladino": { multiclass: { all: ["for", "car"] }, hitDie: "d10", subclasses: ["Juramento de Devoção", "Juramento Personalizado"], core: ["Imposição das Mãos", "Punição Divina", "Aura de Proteção", "Ataque Extra", "Toque Purificador"] },
-  "Patrulheiro": { multiclass: { all: ["dex", "sab"] }, hitDie: "d10", subclasses: ["Caçador", "Conclave Personalizado"], core: ["Inimigo Favorito", "Explorador Hábil", "Estilo de Luta", "Ataque Extra", "Incansável"] },
-  "Ladino": { multiclass: { all: ["dex"] }, hitDie: "d8", subclasses: ["Ladrão", "Arquétipo Ladino Personalizado"], core: ["Ataque Furtivo", "Especialização", "Ação Ardilosa", "Esquiva Sobrenatural", "Evasão"] },
-  "Monge": { multiclass: { all: ["dex", "sab"] }, hitDie: "d8", subclasses: ["Mão Aberta", "Tradição Monástica Personalizada"], core: ["Artes Marciais", "Foco", "Movimento sem Armadura", "Ataque Extra", "Evasão"] },
-  "Bardo": { multiclass: { all: ["car"] }, hitDie: "d8", subclasses: ["Colégio do Conhecimento", "Colégio Personalizado"], core: ["Inspiração de Bardo", "Versatilidade", "Especialização", "Fonte de Inspiração", "Segredos Mágicos"] },
-  "Clérigo": { multiclass: { all: ["sab"] }, hitDie: "d8", subclasses: ["Domínio da Vida", "Domínio Divino Personalizado"], core: ["Conjuração", "Canalizar Divindade", "Destruir Mortos-Vivos", "Intervenção Divina"] },
-  "Mago": { multiclass: { all: ["int"] }, hitDie: "d6", subclasses: ["Evocador", "Tradição Arcana Personalizada"], core: ["Grimório", "Recuperação Arcana", "Memorizar Magia", "Maestria em Magia", "Magias Características"] },
-  "Feiticeiro": { multiclass: { all: ["car"] }, hitDie: "d6", subclasses: ["Feitiçaria Dracônica", "Origem Feiticeira Personalizada"], core: ["Conjuração Inata", "Fonte de Magia", "Metamagia", "Restauração Feiticeira"] },
-  "Bruxo": { multiclass: { all: ["car"] }, hitDie: "d8", subclasses: ["Patrono Corruptor", "Patrono Personalizado"], core: ["Magia de Pacto", "Invocações Místicas", "Dádiva do Pacto", "Arcanos Místicos"] },
-  "Druida": { multiclass: { all: ["sab"] }, hitDie: "d8", subclasses: ["Círculo da Terra", "Círculo Druídico Personalizado"], core: ["Druídico", "Conjuração", "Forma Selvagem", "Corpo Atemporal", "Arquedruida"] }
+  "Bárbaro": { multiclass: { all: ["for"] }, hitDie: "d12", subclasses: ["Caminho do Berserker", "Caminho do Guardião Totêmico"], core: ["Fúria", "Defesa sem Armadura", "Ataque Imprudente", "Ataque Extra", "Crítico Brutal"] },
+  "Guerreiro": { multiclass: { any: ["for", "dex"] }, hitDie: "d10", subclasses: ["Campeão", "Mestre de Manobras"], core: ["Estilo de Luta", "Retomar o Fôlego", "Surto de Ação", "Ataque Extra", "Indomável"] },
+  "Paladino": { multiclass: { all: ["for", "car"] }, hitDie: "d10", subclasses: ["Juramento de Devoção", "Juramento da Aurora"], core: ["Imposição das Mãos", "Punição Divina", "Aura de Proteção", "Ataque Extra", "Toque Purificador"] },
+  "Patrulheiro": { multiclass: { all: ["dex", "sab"] }, hitDie: "d10", subclasses: ["Caçador", "Guardião das Feras"], core: ["Inimigo Favorito", "Explorador Hábil", "Estilo de Luta", "Ataque Extra", "Incansável"] },
+  "Ladino": { multiclass: { all: ["dex"] }, hitDie: "d8", subclasses: ["Ladrão", "Sombra Cortante"], core: ["Ataque Furtivo", "Especialização", "Ação Ardilosa", "Esquiva Sobrenatural", "Evasão"] },
+  "Monge": { multiclass: { all: ["dex", "sab"] }, hitDie: "d8", subclasses: ["Mão Aberta", "Caminho da Sombra"], core: ["Artes Marciais", "Foco", "Movimento sem Armadura", "Ataque Extra", "Evasão"] },
+  "Bardo": { multiclass: { all: ["car"] }, hitDie: "d8", subclasses: ["Colégio do Conhecimento", "Colégio do Valor"], core: ["Inspiração de Bardo", "Versatilidade", "Especialização", "Fonte de Inspiração", "Segredos Mágicos"] },
+  "Clérigo": { multiclass: { all: ["sab"] }, hitDie: "d8", subclasses: ["Domínio da Vida", "Domínio da Luz"], core: ["Conjuração", "Canalizar Divindade", "Destruir Mortos-Vivos", "Intervenção Divina"] },
+  "Mago": { multiclass: { all: ["int"] }, hitDie: "d6", subclasses: ["Evocador", "Ilusionista"], core: ["Grimório", "Recuperação Arcana", "Memorizar Magia", "Maestria em Magia", "Magias Características"] },
+  "Feiticeiro": { multiclass: { all: ["car"] }, hitDie: "d6", subclasses: ["Feitiçaria Dracônica", "Magia Selvagem Controlada"], core: ["Conjuração Inata", "Fonte de Magia", "Metamagia", "Restauração Feiticeira"] },
+  "Bruxo": { multiclass: { all: ["car"] }, hitDie: "d8", subclasses: ["Patrono Corruptor", "Patrono Feérico"], core: ["Magia de Pacto", "Invocações Místicas", "Dádiva do Pacto", "Arcanos Místicos"] },
+  "Druida": { multiclass: { all: ["sab"] }, hitDie: "d8", subclasses: ["Círculo da Terra", "Círculo da Lua"], core: ["Druídico", "Conjuração", "Forma Selvagem", "Corpo Atemporal", "Arquedruida"] }
 };
 
 export const universalLevelFeatures = {
@@ -195,11 +195,33 @@ export const raceAbilityBySubrace = {
   Robusto: "Resiliência contra veneno.",
   "Humano Versátil": "Perícia ou talento inicial adaptado.",
   "Humano Heroico": "Impulso heroico uma vez por descanso.",
+  "Ancestral de Fogo": "Sopro elemental e resistência a fogo.",
+  "Ancestral de Frio": "Sopro elemental e resistência a frio.",
+  "Ancestral de Eletricidade": "Sopro elemental e resistência elétrica.",
+  "Ancestral de Ácido": "Sopro elemental e resistência a ácido.",
+  "Ancestral de Veneno": "Sopro elemental e resistência a veneno.",
+  "Gnomo da Floresta": "Ilusão menor e fala com animais pequenos.",
+  "Gnomo das Rochas": "Conhecimento de artífice.",
+  "Herança Versátil": "Combina duas aptidões adicionais.",
+  "Herança Orc": "Força e resistência física.",
   "Linhagem Infernal": "Resistência a fogo e magia infernal.",
+  "Linhagem Abissal": "Resistência a fogo e magia infernal.",
+  "Orc Errante": "Mobilidade e vigor.",
+  "Gigante das Colinas": "Derruba criaturas com impacto.",
+  "Gigante de Pedra": "Resistência e firmeza pétrea.",
+  "Gigante de Gelo": "Resistência e legado do frio.",
+  "Gigante de Fogo": "Legado ígneo.",
   "Gigante das Nuvens": "Passo sobrenatural de ancestral gigante.",
   "Gigante das Tempestades": "Retaliação trovejante.",
   Sentinela: "Proteção integrada.",
-  Especialista: "Ferramentas integradas."
+  Especialista: "Ferramentas integradas.",
+  "Guardião Silvestre": "Magia natural e invisibilidade curta.",
+  "Viajante Felino": "Explosão de velocidade felina.",
+  "Goblin Astuto": "Movimento evasivo.",
+  Bugbear: "Alcance e surpresa.",
+  Hobgoblin: "Disciplina marcial.",
+  "Caçador dos Pântanos": "Sobrevivência anfíbia.",
+  "Chifres de Ferro": "Investida poderosa."
 };
 
 export const distInputs = [
