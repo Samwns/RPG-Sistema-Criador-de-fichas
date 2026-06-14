@@ -54,6 +54,31 @@ const casterManaByClass = {
   Monge: 2
 };
 
+const featurePowerOverrides = {
+  "Retomar o Fôlego": { effectType: "heal", die: 10, diceCount: 1, manaCost: 0, actionCost: "Ação bônus", duration: "Instantâneo" },
+  "Surto de Ação": { effectType: "utility", manaCost: 0, actionCost: "Livre no turno", duration: "1 turno" },
+  "Ataque Extra": { effectType: "utility", manaCost: 0, actionCost: "Passivo", duration: "Sempre ativo" },
+  "Estilo de Luta": { effectType: "utility", manaCost: 0, actionCost: "Passivo", duration: "Sempre ativo" },
+  "Proteção integrada.": { effectType: "utility", manaCost: 0, actionCost: "Passivo", duration: "Sempre ativo" },
+  "Mestre de Manobras": { effectType: "damage", die: 8, diceCount: 1, manaCost: 1, actionCost: "Ao acertar", duration: "Instantâneo" },
+  "Fúria": { effectType: "utility", manaCost: 0, actionCost: "Ação bônus", duration: "1 minuto" },
+  "Punição Divina": { effectType: "damage", die: 8, diceCount: 2, manaCost: 2, actionCost: "Ao acertar", duration: "Instantâneo" },
+  "Imposição das Mãos": { effectType: "heal", die: 6, diceCount: 2, manaCost: 1, actionCost: "Ação", duration: "Instantâneo" },
+  "Canalizar Divindade": { effectType: "utility", manaCost: 2, actionCost: "Ação", duration: "Cena" },
+  "Forma Selvagem": { effectType: "utility", manaCost: 2, actionCost: "Ação bônus", duration: "Cena" }
+};
+
+const spellSaveBySchool = {
+  Abjuração: "SAB",
+  Adivinhação: "nenhuma",
+  Conjuração: "DEX",
+  Encantamento: "SAB",
+  Evocação: "DEX",
+  Ilusão: "INT",
+  Necromancia: "CON",
+  Transmutação: "CON"
+};
+
 const legacyRaceMap = {
   'Alto Elfo': ['Elfo', 'Alto Elfo'],
   'Elfo da Floresta': ['Elfo', 'Elfo da Floresta'],
@@ -269,16 +294,33 @@ function getClassHitDieSides(className) {
 }
 
 function getAutoPowerProfile(power = {}) {
+  const override = featurePowerOverrides[power.name] || featurePowerOverrides[power.description] || {};
+  const merged = { ...override, ...power };
   const level = Math.max(1, Number(elements.nivel.value) || 1);
   const className = elements.classe1.value;
   const classDie = getClassAttackDie(classData[className]);
-  const die = power.die === 'auto' || !power.die ? classDie : Number(power.die);
+  const die = merged.die === 'auto' || !merged.die ? classDie : Number(merged.die);
   const baseCount = Math.max(1, Math.ceil(level / 5));
-  const diceCount = Number(power.diceCount) > 0 ? Number(power.diceCount) : baseCount;
+  const diceCount = Number(merged.diceCount) > 0 ? Number(merged.diceCount) : baseCount;
   const attribute = getBestClassAttackAttribute(classData[className]);
-  const bonus = Number(power.bonus || 0) || getAttributeModifier(attribute);
-  const manaCost = Number(power.manaCost || 0) || Math.max(0, Number(power.level || 0));
-  return { die, diceCount, bonus, manaCost };
+  const bonus = Number(merged.bonus || 0) || getAttributeModifier(attribute);
+  const manaCost = Number(merged.manaCost || 0) || Math.max(0, Number(merged.level || 0));
+  return {
+    die,
+    diceCount,
+    bonus,
+    manaCost,
+    actionCost: merged.actionCost || (merged.effectType === 'utility' ? 'Ação' : 'Ação'),
+    duration: merged.duration || (merged.effectType === 'utility' ? 'Cena' : 'Instantâneo'),
+    save: merged.save || '',
+    negation: merged.negation || ''
+  };
+}
+
+function escapeHtml(value = '') {
+  const div = document.createElement('div');
+  div.textContent = String(value);
+  return div.innerHTML;
 }
 
 function openDiceTab() {
@@ -718,7 +760,7 @@ function renderAbilityCatalog() {
     const canAfford = getSkillSpent() + cost <= getSkillLimit();
     const card = document.createElement('article');
     card.className = 'spell-card';
-    card.innerHTML = `<span>${ability.className} · Custo ${cost} ponto${cost > 1 ? 's' : ''}</span><h4>${ability.name}</h4><p>${ability.description}</p>`;
+    card.innerHTML = `<span>${ability.className} · Custo ${cost} ponto${cost > 1 ? 's' : ''}</span><h4>${ability.name}</h4><p>${ability.description}</p><small>${formatPowerMeta(ability)}</small>`;
     const button = document.createElement('button');
     button.type = 'button';
     button.textContent = owned ? 'Comprada' : 'Comprar';
@@ -823,7 +865,7 @@ function renderWeaponList() {
   weapons.forEach(weapon => {
     const modifier = getAttributeModifier(weapon.attribute);
     const proficiency = Number(elements.profBonus.value.replace('+', '')) || 0;
-    const attackBonus = modifier + proficiency + Number(weapon.attackBonus || 0);
+    const attackBonus = modifier + proficiency + Number(weapon.attackBonus || 0) + getPassiveAttackBonus();
     const damageBonus = modifier + Number(weapon.damageBonus || 0);
     const card = document.createElement('article');
     card.className = 'weapon-card';
@@ -879,7 +921,7 @@ function renderClassCombatStats() {
   if (!data || !container) return;
   const attackAttribute = getBestClassAttackAttribute(data);
   const proficiency = Number(elements.profBonus.value.replace('+', '')) || 0;
-  const attackBonus = getAttributeModifier(attackAttribute) + proficiency;
+  const attackBonus = getAttributeModifier(attackAttribute) + proficiency + getPassiveAttackBonus();
   const damageDie = getClassAttackDie(data);
   const damageBonus = getAttributeModifier(attackAttribute);
   document.getElementById('classCombatTitle').textContent = `${elements.classe1.value}: ataque base`;
@@ -949,10 +991,25 @@ function getItemBonus(key) {
   }, 0);
 }
 
+function hasAutomaticFeature(name) {
+  return getAutomaticAbilities().some(feature => feature.name === name || feature.description === name);
+}
+
+function getPassiveArmorBonus() {
+  let bonus = 0;
+  if (hasAutomaticFeature('Proteção integrada.')) bonus += 1;
+  if (hasAutomaticFeature('Estilo de Luta')) bonus += 1;
+  return bonus;
+}
+
+function getPassiveAttackBonus() {
+  return hasAutomaticFeature('Estilo de Luta') ? 1 : 0;
+}
+
 function getCalculatedArmorClass() {
   const manual = Number(document.getElementById('armorClass').value) || 10;
   const dexterity = getAttributeModifier('dex');
-  let calculated = manual;
+  let calculated = manual + getPassiveArmorBonus();
   inventory.forEach(itemId => {
     const item = getEquipmentCatalog().find(entry => entry.id === itemId);
     if (!item) return;
@@ -998,8 +1055,16 @@ function clampResources() {
 function formatPowerEffect(power) {
   const profile = getAutoPowerProfile(power);
   const labels = { damage: 'dano', heal: 'cura', mana: 'mana', utility: 'utilidade' };
-  if ((power.effectType || 'damage') === 'utility') return labels.utility;
-  return `${profile.diceCount}d${profile.die} ${formatSigned(profile.bonus)} ${labels[power.effectType || 'damage']}`;
+  const type = power.effectType || featurePowerOverrides[power.name]?.effectType || 'damage';
+  const save = profile.save && profile.save !== 'nenhuma' ? ` · teste ${profile.save}` : '';
+  const negation = profile.negation ? ` · ${profile.negation}` : '';
+  if (type === 'utility') return `${labels.utility} · ${profile.actionCost} · ${profile.duration}${save}${negation}`;
+  return `${profile.diceCount}d${profile.die} ${formatSigned(profile.bonus)} ${labels[type]} · ${profile.actionCost}${save}${negation}`;
+}
+
+function formatPowerMeta(power) {
+  const profile = getAutoPowerProfile(power);
+  return `Uso: ${profile.actionCost} · Duração: ${profile.duration} · Mana ${profile.manaCost} · ${formatPowerEffect(power)}`;
 }
 
 function formatUseLabel(power) {
@@ -1014,6 +1079,8 @@ function markUseButton(button, power) {
 function setResourceMessage(message) {
   const target = document.getElementById('resourceMessage');
   if (target) target.textContent = message;
+  const fileTarget = document.getElementById('fileMessage');
+  if (fileTarget && /arquivo|pdf|ficha importada|inválido/i.test(message)) fileTarget.textContent = message;
 }
 
 function updateResource(action, amount) {
@@ -1052,8 +1119,9 @@ function usePower(power, button = null) {
   saveDraftSoon();
   const type = power.effectType || 'damage';
   if (type === 'utility') {
-    setResourceMessage(`${power.name} usado. Mana restante: ${mana.value}.`);
-    elements.rollResult.innerHTML = `<span class="dice-icon">✓</span><span>${power.name}: usado</span>`;
+    const defense = profile.save && profile.save !== 'nenhuma' ? ` · Resistência ${profile.save}${profile.negation ? ` (${profile.negation})` : ''}` : '';
+    setResourceMessage(`${power.name} usado. ${profile.actionCost}, ${profile.duration}. Mana restante: ${mana.value}.${defense}`);
+    elements.rollResult.innerHTML = `<span class="dice-icon">✓</span><span>${power.name}: usado${defense}</span>`;
     if (button) animateRollButton(button);
     saveDraftSoon();
     return;
@@ -1067,8 +1135,9 @@ function usePower(power, button = null) {
       if (type === 'heal') updateResource('heal', total);
       if (type === 'mana') updateResource('restoreMana', total);
       const action = type === 'damage' ? 'dano' : type === 'heal' ? 'cura' : 'mana';
-      elements.rollResult.innerHTML = `<span class="dice-icon">${results.join(', ')}</span><span>${power.name}: ${total} ${action}</span>`;
-      setResourceMessage(`${power.name} causou ${total} de ${action}. Mana restante: ${mana.value}.`);
+      const defense = profile.save && profile.save !== 'nenhuma' ? ` · Resistência ${profile.save}${profile.negation ? ` (${profile.negation})` : ''}` : '';
+      elements.rollResult.innerHTML = `<span class="dice-icon">${results.join(', ')}</span><span>${power.name}: ${total} ${action}${defense}</span>`;
+      setResourceMessage(`${power.name}: ${total} ${action}. ${profile.actionCost}. Mana restante: ${mana.value}.${defense}`);
     }
   });
   if (button) animateRollButton(button);
@@ -1309,15 +1378,16 @@ function renderAutomaticAbilities() {
   abilities.forEach(ability => {
     const card = document.createElement('article');
     card.className = 'spell-card owned';
-    card.innerHTML = `<span>${ability.source}</span><h4>${ability.name}</h4><p>${ability.description}</p><small>Liberada pela progressão, sem gastar pontos de compra.</small>`;
+    card.innerHTML = `<span>${ability.source}</span><h4>${ability.name}</h4><p>${ability.description}</p><small>Liberada pela progressão, sem gastar pontos de compra. ${formatPowerMeta(ability)}</small>`;
     const useButton = document.createElement('button');
     useButton.type = 'button';
     const power = {
       name: ability.name,
       description: ability.description,
       origin: ability.source,
-      effectType: 'utility',
-      manaCost: 0
+      effectType: featurePowerOverrides[ability.name]?.effectType || featurePowerOverrides[ability.description]?.effectType || 'utility',
+      manaCost: featurePowerOverrides[ability.name]?.manaCost || featurePowerOverrides[ability.description]?.manaCost || 0,
+      ...(featurePowerOverrides[ability.name] || featurePowerOverrides[ability.description] || {})
     };
     markUseButton(useButton, power);
     useButton.addEventListener('click', () => usePower(power, useButton));
@@ -1354,10 +1424,10 @@ function renderFreeSpells() {
   spells.forEach(spell => {
     const card = document.createElement('article');
     card.className = 'spell-card owned';
-    card.innerHTML = `<span>${spell.level === 0 ? 'Truque' : `${spell.level}º círculo`} · ${spell.school}</span><h4>${spell.name}</h4><p>${describeSpell(spell)}</p>`;
+    const power = spellToPower(spell);
+    card.innerHTML = `<span>${spell.level === 0 ? 'Truque' : `${spell.level}º círculo`} · ${spell.school}</span><h4>${spell.name}</h4><p>${describeSpell(spell)}</p><small>${formatPowerMeta(power)}</small>`;
     const useButton = document.createElement('button');
     useButton.type = 'button';
-    const power = spellToPower(spell);
     markUseButton(useButton, power);
     useButton.addEventListener('click', () => usePower(power, useButton));
     const button = document.createElement('button');
@@ -1415,14 +1485,27 @@ function renderSpellCatalog() {
     spells.forEach(spell => {
       const card = document.createElement('article');
       card.className = 'spell-card';
-      card.innerHTML = `<span>${spell.level === 0 ? 'Truque' : `${spell.level}º círculo`} · ${spell.school}</span><h4>${spell.name}</h4><p>${describeSpell(spell)}</p>`;
-      const button = document.createElement('button');
-      button.type = 'button';
+      const power = spellToPower(spell);
+      card.innerHTML = `<span>${spell.level === 0 ? 'Truque' : `${spell.level}º círculo`} · ${spell.school}</span><h4>${spell.name}</h4><p>${describeSpell(spell)}</p><small>${formatPowerMeta(power)}</small>`;
       const purchased = purchasedSpells.includes(spell.name);
-      button.textContent = purchased ? 'Comprada' : `Comprar · ${getSpellCost(spell)} pts`;
-      button.disabled = purchased || spent + getSpellCost(spell) > budget;
-      button.addEventListener('click', () => buySpell(spell));
-      card.appendChild(button);
+      if (purchased) {
+        const useButton = document.createElement('button');
+        useButton.type = 'button';
+        markUseButton(useButton, power);
+        useButton.addEventListener('click', () => usePower(power, useButton));
+        const ownedTag = document.createElement('button');
+        ownedTag.type = 'button';
+        ownedTag.textContent = 'Comprada';
+        ownedTag.disabled = true;
+        card.append(useButton, ownedTag);
+      } else {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = `Comprar · ${getSpellCost(spell)} pts`;
+        button.disabled = spent + getSpellCost(spell) > budget;
+        button.addEventListener('click', () => buySpell(spell));
+        card.appendChild(button);
+      }
       catalog.appendChild(card);
     });
   }
@@ -1432,14 +1515,14 @@ function renderSpellCatalog() {
     if (!spell) return;
     const card = document.createElement('article');
     card.className = 'spell-card owned';
-    card.innerHTML = `<span>${spell.level === 0 ? 'Truque' : `${spell.level}º círculo`} · ${spell.school}</span><h4>${spell.name}</h4><p>${describeSpell(spell)}</p>`;
+    const power = spellToPower(spell);
+    card.innerHTML = `<span>${spell.level === 0 ? 'Truque' : `${spell.level}º círculo`} · ${spell.school}</span><h4>${spell.name}</h4><p>${describeSpell(spell)}</p><small>${formatPowerMeta(power)}</small>`;
     const prepareButton = document.createElement('button');
     prepareButton.type = 'button';
     prepareButton.textContent = 'Preparar';
     prepareButton.addEventListener('click', () => prepareSpell(spell));
     const useButton = document.createElement('button');
     useButton.type = 'button';
-    const power = spellToPower(spell);
     markUseButton(useButton, power);
     useButton.addEventListener('click', () => usePower(power, useButton));
     const sellButton = document.createElement('button');
@@ -1472,16 +1555,27 @@ function inferSpellType(spell) {
 
 function spellToPower(spell) {
   const level = Math.max(0, Number(spell.level) || 0);
+  const type = inferSpellType(spell);
+  const save = spell.save || spellSaveBySchool[spell.school] || 'nenhuma';
+  const negation = type === 'damage'
+    ? (level >= 1 ? 'metade no sucesso' : 'nega no sucesso')
+    : type === 'utility' && save !== 'nenhuma'
+      ? 'nega no sucesso'
+      : '';
   return {
     name: spell.name,
     description: describeSpell(spell),
     origin: spell.classes?.join('/') || 'Magia',
-    effectType: inferSpellType(spell),
+    effectType: type,
     level,
     die: spell.die || 'auto',
-    diceCount: spell.diceCount || Math.max(1, level || 1),
+    diceCount: spell.diceCount || Math.max(1, level ? level + 1 : 1),
     bonus: spell.bonus || 0,
-    manaCost: spell.manaCost ?? Math.max(0, level)
+    manaCost: spell.manaCost ?? Math.max(0, level),
+    actionCost: spell.actionCost || (level === 0 ? 'Ação' : 'Ação'),
+    duration: spell.duration || (type === 'damage' || type === 'heal' ? 'Instantâneo' : 'Concentração/cena'),
+    save,
+    negation
   };
 }
 
@@ -1522,7 +1616,7 @@ function renderCustomSpells() {
   customSpells.forEach((spell, index) => {
     const card = document.createElement('article');
     card.className = 'spell-card owned';
-    card.innerHTML = `<span>${spell.origin} · ${formatPowerEffect(spell)}</span><h4>${spell.name}</h4><p>${spell.description}</p>`;
+    card.innerHTML = `<span>${spell.origin}</span><h4>${spell.name}</h4><p>${spell.description}</p><small>${formatPowerMeta(spell)}</small>`;
     const useButton = document.createElement('button');
     useButton.type = 'button';
     markUseButton(useButton, spell);
@@ -1765,10 +1859,14 @@ function downloadTextFile(filename, content, type = 'application/json') {
   const link = document.createElement('a');
   link.href = url;
   link.download = filename;
+  link.rel = 'noopener';
+  link.style.display = 'none';
   document.body.appendChild(link);
-  link.click();
-  link.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  window.requestAnimationFrame(() => {
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+  });
 }
 
 function getExportFilename(extension) {
@@ -1787,8 +1885,9 @@ function exportCharacterFile() {
     exportedAt: new Date().toISOString(),
     character: getCharacterData()
   };
-  downloadTextFile(getExportFilename('json'), JSON.stringify(payload, null, 2));
-  setResourceMessage('Arquivo da ficha exportado em JSON.');
+  const filename = getExportFilename('json');
+  downloadTextFile(filename, JSON.stringify(payload, null, 2));
+  setResourceMessage(`Arquivo ${filename} exportado em JSON.`);
 }
 
 function importCharacterFile(event) {
@@ -1823,65 +1922,88 @@ function getPreparedSpellLines() {
     .join('');
 }
 
-function exportCharacterPdf() {
+function buildPrintableSheetHtml() {
   const character = getCharacterData();
   const automatic = getAutomaticAbilities();
   const freeSpells = getFreeSpells();
   const items = inventory
     .map(itemId => getEquipmentCatalog().find(item => item.id === itemId))
     .filter(Boolean);
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) {
-    setResourceMessage('Permita pop-ups para exportar a ficha em PDF.');
+  const photo = character.photo
+    ? `<img src="${escapeHtml(character.photo)}" alt="Retrato">`
+    : '<div class="empty-photo">Sem retrato</div>';
+  const purchasedSpellList = purchasedSpells
+    .map(name => spellCatalog.find(entry => entry.name === name))
+    .filter(Boolean);
+  const spellLines = [
+    ...freeSpells.map(item => `<li><b>${escapeHtml(item.name)}</b>: ${escapeHtml(describeSpell(item))} <em>${escapeHtml(formatPowerMeta(spellToPower(item)))}</em></li>`),
+    ...purchasedSpellList.map(item => `<li><b>${escapeHtml(item.name)}</b>: ${escapeHtml(describeSpell(item))} <em>${escapeHtml(formatPowerMeta(spellToPower(item)))}</em></li>`),
+    ...customSpells.map(item => `<li><b>${escapeHtml(item.name)}</b>: ${escapeHtml(item.description)} <em>${escapeHtml(formatPowerMeta(item))}</em></li>`),
+    getPreparedSpellLines()
+  ].join('');
+
+  return `
+    <main class="pdf-sheet">
+      <header class="pdf-header">
+        ${photo}
+        <div>
+          <p>Ficha exportada</p>
+          <h1>${escapeHtml(character.nome || 'Novo personagem')}</h1>
+          <strong>${escapeHtml(character.raca)} · ${escapeHtml(character.subraca)} · ${escapeHtml(character.classe1)} ${escapeHtml(character.nivelC1)} · Nível ${escapeHtml(character.nivel)}</strong>
+        </div>
+      </header>
+      <h2>Status</h2>
+      <section class="pdf-grid">
+        <div><b>PV</b>${escapeHtml(document.getElementById('currentHp').value)} / ${getCalculatedMaxHp()}</div>
+        <div><b>Mana</b>${escapeHtml(document.getElementById('currentMana').value)} / ${getCalculatedMaxMana()}</div>
+        <div><b>CA</b>${getCalculatedArmorClass()}</div>
+        <div><b>Proficiência</b>${escapeHtml(elements.profBonus.value)}</div>
+        <div><b>Deslocamento</b>${escapeHtml(getCalculatedSpeed())}</div>
+        <div><b>Dado de vida</b>${escapeHtml(character.hitDie)}</div>
+      </section>
+      <h2>Atributos</h2>
+      <section class="pdf-grid">
+        ${['For', 'Dex', 'Con', 'Int', 'Sab', 'Car'].map(key => `<div><b>${key.toUpperCase()}</b>${escapeHtml(document.getElementById(`total${key}`).textContent)} (${escapeHtml(document.getElementById(`mod${key}`).textContent)})</div>`).join('')}
+      </section>
+      <section class="pdf-two">
+        <div>
+          <h2>Habilidades</h2>
+          <ul>
+            ${automatic.map(item => `<li><b>${escapeHtml(item.name)}</b>: ${escapeHtml(item.description)} <em>${escapeHtml(formatPowerMeta(item))}</em></li>`).join('')}
+            ${purchasedSkills.map(item => `<li><b>${escapeHtml(item.name)}</b>: ${escapeHtml(item.description)} <em>${escapeHtml(formatPowerMeta(item))}</em></li>`).join('')}
+          </ul>
+        </div>
+        <div>
+          <h2>Magias</h2>
+          <ul>${spellLines || '<li>Nenhuma magia registrada.</li>'}</ul>
+        </div>
+      </section>
+      <h2>Equipamento</h2>
+      <ul>${items.map(item => `<li><b>${escapeHtml(item.name)}</b>: ${escapeHtml(item.description)}</li>`).join('') || '<li>Nenhum item.</li>'}</ul>
+      <h2>História</h2>
+      <div class="pdf-box">${escapeHtml(character.historia || 'Sem história registrada.')}</div>
+    </main>
+  `;
+}
+
+function exportCharacterPdf() {
+  const target = document.getElementById('printSheet');
+  if (!target) {
+    setResourceMessage('Não encontrei a área de impressão da ficha.');
     return;
   }
-  const photo = character.photo ? `<img src="${character.photo}" alt="Retrato">` : '<div class="empty-photo">Sem retrato</div>';
-  printWindow.document.write(`<!doctype html>
-    <html lang="pt-BR">
-    <head>
-      <meta charset="utf-8">
-      <title>${character.nome || 'Ficha'} · PDF</title>
-      <style>
-        @page { size: A4; margin: 14mm; }
-        * { box-sizing: border-box; }
-        body { margin: 0; color: #303030; font-family: Georgia, serif; background: #f7f3ec; }
-        .sheet { padding: 22px; border: 2px solid #333; border-radius: 18px; background: #fffaf2; }
-        header { display: grid; grid-template-columns: 130px 1fr; gap: 18px; align-items: center; border-bottom: 2px solid #333; padding-bottom: 16px; }
-        img, .empty-photo { width: 130px; height: 160px; object-fit: contain; border: 2px solid #333; border-radius: 12px; background: #eee; display: grid; place-items: center; font: 700 12px sans-serif; }
-        h1 { margin: 0; font-size: 42px; line-height: .95; font-style: italic; text-transform: lowercase; }
-        h2 { margin: 18px 0 8px; font-size: 20px; border-bottom: 1px solid #aaa; }
-        .meta, .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-        .box { padding: 9px; border: 1px solid #aaa; border-radius: 8px; background: #fff; min-height: 44px; }
-        .box b { display: block; font: 700 10px sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #666; }
-        ul { margin: 6px 0 0; padding-left: 18px; }
-        .wide { grid-column: 1 / -1; }
-        .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-      </style>
-    </head>
-    <body>
-      <main class="sheet">
-        <header>${photo}<div><h1>${character.nome || 'Novo personagem'}</h1><p>${character.raca} · ${character.subraca} · ${character.classe1} ${character.nivelC1} · Nível ${character.nivel}</p></div></header>
-        <h2>Status</h2>
-        <section class="meta">
-          <div class="box"><b>PV</b>${document.getElementById('currentHp').value} / ${getCalculatedMaxHp()}</div>
-          <div class="box"><b>Mana</b>${document.getElementById('currentMana').value} / ${getCalculatedMaxMana()}</div>
-          <div class="box"><b>CA</b>${getCalculatedArmorClass()}</div>
-          <div class="box"><b>Proficiência</b>${elements.profBonus.value}</div>
-          <div class="box"><b>Deslocamento</b>${getCalculatedSpeed()}</div>
-          <div class="box"><b>Dado de vida</b>${character.hitDie}</div>
-        </section>
-        <h2>Atributos</h2>
-        <section class="grid">${['For','Dex','Con','Int','Sab','Car'].map(key => `<div class="box"><b>${key.toUpperCase()}</b>${document.getElementById(`total${key}`).textContent} (${document.getElementById(`mod${key}`).textContent})</div>`).join('')}</section>
-        <section class="two">
-          <div><h2>Habilidades</h2><ul>${automatic.map(item => `<li><b>${item.name}</b>: ${item.description}</li>`).join('')}${purchasedSkills.map(item => `<li><b>${item.name}</b> · mana ${getAutoPowerProfile(item).manaCost}: ${item.description}</li>`).join('')}</ul></div>
-          <div><h2>Magias</h2><ul>${freeSpells.map(item => `<li><b>${item.name}</b>: ${describeSpell(item)}</li>`).join('')}${customSpells.map(item => `<li><b>${item.name}</b> · mana ${getAutoPowerProfile(item).manaCost}: ${item.description}</li>`).join('')}${getPreparedSpellLines()}</ul></div>
-        </section>
-        <h2>Equipamento</h2><ul>${items.map(item => `<li><b>${item.name}</b>: ${item.description}</li>`).join('') || '<li>Nenhum item.</li>'}</ul>
-        <h2>História</h2><div class="box wide">${character.historia || 'Sem história registrada.'}</div>
-      </main>
-      <script>window.addEventListener('load', () => { window.print(); });</script>
-    </body></html>`);
-  printWindow.document.close();
+  target.innerHTML = buildPrintableSheetHtml();
+  document.body.classList.add('printing-sheet');
+  setResourceMessage('PDF pronto. Na janela de impressão, escolha “Salvar como PDF”.');
+  const cleanup = () => {
+    document.body.classList.remove('printing-sheet');
+    window.removeEventListener('afterprint', cleanup);
+  };
+  window.addEventListener('afterprint', cleanup, { once: true });
+  window.setTimeout(() => {
+    window.print();
+    window.setTimeout(cleanup, 1200);
+  }, 80);
 }
 
 function saveDraftNow() {

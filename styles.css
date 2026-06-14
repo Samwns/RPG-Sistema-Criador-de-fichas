@@ -594,6 +594,11 @@ textarea:focus-visible {
   justify-content: flex-end;
 }
 
+.file-message {
+  flex-basis: 100%;
+  text-align: right;
+}
+
 .content-card,
 .spellbook article,
 .book-card,
@@ -1504,7 +1509,7 @@ input[type="file"] {
   touch-action: none;
 }
 
-.dice-result-container {
+  .dice-result-container {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2223,8 +2228,130 @@ input[type="file"] {
     height: 360px;
   }
 
-  .dice-result-container {
+.dice-result-container {
     flex-wrap: wrap;
+  }
+}
+
+.print-sheet {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+
+  body.printing-sheet {
+    background: #fff;
+  }
+
+  body.printing-sheet .riche-app {
+    display: none !important;
+  }
+
+  body.printing-sheet .print-sheet {
+    display: block !important;
+    color: #303030;
+    font-family: Georgia, serif;
+    background: #fff;
+  }
+
+  body.printing-sheet .pdf-sheet {
+    padding: 18px;
+    border: 2px solid #333;
+    border-radius: 18px;
+    background: #fffaf2;
+  }
+
+  body.printing-sheet .pdf-header {
+    display: grid;
+    grid-template-columns: 130px 1fr;
+    gap: 18px;
+    align-items: center;
+    border-bottom: 2px solid #333;
+    padding-bottom: 16px;
+  }
+
+  body.printing-sheet .pdf-header img,
+  body.printing-sheet .empty-photo {
+    display: grid;
+    width: 130px;
+    height: 160px;
+    place-items: center;
+    object-fit: contain;
+    border: 2px solid #333;
+    border-radius: 12px;
+    background: #eee;
+    font: 700 12px sans-serif;
+  }
+
+  body.printing-sheet .pdf-header p {
+    margin: 0 0 6px;
+    font: 700 10px sans-serif;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: #666;
+  }
+
+  body.printing-sheet .pdf-header h1 {
+    margin: 0;
+    font-size: 42px;
+    line-height: .95;
+    font-style: italic;
+    text-transform: lowercase;
+  }
+
+  body.printing-sheet .pdf-sheet h2 {
+    margin: 18px 0 8px;
+    font-size: 20px;
+    border-bottom: 1px solid #aaa;
+  }
+
+  body.printing-sheet .pdf-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  body.printing-sheet .pdf-grid div,
+  body.printing-sheet .pdf-box {
+    min-height: 44px;
+    padding: 9px;
+    border: 1px solid #aaa;
+    border-radius: 8px;
+    background: #fff;
+  }
+
+  body.printing-sheet .pdf-grid b {
+    display: block;
+    font: 700 10px sans-serif;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: #666;
+  }
+
+  body.printing-sheet .pdf-two {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  body.printing-sheet ul {
+    margin: 6px 0 0;
+    padding-left: 18px;
+  }
+
+  body.printing-sheet li {
+    break-inside: avoid;
+    margin-bottom: 4px;
+  }
+
+  body.printing-sheet em {
+    display: block;
+    color: #666;
+    font-size: 11px;
   }
 }
 
