@@ -7,10 +7,9 @@
 
   [![Release](https://img.shields.io/github/v/release/Samwns/RPG-Sistema-Criador-de-fichas?display_name=tag&sort=semver)](https://github.com/Samwns/RPG-Sistema-Criador-de-fichas/releases/latest)
   [![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-live-blue?logo=github)](https://samwns.github.io/RPG-Sistema-Criador-de-fichas/)
-  [![Demo](https://img.shields.io/badge/demo-local-blue)](index.html)
   [![License](https://img.shields.io/github/license/Samwns/RPG-Sistema-Criador-de-fichas)](LICENSE)
 
-  [**Demo Local**](index.html) · [**Crie a sua ficha**](index.html)
+  [**Crie a sua ficha**](https://samwns.github.io/RPG-Sistema-Criador-de-fichas/)
 </div>
 
 ## Sobre
@@ -29,6 +28,9 @@ Este projeto fornece um criador de fichas para RPG com foco em D&D, usando uma i
 - Combinações de vários tipos de dados na mesma rolagem
 - Ataques e danos conectados ao mesmo tabuleiro 3D
 - Progressão por XP, subclasses, validação de multiclasse e magias prontas por classe
+- Seleção de raça e subraça/linhagem com opções atuais e legadas adaptadas
+- Compra e preparação de magias até o 9º círculo
+- Imagens por arquivo local ou URL para banner, retrato e habilidades
 - Sistema com subabas didáticas para raças, classes, perícias, feitiços, habilidades e equipamentos
 
 O design funciona em dispositivos móveis e desktop.
