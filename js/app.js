@@ -376,6 +376,22 @@ function init() {
     if (tab) tab.click();
   });
 
+  const diceWidget = document.getElementById('ui-container');
+  const dicePanel = document.getElementById('dicePanel');
+  const diceToggle = document.getElementById('diceToggle');
+  const diceClose = document.getElementById('diceClose');
+
+  const setDicePanelOpen = open => {
+    diceWidget.classList.toggle('open', open);
+    diceToggle.setAttribute('aria-expanded', String(open));
+    dicePanel.setAttribute('aria-hidden', String(!open));
+  };
+
+  diceToggle.addEventListener('click', () => {
+    setDicePanelOpen(!diceWidget.classList.contains('open'));
+  });
+  diceClose.addEventListener('click', () => setDicePanelOpen(false));
+
   setupTabs();
   initDiceRoller();
   toggleMulticlassFields();

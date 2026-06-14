@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/ofs-256.png" width="112" height="112" alt="RPG Sistema Criador de Fichas icon">
+  <img src="docs/ofs-256.svg" width="112" height="112" alt="RPG Sistema Criador de Fichas icon">
 
   # RPG Sistema Criador de Fichas
 

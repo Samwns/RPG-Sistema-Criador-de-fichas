@@ -16,11 +16,25 @@
   </script>
 </head>
 <body>
-  <div id="ui-container">
-    <div class="dice-roller-section">
+  <div id="ui-container" class="dice-widget">
+    <button
+      id="diceToggle"
+      class="dice-toggle"
+      type="button"
+      aria-expanded="false"
+      aria-controls="dicePanel"
+    >
+      <span class="dice-toggle-icon" aria-hidden="true">20</span>
+      <span>Rolar dados</span>
+    </button>
+
+    <div id="dicePanel" class="dice-roller-section" aria-hidden="true">
       <div class="dice-roller-header">
-        <h2 class="dice-roller-title">Rolar Dados</h2>
-        <p class="dice-roller-subtitle">Clique no dado para ativar a magia</p>
+        <div>
+          <h2 class="dice-roller-title">Rolar Dados</h2>
+          <p class="dice-roller-subtitle">Clique e arraste os dados para rolar</p>
+        </div>
+        <button id="diceClose" class="dice-close" type="button" aria-label="Fechar rolador de dados">×</button>
       </div>
       
       <div class="dice-roller-wrapper">
@@ -57,6 +71,7 @@
   </div>
 
   <main class="app-shell">
+    <header class="hero">
       <div>
         <p class="eyebrow">RPG Criador de Fichas</p>
         <h1>Ficha de Personagem Interativa</h1>

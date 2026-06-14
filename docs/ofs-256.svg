@@ -13,7 +13,10 @@
   <rect width="256" height="256" rx="48" fill="#0f172a" />
   <circle cx="128" cy="128" r="104" fill="url(#bg)" />
   <circle cx="128" cy="128" r="92" fill="none" stroke="url(#stroke)" stroke-width="12" />
-  <path d="M88 108c0-30 25-55 56-55s56 25 56 55c0 15-15 35-30 45c-5 3-9 9-6 14c3 5 9 7 14 4l35-20c6-3 11 0 14 5c3 6 0 13-6 16l-45 24c-10 5-24 4-34-2c-14-9-20-24-20-41c0-5 1-10 4-14c3-4 8-4 12-1c5 3 7 8 5 13c-2 8 0 20 10 27c10 7 22 7 32 1l26-14c4-2 6-7 4-11c-2-4-6-6-10-4l-24 13c-10 6-24 6-34 0c-15-8-23-23-23-40z"
-    fill="#f8fafc" opacity="0.95" />
-  <text x="128" y="188" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-weight="800" font-size="56" fill="#ffffff">D&amp;D</text>
+  <g fill="none" stroke="#f8fafc" stroke-linejoin="round">
+    <path d="M128 48 201 91 184 178 128 210 72 178 55 91Z" stroke-width="10" />
+    <path d="M128 48 95 112 128 210 161 112ZM55 91 95 112 72 178M201 91 161 112 184 178M95 112H161"
+      stroke-width="7" opacity=".9" />
+  </g>
+  <text x="128" y="143" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-weight="900" font-size="42" fill="#ffffff">20</text>
 </svg>
