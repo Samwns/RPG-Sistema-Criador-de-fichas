@@ -621,8 +621,9 @@ textarea:focus-visible {
 }
 
 .photo-preview {
-  min-height: 270px;
-  padding: 20px;
+  aspect-ratio: 4 / 5;
+  min-height: 0;
+  padding: 6px;
 }
 
 .photo-preview img,
@@ -630,7 +631,8 @@ textarea:focus-visible {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  background: rgba(68, 68, 68, .08);
+  border-radius: 6px;
+  background: rgba(244, 244, 242, .86);
 }
 
 .form-grid,
@@ -2028,7 +2030,7 @@ input[type="file"] {
   }
 
   .photo-preview {
-    min-height: 210px;
+    min-height: 0;
   }
 
   .summary-image {
