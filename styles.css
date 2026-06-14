@@ -963,6 +963,21 @@ input[type="file"] {
   overflow-wrap: anywhere;
 }
 
+.skill-price {
+  display: inline-flex;
+  width: max-content;
+  margin-top: 7px;
+  padding: .28rem .6rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff;
+  font-size: .58rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, .16);
+}
+
 .skill-card p {
   margin: 8px 0 12px;
   color: #666;

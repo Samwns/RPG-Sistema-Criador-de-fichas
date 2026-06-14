@@ -24,19 +24,19 @@ export const raceGrantedSpells = {
 };
 
 export const abilityCatalog = [
-  { className: "Geral", name: "Talento Adaptável", description: "Escolha uma perícia ou ferramenta e ganhe proficiência narrativa nela." },
-  { className: "Bárbaro", name: "Investida Furiosa", description: "Ao entrar em fúria, avance até 3 m antes do primeiro ataque." },
-  { className: "Guerreiro", name: "Golpe Preciso", description: "Uma vez por combate, adicione +2 ao ataque depois de ver o resultado do d20." },
-  { className: "Paladino", name: "Punição Guardada", description: "Ao acertar, converta energia mágica em dano radiante extra definido pelo mestre." },
-  { className: "Patrulheiro", name: "Marca do Caçador", description: "Marque um alvo e ganhe +1 no dano contra ele até trocar de alvo." },
-  { className: "Ladino", name: "Sombra Oportunista", description: "Depois de se esconder, seu próximo ataque furtivo recebe +1 no dano." },
-  { className: "Monge", name: "Passo do Vento", description: "Gaste foco para deslocar-se sem provocar reação narrativa." },
-  { className: "Bardo", name: "Inspiração Cortante", description: "Reduza em 1d6 uma rolagem inimiga que você possa perceber." },
-  { className: "Clérigo", name: "Canalizar Milagre", description: "Use energia divina para curar ou repelir criaturas profanas." },
-  { className: "Druida", name: "Forma Selvagem Menor", description: "Assuma uma forma animal simples para exploração por curto período." },
-  { className: "Feiticeiro", name: "Metamagia: Acelerar", description: "Uma magia simples pode ser conjurada como ação rápida, se o mestre permitir." },
-  { className: "Bruxo", name: "Invocação: Visão Arcana", description: "Detecte traços mágicos próximos sem gastar espaço de magia." },
-  { className: "Mago", name: "Recuperação Arcana", description: "Recupere parte da energia mágica após um descanso curto." }
+  { className: "Geral", name: "Talento Adaptável", cost: 1, description: "Escolha uma perícia ou ferramenta e ganhe proficiência narrativa nela." },
+  { className: "Bárbaro", name: "Investida Furiosa", cost: 1, description: "Ao entrar em fúria, avance até 3 m antes do primeiro ataque." },
+  { className: "Guerreiro", name: "Golpe Preciso", cost: 1, description: "Uma vez por combate, adicione +2 ao ataque depois de ver o resultado do d20." },
+  { className: "Paladino", name: "Punição Guardada", cost: 2, description: "Ao acertar, converta energia mágica em dano radiante extra definido pelo mestre." },
+  { className: "Patrulheiro", name: "Marca do Caçador", cost: 1, description: "Marque um alvo e ganhe +1 no dano contra ele até trocar de alvo." },
+  { className: "Ladino", name: "Sombra Oportunista", cost: 1, description: "Depois de se esconder, seu próximo ataque furtivo recebe +1 no dano." },
+  { className: "Monge", name: "Passo do Vento", cost: 1, description: "Gaste foco para deslocar-se sem provocar reação narrativa." },
+  { className: "Bardo", name: "Inspiração Cortante", cost: 2, description: "Reduza em 1d6 uma rolagem inimiga que você possa perceber." },
+  { className: "Clérigo", name: "Canalizar Milagre", cost: 2, description: "Use energia divina para curar ou repelir criaturas profanas." },
+  { className: "Druida", name: "Forma Selvagem Menor", cost: 2, description: "Assuma uma forma animal simples para exploração por curto período." },
+  { className: "Feiticeiro", name: "Metamagia: Acelerar", cost: 3, description: "Uma magia simples pode ser conjurada como ação rápida, se o mestre permitir." },
+  { className: "Bruxo", name: "Invocação: Visão Arcana", cost: 2, description: "Detecte traços mágicos próximos sem gastar espaço de magia." },
+  { className: "Mago", name: "Recuperação Arcana", cost: 2, description: "Recupere parte da energia mágica após um descanso curto." }
 ];
 
 export const spellCatalog = [

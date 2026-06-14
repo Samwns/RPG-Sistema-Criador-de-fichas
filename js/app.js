@@ -407,16 +407,24 @@ function getSkillLimit() {
   return Math.min(level, Math.floor(distributedPoints / 3));
 }
 
+function getSkillCost(skill) {
+  return Math.max(1, Number(skill?.cost) || 1);
+}
+
+function getSkillSpent() {
+  return purchasedSkills.reduce((sum, skill) => sum + getSkillCost(skill), 0);
+}
+
 function updateSkillBudget() {
   const limit = getSkillLimit();
-  const used = purchasedSkills.length;
+  const used = getSkillSpent();
   const available = Math.max(0, limit - used);
   document.getElementById('skillLimit').textContent = limit;
   document.getElementById('skillUsed').textContent = used;
   document.getElementById('skillAvailable').textContent = available;
 
   const addButton = document.getElementById('addSkill');
-  addButton.disabled = editingSkillIndex < 0 && available === 0;
+  addButton.disabled = editingSkillIndex < 0 && available < 1;
   addButton.title = available === 0 && editingSkillIndex < 0
     ? 'Distribua mais pontos de atributo ou aumente o nível.'
     : '';
@@ -465,6 +473,9 @@ function renderSkillCollection() {
     copy.className = 'skill-card-copy';
     const title = document.createElement('h4');
     title.textContent = skill.name;
+    const price = document.createElement('span');
+    price.className = 'skill-price';
+    price.textContent = `Custo ${getSkillCost(skill)} ponto${getSkillCost(skill) > 1 ? 's' : ''}`;
     const description = document.createElement('p');
     description.textContent = skill.description;
 
@@ -482,10 +493,12 @@ function renderSkillCollection() {
       if (editingSkillIndex === index) resetSkillEditor();
       renderSkillCollection();
       updateSkillBudget();
+      renderAbilityCatalog();
+      saveDraftSoon();
     });
 
     actions.append(editButton, deleteButton);
-    copy.append(title, description, actions);
+    copy.append(title, price, description, actions);
     card.append(image, copy);
     collection.appendChild(card);
   });
@@ -532,7 +545,7 @@ function saveSkillFromEditor() {
     return;
   }
 
-  if (editingSkillIndex < 0 && purchasedSkills.length >= getSkillLimit()) {
+  if (editingSkillIndex < 0 && getSkillSpent() + 1 > getSkillLimit()) {
     message.textContent = 'Sem pontos disponíveis. Distribua 3 pontos de atributo ou aumente o nível.';
     return;
   }
@@ -543,7 +556,8 @@ function saveSkillFromEditor() {
       : (crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`),
     name,
     description,
-    photo: skillPhoto
+    photo: skillPhoto,
+    cost: editingSkillIndex >= 0 ? getSkillCost(purchasedSkills[editingSkillIndex]) : 1
   };
 
   if (editingSkillIndex >= 0) purchasedSkills[editingSkillIndex] = skill;
@@ -552,23 +566,27 @@ function saveSkillFromEditor() {
   resetSkillEditor();
   renderSkillCollection();
   updateSkillBudget();
+  renderAbilityCatalog();
+  saveDraftSoon();
 }
 
 function buyCatalogAbility(ability) {
   const message = document.getElementById('skillMessage');
+  const cost = getSkillCost(ability);
   if (purchasedSkills.some(skill => skill.name === ability.name)) {
     message.textContent = 'Essa habilidade já foi comprada.';
     return;
   }
-  if (purchasedSkills.length >= getSkillLimit()) {
-    message.textContent = 'Sem espaços disponíveis para comprar habilidade.';
+  if (getSkillSpent() + cost > getSkillLimit()) {
+    message.textContent = `Sem pontos disponíveis. Essa habilidade custa ${cost} ponto${cost > 1 ? 's' : ''}.`;
     return;
   }
   purchasedSkills.push({
     id: crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`,
     name: ability.name,
     description: ability.description,
-    photo: ''
+    photo: '',
+    cost
   });
   renderSkillCollection();
   updateSkillBudget();
@@ -584,13 +602,16 @@ function renderAbilityCatalog() {
   container.innerHTML = '';
   options.forEach(ability => {
     const owned = purchasedSkills.some(skill => skill.name === ability.name);
+    const cost = getSkillCost(ability);
+    const canAfford = getSkillSpent() + cost <= getSkillLimit();
     const card = document.createElement('article');
     card.className = 'spell-card';
-    card.innerHTML = `<span>${ability.className}</span><h4>${ability.name}</h4><p>${ability.description}</p>`;
+    card.innerHTML = `<span>${ability.className} · Custo ${cost} ponto${cost > 1 ? 's' : ''}</span><h4>${ability.name}</h4><p>${ability.description}</p>`;
     const button = document.createElement('button');
     button.type = 'button';
     button.textContent = owned ? 'Comprada' : 'Comprar';
-    button.disabled = owned || purchasedSkills.length >= getSkillLimit();
+    button.disabled = owned || !canAfford;
+    button.title = !owned && !canAfford ? `Faltam ${getSkillSpent() + cost - getSkillLimit()} ponto(s) de habilidade.` : '';
     button.addEventListener('click', () => buyCatalogAbility(ability));
     card.appendChild(button);
     container.appendChild(card);
