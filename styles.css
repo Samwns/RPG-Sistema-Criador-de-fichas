@@ -1060,7 +1060,8 @@ input[type="file"] {
   color: transparent;
 }
 
-.combat-vitals input {
+.combat-vitals input,
+.magic-stats input {
   width: 52px;
   border: 0;
   padding: 0;
@@ -1072,6 +1073,29 @@ input[type="file"] {
 
 .magic-stats {
   grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.compact-action-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 10px 0 12px;
+}
+
+.resource-controls {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) repeat(4, auto);
+  gap: 10px;
+  align-items: end;
+}
+
+.resource-controls button {
+  border: 0;
+  border-radius: 7px;
+  padding: 13px 14px;
+  background: #444;
+  color: #eee;
+  font: 800 .65rem/1 var(--mono);
+  letter-spacing: .07em;
+  text-transform: uppercase;
 }
 
 .magic-budget,
@@ -2127,7 +2151,9 @@ input[type="file"] {
 
   .multiclass-grid,
   .magic-stats,
-  .class-combat-stats {
+  .class-combat-stats,
+  .compact-action-grid,
+  .resource-controls {
     grid-template-columns: 1fr;
   }
 

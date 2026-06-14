@@ -37,9 +37,22 @@ let bannerPhoto = '';
 let inventory = [];
 let customItems = [];
 let purchasedSpells = [];
+let customSpells = [];
 let themeColors = { primary: '#7EBAEE', secondary: '#F0A06F' };
 let isRestoringCharacter = false;
 let draftTimer = null;
+
+const casterManaByClass = {
+  Bardo: 6,
+  "Clérigo": 6,
+  Druida: 6,
+  Mago: 6,
+  Feiticeiro: 6,
+  Bruxo: 5,
+  Paladino: 3,
+  Patrulheiro: 3,
+  Monge: 2
+};
 
 const legacyRaceMap = {
   'Alto Elfo': ['Elfo', 'Alto Elfo'],
@@ -243,6 +256,27 @@ function getClassAttackDie(data) {
   return Number(String(data?.attackDie || '1d6').match(/d(\d+)/)?.[1] || 6);
 }
 
+function getDieAverage(sides) {
+  return (Number(sides) + 1) / 2;
+}
+
+function getClassHitDieSides(className) {
+  return Number(String(classData[className]?.hitDie || 'd8').replace('d', '')) || 8;
+}
+
+function getAutoPowerProfile(power = {}) {
+  const level = Math.max(1, Number(elements.nivel.value) || 1);
+  const className = elements.classe1.value;
+  const classDie = getClassAttackDie(classData[className]);
+  const die = power.die === 'auto' || !power.die ? classDie : Number(power.die);
+  const baseCount = Math.max(1, Math.ceil(level / 5));
+  const diceCount = Number(power.diceCount) > 0 ? Number(power.diceCount) : baseCount;
+  const attribute = getBestClassAttackAttribute(classData[className]);
+  const bonus = Number(power.bonus || 0) || getAttributeModifier(attribute);
+  const manaCost = Number(power.manaCost || 0) || Math.max(0, Number(power.level || 0));
+  return { die, diceCount, bonus, manaCost };
+}
+
 function openDiceTab() {
   document.querySelector('[data-target="tab-dados"]')?.click();
 }
@@ -399,6 +433,7 @@ function resetFicha() {
   document.getElementById('hitDie').value = 'd10';
   document.getElementById('castingStat').value = 'int';
   document.getElementById('spellSlots').value = 0;
+  document.getElementById('currentMana').value = 15;
   elements.multiclasse.checked = false;
   elements.nivelC1.value = 1;
   elements.nivelC2.value = 1;
@@ -412,6 +447,7 @@ function resetFicha() {
   inventory = [];
   customItems = [];
   purchasedSpells = [];
+  customSpells = [];
   bannerPhoto = '';
   applyDynamicTheme('#7EBAEE', '#F0A06F');
   resetSkillEditor();
@@ -440,6 +476,7 @@ function resetFicha() {
   });
   renderEquipment();
   renderSpellCatalog();
+  renderCustomSpells();
   synchronize();
 }
 
@@ -477,6 +514,12 @@ function resetSkillEditor() {
   editingSkillIndex = -1;
   elements.tituloHabilidade.value = '';
   elements.descricaoHabilidade.value = '';
+  document.getElementById('skillOrigin').value = 'Classe';
+  document.getElementById('skillEffectType').value = 'damage';
+  document.getElementById('skillDamageDie').value = 'auto';
+  document.getElementById('skillDiceCount').value = 0;
+  document.getElementById('skillFlatBonus').value = 0;
+  document.getElementById('skillManaCost').value = 0;
   document.getElementById('skillPhotoInput').value = '';
   document.getElementById('skillPhotoUrl').value = '';
   document.getElementById('skillPhotoPreview').textContent = 'Foto da habilidade';
@@ -517,7 +560,8 @@ function renderSkillCollection() {
     title.textContent = skill.name;
     const price = document.createElement('span');
     price.className = 'skill-price';
-    price.textContent = `Custo ${getSkillCost(skill)} ponto${getSkillCost(skill) > 1 ? 's' : ''}`;
+    const profile = getAutoPowerProfile(skill);
+    price.textContent = `Compra ${getSkillCost(skill)} · Mana ${profile.manaCost} · ${formatPowerEffect(skill)}`;
     const description = document.createElement('p');
     description.textContent = skill.description;
 
@@ -527,6 +571,10 @@ function renderSkillCollection() {
     editButton.type = 'button';
     editButton.textContent = 'Editar';
     editButton.addEventListener('click', () => editSkill(index));
+    const useButton = document.createElement('button');
+    useButton.type = 'button';
+    useButton.textContent = 'Usar';
+    useButton.addEventListener('click', () => usePower(skill, useButton));
     const deleteButton = document.createElement('button');
     deleteButton.type = 'button';
     deleteButton.textContent = 'Excluir';
@@ -539,7 +587,7 @@ function renderSkillCollection() {
       saveDraftSoon();
     });
 
-    actions.append(editButton, deleteButton);
+    actions.append(useButton, editButton, deleteButton);
     copy.append(title, price, description, actions);
     card.append(image, copy);
     collection.appendChild(card);
@@ -566,6 +614,12 @@ function editSkill(index) {
   skillPhoto = skill.photo || '';
   elements.tituloHabilidade.value = skill.name;
   elements.descricaoHabilidade.value = skill.description;
+  document.getElementById('skillOrigin').value = skill.origin || 'Classe';
+  document.getElementById('skillEffectType').value = skill.effectType || 'damage';
+  document.getElementById('skillDamageDie').value = skill.die || 'auto';
+  document.getElementById('skillDiceCount').value = skill.diceCount || 0;
+  document.getElementById('skillFlatBonus').value = skill.bonus || 0;
+  document.getElementById('skillManaCost').value = skill.manaCost || 0;
   const preview = document.getElementById('skillPhotoPreview');
   preview.innerHTML = skillPhoto
     ? `<img src="${skillPhoto}" alt="Imagem da habilidade">`
@@ -599,7 +653,13 @@ function saveSkillFromEditor() {
     name,
     description,
     photo: skillPhoto,
-    cost: editingSkillIndex >= 0 ? getSkillCost(purchasedSkills[editingSkillIndex]) : 1
+    cost: editingSkillIndex >= 0 ? getSkillCost(purchasedSkills[editingSkillIndex]) : 1,
+    origin: document.getElementById('skillOrigin').value,
+    effectType: document.getElementById('skillEffectType').value,
+    die: document.getElementById('skillDamageDie').value,
+    diceCount: Number(document.getElementById('skillDiceCount').value || 0),
+    bonus: Number(document.getElementById('skillFlatBonus').value || 0),
+    manaCost: Number(document.getElementById('skillManaCost').value || 0)
   };
 
   if (editingSkillIndex >= 0) purchasedSkills[editingSkillIndex] = skill;
@@ -628,7 +688,13 @@ function buyCatalogAbility(ability) {
     name: ability.name,
     description: ability.description,
     photo: '',
-    cost
+    cost,
+    origin: ability.className === 'Geral' ? 'Personalizada' : 'Classe',
+    effectType: ability.effectType || 'damage',
+    die: ability.die || 'auto',
+    diceCount: ability.diceCount || 0,
+    bonus: ability.bonus || 0,
+    manaCost: ability.manaCost || 0
   });
   renderSkillCollection();
   updateSkillBudget();
@@ -893,7 +959,105 @@ function getCalculatedArmorClass() {
 }
 
 function getCalculatedMaxHp() {
-  return (Number(elements.vidaMaxima.value) || 0) + getItemBonus('maxHpBonus');
+  const con = getAttributeModifier('con');
+  const classHp = getClassBuild().reduce((sum, entry) => {
+    const sides = getClassHitDieSides(entry.className);
+    const level = Math.max(0, Number(entry.level) || 0);
+    if (!level) return sum;
+    const average = Math.floor(sides / 2) + 1;
+    return sum + sides + Math.max(0, level - 1) * average + con * level;
+  }, 0);
+  const raceHp = document.getElementById('subraca').value === 'Anão da Colina'
+    ? Number(elements.nivel.value || 1)
+    : 0;
+  return Math.max(Number(elements.vidaMaxima.value) || 0, classHp + raceHp) + getItemBonus('maxHpBonus');
+}
+
+function getCalculatedMaxMana() {
+  const castingStat = document.getElementById('castingStat').value;
+  const castingBonus = Math.max(0, getAttributeModifier(castingStat));
+  const classMana = getClassBuild().reduce((sum, entry) => {
+    const perLevel = casterManaByClass[entry.className] || 1;
+    return sum + Math.max(0, Number(entry.level) || 0) * perLevel;
+  }, 0);
+  const racialMana = (raceGrantedSpells[document.getElementById('subraca').value] || []).length * 2;
+  return Math.max(Number(elements.pontosMagia.value) || 0, classMana + castingBonus + racialMana) + getItemBonus('spellBonus');
+}
+
+function clampResources() {
+  const hp = document.getElementById('currentHp');
+  const mana = document.getElementById('currentMana');
+  if (hp) hp.value = Math.min(Math.max(0, Number(hp.value || 0)), getCalculatedMaxHp());
+  if (mana) mana.value = Math.min(Math.max(0, Number(mana.value || 0)), getCalculatedMaxMana());
+}
+
+function formatPowerEffect(power) {
+  const profile = getAutoPowerProfile(power);
+  const labels = { damage: 'dano', heal: 'cura', mana: 'mana', utility: 'utilidade' };
+  if ((power.effectType || 'damage') === 'utility') return labels.utility;
+  return `${profile.diceCount}d${profile.die} ${formatSigned(profile.bonus)} ${labels[power.effectType || 'damage']}`;
+}
+
+function setResourceMessage(message) {
+  const target = document.getElementById('resourceMessage');
+  if (target) target.textContent = message;
+}
+
+function updateResource(action, amount) {
+  const value = Math.max(0, Number(amount) || 0);
+  const hp = document.getElementById('currentHp');
+  const mana = document.getElementById('currentMana');
+  const maxHp = getCalculatedMaxHp();
+  const maxMana = getCalculatedMaxMana();
+  if (action === 'damage') {
+    hp.value = Math.max(0, Number(hp.value || 0) - value);
+    setResourceMessage(`Recebeu ${value} de dano.`);
+  }
+  if (action === 'heal') {
+    hp.value = Math.min(maxHp, Number(hp.value || 0) + value);
+    setResourceMessage(`Curou ${value} PV.`);
+  }
+  if (action === 'spendMana') {
+    mana.value = Math.max(0, Number(mana.value || 0) - value);
+    setResourceMessage(`Gastou ${value} de mana.`);
+  }
+  if (action === 'restoreMana') {
+    mana.value = Math.min(maxMana, Number(mana.value || 0) + value);
+    setResourceMessage(`Recuperou ${value} de mana.`);
+  }
+  synchronize();
+}
+
+function usePower(power, button = null) {
+  const profile = getAutoPowerProfile(power);
+  const mana = document.getElementById('currentMana');
+  if (profile.manaCost > Number(mana.value || 0)) {
+    setResourceMessage(`${power.name} precisa de ${profile.manaCost} mana.`);
+    return;
+  }
+  mana.value = Math.max(0, Number(mana.value || 0) - profile.manaCost);
+  saveDraftSoon();
+  const type = power.effectType || 'damage';
+  if (type === 'utility') {
+    setResourceMessage(`${power.name} usado. Mana restante: ${mana.value}.`);
+    saveDraftSoon();
+    return;
+  }
+  rollDice({
+    sides: profile.die,
+    count: profile.diceCount,
+    modifier: profile.bonus,
+    label: power.name,
+    onComplete: ({ results, total }) => {
+      if (type === 'heal') updateResource('heal', total);
+      if (type === 'mana') updateResource('restoreMana', total);
+      const action = type === 'damage' ? 'dano' : type === 'heal' ? 'cura' : 'mana';
+      elements.rollResult.innerHTML = `<span class="dice-icon">${results.join(', ')}</span><span>${power.name}: ${total} ${action}</span>`;
+      setResourceMessage(`${power.name} causou ${total} de ${action}. Mana restante: ${mana.value}.`);
+    }
+  });
+  if (button) animateRollButton(button);
+  openDiceTab();
 }
 
 function getCalculatedSpeed() {
@@ -1164,11 +1328,15 @@ function renderFreeSpells() {
     const card = document.createElement('article');
     card.className = 'spell-card owned';
     card.innerHTML = `<span>${spell.level === 0 ? 'Truque' : `${spell.level}º círculo`} · ${spell.school}</span><h4>${spell.name}</h4><p>${describeSpell(spell)}</p>`;
+    const useButton = document.createElement('button');
+    useButton.type = 'button';
+    useButton.textContent = 'Usar';
+    useButton.addEventListener('click', () => usePower(spellToPower(spell), useButton));
     const button = document.createElement('button');
     button.type = 'button';
     button.textContent = 'Preparar';
     button.addEventListener('click', () => prepareSpell(spell));
-    card.appendChild(button);
+    card.append(useButton, button);
     container.appendChild(card);
   });
 }
@@ -1241,14 +1409,19 @@ function renderSpellCatalog() {
     prepareButton.type = 'button';
     prepareButton.textContent = 'Preparar';
     prepareButton.addEventListener('click', () => prepareSpell(spell));
+    const useButton = document.createElement('button');
+    useButton.type = 'button';
+    useButton.textContent = 'Usar';
+    useButton.addEventListener('click', () => usePower(spellToPower(spell), useButton));
     const sellButton = document.createElement('button');
     sellButton.type = 'button';
     sellButton.textContent = 'Vender';
     sellButton.addEventListener('click', () => sellSpell(spell));
-    card.append(prepareButton, sellButton);
+    card.append(useButton, prepareButton, sellButton);
     owned.appendChild(card);
   });
   if (!purchasedSpells.length) owned.innerHTML = '<p class="system-rule">Nenhuma magia comprada ainda.</p>';
+  renderCustomSpells();
 }
 
 function prepareSpell(spell) {
@@ -1258,6 +1431,84 @@ function prepareSpell(spell) {
   if (!current.includes(spell.name)) current.push(spell.name);
   textarea.value = current.join('\n');
   textarea.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+function inferSpellType(spell) {
+  const text = `${spell.name} ${spell.effect || ''}`.toLowerCase();
+  if (text.includes('curar') || text.includes('cura') || text.includes('restaura')) return 'heal';
+  if (text.includes('recupera') && text.includes('mana')) return 'mana';
+  if (spell.level === 0 || spell.school === 'Evocação' || text.includes('dano') || text.includes('raio') || text.includes('bola')) return 'damage';
+  return 'utility';
+}
+
+function spellToPower(spell) {
+  const level = Math.max(0, Number(spell.level) || 0);
+  return {
+    name: spell.name,
+    description: describeSpell(spell),
+    origin: spell.classes?.join('/') || 'Magia',
+    effectType: inferSpellType(spell),
+    level,
+    die: spell.die || 'auto',
+    diceCount: spell.diceCount || Math.max(1, level || 1),
+    bonus: spell.bonus || 0,
+    manaCost: spell.manaCost ?? Math.max(0, level)
+  };
+}
+
+function addCustomSpell() {
+  const name = document.getElementById('customSpellName').value.trim();
+  const message = document.getElementById('customSpellMessage');
+  if (!name) {
+    message.textContent = 'Dê um nome para a magia personalizada.';
+    return;
+  }
+  customSpells.push({
+    id: crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`,
+    name,
+    origin: document.getElementById('customSpellOrigin').value,
+    effectType: document.getElementById('customSpellType').value,
+    level: Number(document.getElementById('customSpellLevel').value || 0),
+    die: document.getElementById('customSpellDie').value,
+    diceCount: Number(document.getElementById('customSpellDiceCount').value || 0),
+    bonus: Number(document.getElementById('customSpellBonus').value || 0),
+    manaCost: Number(document.getElementById('customSpellManaCost').value || 0),
+    description: document.getElementById('customSpellDescription').value.trim() || 'Magia personalizada da ficha.'
+  });
+  message.textContent = `${name} adicionada.`;
+  document.getElementById('customSpellName').value = '';
+  document.getElementById('customSpellDescription').value = '';
+  renderCustomSpells();
+  saveDraftSoon();
+}
+
+function renderCustomSpells() {
+  const list = document.getElementById('customSpellList');
+  if (!list) return;
+  list.innerHTML = '';
+  if (!customSpells.length) {
+    list.innerHTML = '<p class="system-rule">Nenhuma magia personalizada ainda.</p>';
+    return;
+  }
+  customSpells.forEach((spell, index) => {
+    const card = document.createElement('article');
+    card.className = 'spell-card owned';
+    card.innerHTML = `<span>${spell.origin} · ${formatPowerEffect(spell)}</span><h4>${spell.name}</h4><p>${spell.description}</p>`;
+    const useButton = document.createElement('button');
+    useButton.type = 'button';
+    useButton.textContent = 'Usar';
+    useButton.addEventListener('click', () => usePower(spell, useButton));
+    const deleteButton = document.createElement('button');
+    deleteButton.type = 'button';
+    deleteButton.textContent = 'Excluir';
+    deleteButton.addEventListener('click', () => {
+      customSpells.splice(index, 1);
+      renderCustomSpells();
+      saveDraftSoon();
+    });
+    card.append(useButton, deleteButton);
+    list.appendChild(card);
+  });
 }
 
 function extractThemeFromImage(source) {
@@ -1360,7 +1611,7 @@ function updateSpellStats() {
   document.getElementById('spellSaveDc').textContent = 8 + proficiency + modifier + itemMagicBonus;
   document.getElementById('spellAttackBonus').textContent = formatSigned(proficiency + modifier + itemMagicBonus).replace(' ', '');
   document.getElementById('spellCastingStat').textContent = labels[castingStat];
-  document.getElementById('spellSlotTotal').textContent = document.getElementById('spellSlots').value || 0;
+  document.getElementById('maxMana').textContent = getCalculatedMaxMana();
 }
 
 function synchronize() {
@@ -1375,6 +1626,7 @@ function synchronize() {
   updateSkillBudget();
   updateSpellStats();
   updateClassProgression();
+  clampResources();
   renderEquipment();
   renderSpellCatalog();
   renderClassProgression();
@@ -1530,6 +1782,7 @@ function getCharacterData() {
     distCar: document.getElementById('distCar').value,
     pontosMagia: elements.pontosMagia.value,
     pontosVida: elements.pontosVida.value,
+    currentMana: document.getElementById('currentMana').value,
     castingStat: document.getElementById('castingStat').value,
     spellSlots: document.getElementById('spellSlots').value,
     historia: elements.historia.value,
@@ -1541,6 +1794,7 @@ function getCharacterData() {
     inventory,
     customItems,
     purchasedSpells,
+    customSpells,
     themeColors,
     storedFields: Object.fromEntries(
       [...document.querySelectorAll('[data-store]')].map(input => [input.dataset.store, input.value])
@@ -1606,6 +1860,7 @@ function loadCharacter(index) {
   document.getElementById('raceCar').value = character.raceCar || 0;
   elements.pontosMagia.value = character.pontosMagia || 15;
   elements.pontosVida.value = character.pontosVida || 15;
+  document.getElementById('currentMana').value = character.currentMana || character.pontosMagia || 15;
   document.getElementById('castingStat').value = character.castingStat || 'int';
   document.getElementById('spellSlots').value = character.spellSlots || 0;
   elements.historia.value = character.historia || '';
@@ -1617,6 +1872,7 @@ function loadCharacter(index) {
   inventory = Array.isArray(character.inventory) ? character.inventory : [];
   customItems = Array.isArray(character.customItems) ? character.customItems : [];
   purchasedSpells = Array.isArray(character.purchasedSpells) ? character.purchasedSpells : [];
+  customSpells = Array.isArray(character.customSpells) ? character.customSpells : [];
   themeColors = character.themeColors || { primary: '#7EBAEE', secondary: '#F0A06F' };
   resetSkillEditor();
   renderSkillCollection();
@@ -1779,6 +2035,7 @@ function init() {
     document.getElementById('speed'),
     document.getElementById('vision'),
     document.getElementById('hitDie'),
+    document.getElementById('currentMana'),
     document.getElementById('castingStat'),
     document.getElementById('spellSlots'),
     elements.tituloHabilidade,
@@ -1807,8 +2064,8 @@ function init() {
     });
   });
 
-  elements.pontosMagia.addEventListener('input', () => updateMagicLifeUI(elements.pontosMagia.value, elements.pontosVida.value, elements.nivel.value));
-  elements.pontosVida.addEventListener('input', () => updateMagicLifeUI(elements.pontosMagia.value, elements.pontosVida.value, elements.nivel.value));
+  elements.pontosMagia.addEventListener('input', synchronize);
+  elements.pontosVida.addEventListener('input', synchronize);
 
   document.querySelectorAll('[data-action="dados"]').forEach(button => {
     button.addEventListener('click', () => handleRoll(button.dataset.type));
@@ -1818,6 +2075,11 @@ function init() {
   document.getElementById('bannerInput').addEventListener('change', handleBannerUpload);
   document.getElementById('skillPhotoInput').addEventListener('change', handleSkillPhotoUpload);
   document.getElementById('addCustomItem').addEventListener('click', addCustomItem);
+  document.getElementById('addCustomSpell').addEventListener('click', addCustomSpell);
+  document.getElementById('applyDamage').addEventListener('click', () => updateResource('damage', document.getElementById('resourceAmount').value));
+  document.getElementById('applyHealing').addEventListener('click', () => updateResource('heal', document.getElementById('resourceAmount').value));
+  document.getElementById('spendMana').addEventListener('click', () => updateResource('spendMana', document.getElementById('resourceAmount').value));
+  document.getElementById('restoreMana').addEventListener('click', () => updateResource('restoreMana', document.getElementById('resourceAmount').value));
   document.getElementById('photoUrl').addEventListener('change', event => applyImageUrl(event.target, url => {
     elements.photoPreview.innerHTML = `<img src="${url}" alt="Foto do personagem">`;
     elements.photoPreview.dataset.photo = url;
