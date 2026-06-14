@@ -1,5 +1,6 @@
 import {
   raceOptions,
+  raceData,
   originOptions,
   classOptions,
   distInputs,
@@ -12,9 +13,11 @@ import {
   xpThresholds,
   getXpProgress,
   getSubclassOptions,
-  getMulticlassRequirement
+  getMulticlassRequirement,
+  universalLevelFeatures,
+  raceAbilityBySubrace
 } from './modules/mechanics.js';
-import { spellCatalog, spellcastingClasses } from './modules/gameData.js';
+import { spellCatalog, spellcastingClasses, classGrantedSpells, raceGrantedSpells } from './modules/gameData.js';
 import {
   elements,
   populateSelect,
@@ -32,7 +35,19 @@ let skillPhoto = '';
 let editingSkillIndex = -1;
 let bannerPhoto = '';
 let inventory = [];
+let purchasedSpells = [];
 let themeColors = { primary: '#7EBAEE', secondary: '#F0A06F' };
+
+const legacyRaceMap = {
+  'Alto Elfo': ['Elfo', 'Alto Elfo'],
+  'Elfo da Floresta': ['Elfo', 'Elfo da Floresta'],
+  Drow: ['Elfo', 'Drow'],
+  'Gnomo das Rochas': ['Gnomo', 'Gnomo das Rochas'],
+  'Gnomo da Floresta': ['Gnomo', 'Gnomo da Floresta'],
+  Bugbear: ['Goblin', 'Bugbear'],
+  Goblinoide: ['Goblin', 'Goblin Astuto'],
+  Lizardfolk: ['Povo-Lagarto', 'Caçador dos Pântanos']
+};
 
 const equipmentCatalog = [
   { id: 'longsword', name: 'Espada longa', category: 'Arma', cost: 6, die: 8, attribute: 'for', range: 'corpo a corpo', description: 'Arma versátil de corte.' },
@@ -47,29 +62,6 @@ const equipmentCatalog = [
   { id: 'tools', name: 'Kit de ferramentas', category: 'Aventura', cost: 4, description: 'Ferramentas para testes especializados.' }
 ];
 
-const raceBonuses = {
-  'Forjado Bélico': { con: 2, for: 1 },
-  'Autognomo': { int: 2, con: 1 },
-  'Elfo da Floresta': { dex: 2, sab: 1 },
-  'Alto Elfo': { dex: 2, int: 1 },
-  'Drow': { dex: 2, car: 1 },
-  'Gnomo das Rochas': { int: 2, con: 1 },
-  'Gnomo da Floresta': { int: 2, sab: 1 },
-  'Homem-Rato': { dex: 2, int: 1 },
-  'Minotauro': { for: 2, con: 1 },
-  'Lizardfolk': { con: 2, for: 1 },
-  'Tabaxi': { dex: 2, car: 1 },
-  'Halfling': { dex: 2, sab: 1 },
-  'Goliata': { for: 2, con: 1 },
-  'Firbolg': { sab: 2, int: 1 },
-  'Orc': { for: 2, con: 1 },
-  'Goblinoide': { dex: 2, int: 1 },
-  'Bugbear': { for: 2, sab: 1 },
-  'Tiefling': { car: 2, int: 1 },
-  'Dragonborn': { for: 2, car: 1 },
-  'Anão': { con: 2, for: 1 }
-};
-
 function getInputValues() {
   return distInputs.map(item => Number(document.getElementById(item.id).value || 0));
 }
@@ -83,7 +75,14 @@ function openDiceTab() {
 }
 
 function applySelectedRaceBonuses() {
-  const bonuses = raceBonuses[elements.raca.value] || {};
+  const race = raceData[elements.raca.value];
+  const subraceSelect = document.getElementById('subraca');
+  const previous = subraceSelect.value;
+  const subraces = Object.keys(race?.subraces || {});
+  subraceSelect.innerHTML = subraces.map(name => `<option value="${name}">${name}</option>`).join('');
+  if (subraces.includes(previous)) subraceSelect.value = previous;
+  const subrace = race?.subraces?.[subraceSelect.value];
+  const bonuses = subrace?.bonuses || {};
   const inputs = {
     for: 'raceFor',
     dex: 'raceDex',
@@ -95,6 +94,21 @@ function applySelectedRaceBonuses() {
   Object.entries(inputs).forEach(([attribute, id]) => {
     document.getElementById(id).value = bonuses[attribute] || 0;
   });
+  document.getElementById('raceDescription').textContent = race
+    ? `${race.source} · ${race.traits} ${subrace?.trait || ''}`
+    : '';
+  synchronize();
+}
+
+function applySelectedSubraceBonuses() {
+  const subrace = raceData[elements.raca.value]?.subraces?.[document.getElementById('subraca').value];
+  const bonuses = subrace?.bonuses || {};
+  const ids = { for: 'raceFor', dex: 'raceDex', con: 'raceCon', int: 'raceInt', sab: 'raceSab', car: 'raceCar' };
+  Object.entries(ids).forEach(([attribute, id]) => {
+    document.getElementById(id).value = bonuses[attribute] || 0;
+  });
+  const race = raceData[elements.raca.value];
+  document.getElementById('raceDescription').textContent = `${race?.source || ''} · ${race?.traits || ''} ${subrace?.trait || ''}`;
   synchronize();
 }
 
@@ -202,6 +216,7 @@ function resetFicha() {
   elements.descricaoClasse.value = '';
   purchasedSkills = [];
   inventory = [];
+  purchasedSpells = [];
   bannerPhoto = '';
   applyDynamicTheme('#7EBAEE', '#F0A06F');
   resetSkillEditor();
@@ -220,12 +235,16 @@ function resetFicha() {
   elements.photoPreview.dataset.photo = '';
   elements.photoPreview.innerHTML = 'Adicione a imagem do personagem';
   document.getElementById('bannerInput').value = '';
+  document.getElementById('bannerUrl').value = '';
+  document.getElementById('photoUrl').value = '';
+  document.getElementById('skillPhotoUrl').value = '';
   applyBanner('');
   elements.rollResult.textContent = 'Clique em uma rolagem para ver o resultado.';
   document.querySelectorAll('[data-store]').forEach(input => {
     input.value = input.classList.contains('slot-counter') ? '0 / 0' : '';
   });
   renderEquipment();
+  renderSpellCatalog();
   synchronize();
 }
 
@@ -256,6 +275,7 @@ function resetSkillEditor() {
   elements.tituloHabilidade.value = '';
   elements.descricaoHabilidade.value = '';
   document.getElementById('skillPhotoInput').value = '';
+  document.getElementById('skillPhotoUrl').value = '';
   document.getElementById('skillPhotoPreview').textContent = 'Foto da habilidade';
   document.getElementById('addSkill').textContent = 'Adicionar habilidade';
   document.getElementById('cancelSkillEdit').classList.add('hidden');
@@ -572,6 +592,33 @@ function updateProgression() {
     ? 'Nível máximo alcançado'
     : `${progress.remaining.toLocaleString('pt-BR')} XP para o nível ${progress.level + 1}`;
   if (!elements.multiclasse.checked) elements.nivelC1.value = progress.level;
+  else balanceMulticlassLevels(false);
+}
+
+function getClassBuild() {
+  const groups = [
+    { className: elements.classe1.value, level: Number(elements.nivelC1.value) || 0, subclass: document.getElementById('subclasse1').value },
+    { className: elements.classe2.value, level: Number(elements.nivelC2.value) || 0, subclass: document.getElementById('subclasse2').value },
+    { className: elements.classe3.value, level: Number(elements.nivelC3.value) || 0, subclass: document.getElementById('subclasse3').value }
+  ];
+  return elements.multiclasse.checked ? groups.filter((entry, index) => index < 2 || entry.level > 0) : groups.slice(0, 1);
+}
+
+function balanceMulticlassLevels(shouldSync = true) {
+  if (!elements.multiclasse.checked) return;
+  const total = Number(elements.nivel.value) || 1;
+  const includeThird = Number(elements.nivelC3.value) > 0;
+  const slots = includeThird
+    ? [elements.nivelC1, elements.nivelC2, elements.nivelC3]
+    : [elements.nivelC1, elements.nivelC2];
+  const base = Math.floor(total / slots.length);
+  let rest = total % slots.length;
+  slots.forEach(input => {
+    input.value = Math.max(1, base + (rest > 0 ? 1 : 0));
+    rest -= 1;
+  });
+  if (!includeThird) elements.nivelC3.value = 0;
+  if (shouldSync) synchronize();
 }
 
 function updateSubclassSelect(classSelect, levelInput, subclassSelect) {
@@ -630,29 +677,203 @@ function updateClassProgression() {
   document.getElementById('hitDie').value = classData[elements.classe1.value]?.hitDie || 'd10';
 }
 
-function renderSpellCatalog() {
-  const className = document.getElementById('spellClassFilter').value;
-  const levelFilter = document.getElementById('spellLevelFilter').value;
-  const catalog = document.getElementById('spellCatalog');
-  const spells = spellCatalog.filter(spell => {
-    return spell.classes.includes(className) && (levelFilter === 'all' || spell.level === Number(levelFilter));
+function renderClassProgression() {
+  const className = document.getElementById('progressionClass').value || elements.classe1.value;
+  const data = classData[className];
+  const overview = document.getElementById('classOverview');
+  const progression = document.getElementById('classProgression');
+  if (!data || !overview || !progression) return;
+  renderClassBrowser(className);
+  overview.innerHTML = `
+    <div><p class="panel-kicker">Dado de vida ${data.hitDie}</p><h3>${className}</h3></div>
+    <div><b>Clique numa subclasse</b><p>${data.subclasses.map(name => `<button type="button" class="inline-pill" data-subclass-name="${name}">${name}</button>`).join('')}</p></div>
+    <div><b>Recursos centrais</b><p>${data.core.join(' · ')}</p></div>
+  `;
+  overview.querySelectorAll('[data-subclass-name]').forEach(button => {
+    button.addEventListener('click', () => {
+      overview.querySelectorAll('[data-subclass-name]').forEach(item => item.classList.toggle('active', item === button));
+      document.getElementById('classSubclassDetail').textContent = `${button.dataset.subclassName}: caminho liberado no nível 3 da classe. Use como base e personalize efeitos com seu mestre.`;
+    });
   });
-  catalog.innerHTML = '';
+  overview.insertAdjacentHTML('beforeend', '<p id="classSubclassDetail" class="system-rule full-width">Selecione uma subclasse acima para ver como ela entra na evolução.</p>');
+  progression.innerHTML = '';
+  for (let level = 1; level <= 20; level += 1) {
+    const card = document.createElement('article');
+    card.className = 'progression-level';
+    const classFeature = data.core[Math.min(data.core.length - 1, Math.floor((level - 1) / 4))];
+    card.innerHTML = `<span>${String(level).padStart(2, '0')}</span><div><b>Nível ${level}</b><p>${universalLevelFeatures[level]} · ${classFeature}</p></div>`;
+    progression.appendChild(card);
+  }
+}
+
+function renderClassBrowser(activeClass) {
+  const browser = document.getElementById('classBrowser');
+  if (!browser) return;
+  browser.innerHTML = '';
+  classOptions.forEach(className => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = className === activeClass ? 'active' : '';
+    button.textContent = className;
+    button.addEventListener('click', () => {
+      document.getElementById('progressionClass').value = className;
+      renderClassProgression();
+    });
+    browser.appendChild(button);
+  });
+}
+
+function getAutomaticAbilities() {
+  const subrace = document.getElementById('subraca').value;
+  const abilities = [];
+  if (raceAbilityBySubrace[subrace]) abilities.push({ source: subrace, name: raceAbilityBySubrace[subrace] });
+  getClassBuild().forEach(entry => {
+    const data = classData[entry.className];
+    if (!data) return;
+    data.core.forEach((feature, index) => {
+      const unlockLevel = [1, 2, 3, 5, 9][index] || 1;
+      if (entry.level >= unlockLevel) {
+        abilities.push({ source: `${entry.className} ${entry.level}`, name: feature });
+      }
+    });
+    if (entry.level >= 3 && entry.subclass) {
+      abilities.push({ source: 'Subclasse', name: entry.subclass });
+    }
+  });
+  return abilities;
+}
+
+function renderAutomaticAbilities() {
+  const container = document.getElementById('autoAbilities');
+  if (!container) return;
+  const abilities = getAutomaticAbilities();
+  container.innerHTML = '';
+  if (!abilities.length) {
+    container.innerHTML = '<p class="system-rule">Nenhuma habilidade automática liberada ainda.</p>';
+    return;
+  }
+  abilities.forEach(ability => {
+    const card = document.createElement('article');
+    card.className = 'spell-card owned';
+    card.innerHTML = `<span>${ability.source}</span><h4>${ability.name}</h4><p>Habilidade pronta liberada pela progressão, sem gastar pontos de compra.</p>`;
+    container.appendChild(card);
+  });
+}
+
+function getFreeSpells() {
+  const names = new Set(raceGrantedSpells[document.getElementById('subraca').value] || []);
+  getClassBuild().forEach(entry => {
+    (classGrantedSpells[entry.className] || []).forEach(group => {
+      if (entry.level >= group.level) group.spells.forEach(name => names.add(name));
+    });
+  });
+  return [...names].map(name => spellCatalog.find(spell => spell.name === name) || {
+    name,
+    level: 0,
+    school: 'Especial',
+    classes: [],
+    effect: 'Magia racial ou recurso especial.'
+  });
+}
+
+function renderFreeSpells() {
+  const container = document.getElementById('freeSpellCatalog');
+  if (!container) return;
+  const spells = getFreeSpells();
+  container.innerHTML = '';
   if (!spells.length) {
-    catalog.innerHTML = '<p class="system-rule">Nenhuma magia disponível para esse filtro.</p>';
+    container.innerHTML = '<p class="system-rule">Nenhuma magia automática liberada ainda.</p>';
     return;
   }
   spells.forEach(spell => {
     const card = document.createElement('article');
-    card.className = 'spell-card';
-    card.innerHTML = `<span>${spell.level === 0 ? 'Truque' : `${spell.level}º círculo`} · ${spell.school}</span><h4>${spell.name}</h4>`;
+    card.className = 'spell-card owned';
+    card.innerHTML = `<span>${spell.level === 0 ? 'Truque' : `${spell.level}º círculo`} · ${spell.school}</span><h4>${spell.name}</h4><p>${spell.effect || 'Liberada por classe, subclasse ou raça.'}</p>`;
     const button = document.createElement('button');
     button.type = 'button';
     button.textContent = 'Preparar';
     button.addEventListener('click', () => prepareSpell(spell));
     card.appendChild(button);
-    catalog.appendChild(card);
+    container.appendChild(card);
   });
+}
+
+function getSpellCost(spell) {
+  return spell.level === 0 ? 1 : spell.level + 1;
+}
+
+function getSpellBudget() {
+  return 4 + (Number(elements.nivel.value) || 1) * 2;
+}
+
+function getSpellSpent() {
+  return purchasedSpells.reduce((sum, name) => {
+    const spell = spellCatalog.find(entry => entry.name === name);
+    return sum + (spell ? getSpellCost(spell) : 0);
+  }, 0);
+}
+
+function buySpell(spell) {
+  if (purchasedSpells.includes(spell.name)) return;
+  if (getSpellSpent() + getSpellCost(spell) > getSpellBudget()) return;
+  purchasedSpells.push(spell.name);
+  renderSpellCatalog();
+}
+
+function sellSpell(spell) {
+  purchasedSpells = purchasedSpells.filter(name => name !== spell.name);
+  renderSpellCatalog();
+}
+
+function renderSpellCatalog() {
+  const className = document.getElementById('spellClassFilter').value;
+  const levelFilter = document.getElementById('spellLevelFilter').value;
+  const catalog = document.getElementById('spellCatalog');
+  const owned = document.getElementById('ownedSpells');
+  const budget = getSpellBudget();
+  const spent = getSpellSpent();
+  document.getElementById('spellBudget').textContent = budget;
+  document.getElementById('spellSpent').textContent = spent;
+  document.getElementById('spellRemaining').textContent = Math.max(0, budget - spent);
+  const spells = spellCatalog.filter(spell => {
+    return spell.classes.includes(className) && (levelFilter === 'all' || spell.level === Number(levelFilter));
+  });
+  catalog.innerHTML = '';
+  if (!spells.length) catalog.innerHTML = '<p class="system-rule">Nenhuma magia disponível para esse filtro.</p>';
+  else {
+    spells.forEach(spell => {
+      const card = document.createElement('article');
+      card.className = 'spell-card';
+      card.innerHTML = `<span>${spell.level === 0 ? 'Truque' : `${spell.level}º círculo`} · ${spell.school}</span><h4>${spell.name}</h4><p>${spell.effect || 'Magia pronta da lista aberta do sistema.'}</p>`;
+      const button = document.createElement('button');
+      button.type = 'button';
+      const purchased = purchasedSpells.includes(spell.name);
+      button.textContent = purchased ? 'Comprada' : `Comprar · ${getSpellCost(spell)} pts`;
+      button.disabled = purchased || spent + getSpellCost(spell) > budget;
+      button.addEventListener('click', () => buySpell(spell));
+      card.appendChild(button);
+      catalog.appendChild(card);
+    });
+  }
+  owned.innerHTML = '';
+  purchasedSpells.forEach(name => {
+    const spell = spellCatalog.find(entry => entry.name === name);
+    if (!spell) return;
+    const card = document.createElement('article');
+    card.className = 'spell-card owned';
+    card.innerHTML = `<span>${spell.level === 0 ? 'Truque' : `${spell.level}º círculo`} · ${spell.school}</span><h4>${spell.name}</h4><p>${spell.effect || 'Magia pronta da lista aberta do sistema.'}</p>`;
+    const prepareButton = document.createElement('button');
+    prepareButton.type = 'button';
+    prepareButton.textContent = 'Preparar';
+    prepareButton.addEventListener('click', () => prepareSpell(spell));
+    const sellButton = document.createElement('button');
+    sellButton.type = 'button';
+    sellButton.textContent = 'Vender';
+    sellButton.addEventListener('click', () => sellSpell(spell));
+    card.append(prepareButton, sellButton);
+    owned.appendChild(card);
+  });
+  if (!purchasedSpells.length) owned.innerHTML = '<p class="system-rule">Nenhuma magia comprada ainda.</p>';
 }
 
 function prepareSpell(spell) {
@@ -668,12 +889,17 @@ function extractThemeFromImage(source) {
   if (!source) return;
   const image = new Image();
   image.onload = () => {
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d', { willReadFrequently: true });
-    canvas.width = 64;
-    canvas.height = 64;
-    context.drawImage(image, 0, 0, 64, 64);
-    const data = context.getImageData(0, 0, 64, 64).data;
+    let data;
+    try {
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d', { willReadFrequently: true });
+      canvas.width = 64;
+      canvas.height = 64;
+      context.drawImage(image, 0, 0, 64, 64);
+      data = context.getImageData(0, 0, 64, 64).data;
+    } catch {
+      return;
+    }
     const colors = [];
 
     for (let index = 0; index < data.length; index += 64) {
@@ -695,7 +921,41 @@ function extractThemeFromImage(source) {
       .sort((a, b) => themeColorScore(b, primary) - themeColorScore(a, primary))[0];
     applyDynamicTheme(rgbToHex(primary), rgbToHex(secondary));
   };
+  image.crossOrigin = 'anonymous';
   image.src = source;
+}
+
+function renderRaceReference() {
+  const grid = document.querySelector('#system-races .reference-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  Object.entries(raceData).forEach(([name, race]) => {
+    const article = document.createElement('article');
+    const subraces = Object.keys(race.subraces).join(' · ');
+    article.innerHTML = `<h3>${name}</h3><b>${race.source}</b><p>${race.traits}</p><small>${subraces}</small>`;
+    grid.appendChild(article);
+  });
+}
+
+function renderClassReference() {
+  const grid = document.querySelector('#system-classes .reference-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  Object.entries(classData).forEach(([name, data]) => {
+    const article = document.createElement('article');
+    article.innerHTML = `<h3>${name}</h3><b>${data.hitDie}</b><p>${data.core.join(' · ')}</p><small>Subclasses: ${data.subclasses.join(' · ')}</small>`;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'inline-pill';
+    button.textContent = 'Ver evolução';
+    button.addEventListener('click', () => {
+      document.querySelector('[data-target="tab-progressao"]').click();
+      document.getElementById('progressionClass').value = name;
+      renderClassProgression();
+    });
+    article.appendChild(button);
+    grid.appendChild(article);
+  });
 }
 
 function colorDistance(a, b) {
@@ -740,6 +1000,10 @@ function synchronize() {
   updateSpellStats();
   updateClassProgression();
   renderEquipment();
+  renderSpellCatalog();
+  renderClassProgression();
+  renderAutomaticAbilities();
+  renderFreeSpells();
 
   const combatHp = document.getElementById('combatHp');
   const combatProf = document.getElementById('combatProf');
@@ -850,6 +1114,7 @@ function getCharacterData() {
     vision: document.getElementById('vision').value,
     hitDie: document.getElementById('hitDie').value,
     raca: elements.raca.value,
+    subraca: document.getElementById('subraca').value,
     origem: elements.origem.value,
     classe1: elements.classe1.value,
     nivelC1: elements.nivelC1.value,
@@ -884,6 +1149,7 @@ function getCharacterData() {
     descricaoClasse: elements.descricaoClasse.value,
     purchasedSkills,
     inventory,
+    purchasedSpells,
     themeColors,
     storedFields: Object.fromEntries(
       [...document.querySelectorAll('[data-store]')].map(input => [input.dataset.store, input.value])
@@ -915,7 +1181,11 @@ function loadCharacter(index) {
   document.getElementById('speed').value = character.speed || '9 m';
   document.getElementById('vision').value = character.vision || 'normal';
   document.getElementById('hitDie').value = character.hitDie || 'd10';
-  elements.raca.value = character.raca || 'Forjado Bélico';
+  const migratedRace = legacyRaceMap[character.raca];
+  elements.raca.value = migratedRace?.[0] || character.raca || 'Forjado Bélico';
+  applySelectedRaceBonuses();
+  document.getElementById('subraca').value = character.subraca || migratedRace?.[1] || document.getElementById('subraca').value;
+  applySelectedSubraceBonuses();
   elements.origem.value = character.origem || 'Acolhido';
   elements.classe1.value = character.classe1 || 'Bárbaro';
   elements.nivelC1.value = character.nivelC1 || 1;
@@ -952,6 +1222,7 @@ function loadCharacter(index) {
   elements.descricaoClasse.value = character.descricaoClasse || '';
   purchasedSkills = Array.isArray(character.purchasedSkills) ? character.purchasedSkills : [];
   inventory = Array.isArray(character.inventory) ? character.inventory : [];
+  purchasedSpells = Array.isArray(character.purchasedSpells) ? character.purchasedSpells : [];
   themeColors = character.themeColors || { primary: '#7EBAEE', secondary: '#F0A06F' };
   resetSkillEditor();
   renderSkillCollection();
@@ -1024,12 +1295,34 @@ function handleBannerUpload(event) {
   reader.readAsDataURL(file);
 }
 
+function applyImageUrl(input, callback) {
+  const url = input.value.trim();
+  if (!url) return;
+  const probe = new Image();
+  probe.onload = () => callback(url);
+  probe.onerror = () => input.setCustomValidity('Não foi possível carregar esta imagem.');
+  input.setCustomValidity('');
+  probe.src = url;
+}
+
+function setupInnerTabs() {
+  document.querySelectorAll('[data-magic-target]').forEach(button => {
+    button.addEventListener('click', () => {
+      document.querySelectorAll('[data-magic-target]').forEach(tab => tab.classList.toggle('active', tab === button));
+      document.querySelectorAll('[data-magic-section]').forEach(section => {
+        section.classList.toggle('active', section.dataset.magicSection === button.dataset.magicTarget);
+      });
+    });
+  });
+}
+
 function init() {
   populateSelect(elements.raca, raceOptions);
   populateSelect(elements.origem, originOptions);
   populateSelect(elements.classe1, classOptions);
   populateSelect(elements.classe2, classOptions);
   populateSelect(elements.classe3, classOptions);
+  populateSelect(document.getElementById('progressionClass'), classOptions);
   populateSelect(document.getElementById('spellClassFilter'), spellcastingClasses);
   document.getElementById('spellClassFilter').value = spellcastingClasses.includes(elements.classe1.value)
     ? elements.classe1.value
@@ -1058,12 +1351,19 @@ function init() {
   });
 
   elements.multiclasse.addEventListener('change', toggleMulticlassFields);
+  document.getElementById('balanceMulticlass').addEventListener('click', () => balanceMulticlassLevels(true));
   elements.raca.addEventListener('change', applySelectedRaceBonuses);
+  document.getElementById('subraca').addEventListener('change', applySelectedSubraceBonuses);
+  document.getElementById('progressionClass').addEventListener('change', renderClassProgression);
   [elements.classe1, elements.classe2, elements.classe3].forEach(select => {
     select.addEventListener('change', () => {
       if (select === elements.classe1 && spellcastingClasses.includes(select.value)) {
         document.getElementById('spellClassFilter').value = select.value;
         renderSpellCatalog();
+      }
+      if (select === elements.classe1) {
+        document.getElementById('progressionClass').value = select.value;
+        renderClassProgression();
       }
       synchronize();
     });
@@ -1118,6 +1418,20 @@ function init() {
   elements.photoInput.addEventListener('change', handlePhotoUpload);
   document.getElementById('bannerInput').addEventListener('change', handleBannerUpload);
   document.getElementById('skillPhotoInput').addEventListener('change', handleSkillPhotoUpload);
+  document.getElementById('photoUrl').addEventListener('change', event => applyImageUrl(event.target, url => {
+    elements.photoPreview.innerHTML = `<img src="${url}" alt="Foto do personagem">`;
+    elements.photoPreview.dataset.photo = url;
+    extractThemeFromImage(url);
+    renderSummary();
+  }));
+  document.getElementById('bannerUrl').addEventListener('change', event => applyImageUrl(event.target, url => {
+    applyBanner(url);
+    extractThemeFromImage(url);
+  }));
+  document.getElementById('skillPhotoUrl').addEventListener('change', event => applyImageUrl(event.target, url => {
+    skillPhoto = url;
+    document.getElementById('skillPhotoPreview').innerHTML = `<img src="${url}" alt="Imagem da habilidade">`;
+  }));
   document.getElementById('addSkill').addEventListener('click', saveSkillFromEditor);
   document.getElementById('cancelSkillEdit').addEventListener('click', resetSkillEditor);
   elements.saveButton.addEventListener('click', saveCharacter);
@@ -1138,12 +1452,18 @@ function init() {
   });
 
   setupTabs();
+  setupInnerTabs();
+  document.getElementById('skillBuilderMount').appendChild(document.querySelector('.skill-builder'));
+  renderRaceReference();
+  renderClassReference();
   initDiceRoller();
   toggleMulticlassFields();
   applySelectedRaceBonuses();
   loadSavedCharacters();
   renderSkillCollection();
   renderSpellCatalog();
+  document.getElementById('progressionClass').value = elements.classe1.value;
+  renderClassProgression();
   synchronize();
 }
 

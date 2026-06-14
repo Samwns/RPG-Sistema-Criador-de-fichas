@@ -89,6 +89,10 @@
                 <span>Banner</span>
                 <input id="bannerInput" type="file" accept="image/*">
               </label>
+              <label class="banner-url">
+                <span>URL do banner</span>
+                <input id="bannerUrl" type="url" placeholder="https://...">
+              </label>
               <button id="createSheetButton" type="button">Criar ficha</button>
               <button id="resetButton" type="button">Resetar</button>
             </div>
@@ -96,6 +100,8 @@
 
           <nav class="sheet-tabs" role="tablist" aria-label="Seções da ficha">
             <button class="tab-button active" data-target="tab-ficha" type="button">Ficha</button>
+            <button class="tab-button" data-target="tab-progressao" type="button">Progressão</button>
+            <button class="tab-button" data-target="tab-habilidades" type="button">Habilidades</button>
             <button class="tab-button" data-target="tab-combate" type="button">Combate</button>
             <button class="tab-button" data-target="tab-magia" type="button">Magias</button>
             <button class="tab-button" data-target="tab-equipamento" type="button">Equipamento</button>
@@ -124,6 +130,7 @@
                     <span>Retrato</span>
                     <input id="photoInput" type="file" accept="image/*">
                   </label>
+                  <label><span>URL do retrato</span><input id="photoUrl" type="url" placeholder="https://..."></label>
                 </div>
 
                 <div class="form-grid">
@@ -143,6 +150,8 @@
                   <label><span>Visão</span><input id="vision" type="text" value="normal"></label>
                   <label><span>Dado de vida</span><select id="hitDie"><option>d6</option><option>d8</option><option selected>d10</option><option>d12</option></select></label>
                   <label><span>Raça</span><select id="raca"></select></label>
+                  <label><span>Subraça / linhagem</span><select id="subraca"></select></label>
+                  <p id="raceDescription" class="system-rule full-width"></p>
                   <label><span>Origem</span><select id="origem"></select></label>
                   <label><span>Classe principal</span><select id="classe1"></select></label>
                   <label><span>Nível da classe</span><input id="nivelC1" type="number" min="1" max="20" value="1"></label>
@@ -158,6 +167,7 @@
                 <label><span>Classe 3</span><select id="classe3"></select></label>
                 <label><span>Nível C3 (opcional)</span><input id="nivelC3" type="number" min="0" max="20" value="0"></label>
                 <label><span>Subclasse 3</span><select id="subclasse3"></select></label>
+                <button id="balanceMulticlass" type="button" class="button-muted full-width">Balancear níveis da multiclasse</button>
                 <p id="multiclassWarning" class="warning full-width"></p>
               </section>
 
@@ -211,6 +221,7 @@
                   <div class="skill-photo-column">
                     <div id="skillPhotoPreview" class="skill-photo-preview">Foto da habilidade</div>
                     <label><span>Imagem da habilidade</span><input id="skillPhotoInput" type="file" accept="image/*"></label>
+                    <label><span>URL da imagem</span><input id="skillPhotoUrl" type="url" placeholder="https://..."></label>
                   </div>
                   <div class="skill-fields">
                     <label><span>Nome da habilidade</span><input id="tituloHabilidade" type="text" placeholder="Ex.: Golpe flamejante"></label>
@@ -242,6 +253,29 @@
                   <p id="summaryClassDesc">A descrição da classe aparecerá aqui.</p>
                 </div>
               </section>
+            </section>
+
+            <section class="tab-panel" id="tab-progressao">
+              <div class="panel-heading">
+                <div><p class="panel-kicker">Níveis 1 a 20</p><h2>Classes e subclasses</h2></div>
+                <label class="compact-filter"><span>Ver classe</span><select id="progressionClass"></select></label>
+              </div>
+              <section id="classBrowser" class="class-browser"></section>
+              <section id="classOverview" class="content-card class-overview"></section>
+              <section id="classProgression" class="progression-grid"></section>
+            </section>
+
+            <section class="tab-panel" id="tab-habilidades">
+              <div class="panel-heading">
+                <div><p class="panel-kicker">Compra e criação</p><h2>Habilidades do personagem</h2></div>
+              </div>
+              <section class="content-card">
+                <div class="section-title">
+                  <div><p class="panel-kicker">Grátis por raça e classe</p><h3>Habilidades prontas liberadas</h3></div>
+                </div>
+                <div id="autoAbilities" class="spell-catalog"></div>
+              </section>
+              <div id="skillBuilderMount"></div>
             </section>
 
             <section class="tab-panel" id="tab-combate">
@@ -292,15 +326,19 @@
               <div class="panel-heading">
                 <div><p class="panel-kicker">Recursos</p><h2>Magia e vida</h2></div>
               </div>
+              <nav class="inner-tabs" aria-label="Seções de magia">
+                <button type="button" class="inner-tab active" data-magic-target="magic-sheet">Grimório</button>
+                <button type="button" class="inner-tab" data-magic-target="magic-shop">Comprar magias</button>
+              </nav>
 
-              <section class="magic-stats">
+              <section class="magic-stats magic-section active" data-magic-section="magic-sheet">
                 <div><strong id="spellSaveDc">11</strong><span>CD de resistência</span></div>
                 <div><strong id="spellAttackBonus">+3</strong><span>Bônus de ataque</span></div>
                 <div><strong id="spellCastingStat">INT</strong><span>Atributo de conjuração</span></div>
                 <div><strong id="spellSlotTotal">0</strong><span>Espaços totais</span></div>
               </section>
 
-              <section class="content-card">
+              <section class="content-card magic-section active" data-magic-section="magic-sheet">
                 <div class="form-grid">
                   <label><span>Pontos para magia</span><input id="pontosMagia" type="number" min="0" value="15"></label>
                   <label><span>Pontos para vida</span><input id="pontosVida" type="number" min="0" value="15"></label>
@@ -315,24 +353,42 @@
                 <p class="magic-note" id="magicNote">O total deve respeitar o limite do sistema.</p>
               </section>
 
-              <section class="spellbook">
+              <section class="spellbook magic-section active" data-magic-section="magic-sheet">
                 <article><span>Truques</span><label>À vontade</label><textarea data-store="spell-0" placeholder="Escolha truques no catálogo abaixo..."></textarea></article>
                 <article><span>1º círculo</span><label>Usados / Total <input class="slot-counter" data-store="slots-1" data-slot-level="1" type="text" value="0 / 0"></label><textarea data-store="spell-1" placeholder="Escreva suas magias aqui..."></textarea></article>
                 <article><span>2º círculo</span><label>Usados / Total <input class="slot-counter" data-store="slots-2" data-slot-level="2" type="text" value="0 / 0"></label><textarea data-store="spell-2"></textarea></article>
                 <article><span>3º círculo</span><label>Usados / Total <input class="slot-counter" data-store="slots-3" data-slot-level="3" type="text" value="0 / 0"></label><textarea data-store="spell-3"></textarea></article>
                 <article><span>4º círculo</span><label>Usados / Total <input class="slot-counter" data-store="slots-4" data-slot-level="4" type="text" value="0 / 0"></label><textarea data-store="spell-4"></textarea></article>
                 <article><span>5º círculo</span><label>Usados / Total <input class="slot-counter" data-store="slots-5" data-slot-level="5" type="text" value="0 / 0"></label><textarea data-store="spell-5"></textarea></article>
+                <article><span>6º círculo</span><label>Usados / Total <input class="slot-counter" data-store="slots-6" data-slot-level="6" type="text" value="0 / 0"></label><textarea data-store="spell-6"></textarea></article>
+                <article><span>7º círculo</span><label>Usados / Total <input class="slot-counter" data-store="slots-7" data-slot-level="7" type="text" value="0 / 0"></label><textarea data-store="spell-7"></textarea></article>
+                <article><span>8º círculo</span><label>Usados / Total <input class="slot-counter" data-store="slots-8" data-slot-level="8" type="text" value="0 / 0"></label><textarea data-store="spell-8"></textarea></article>
+                <article><span>9º círculo</span><label>Usados / Total <input class="slot-counter" data-store="slots-9" data-slot-level="9" type="text" value="0 / 0"></label><textarea data-store="spell-9"></textarea></article>
               </section>
 
-              <section class="content-card spell-library">
+              <section class="content-card magic-section active" data-magic-section="magic-sheet">
                 <div class="section-title">
-                  <div><p class="panel-kicker">Catálogo do SRD</p><h3>Magias prontas por classe</h3></div>
+                  <div><p class="panel-kicker">Grátis por raça e classe</p><h3>Magias liberadas automaticamente</h3></div>
+                </div>
+                <div id="freeSpellCatalog" class="spell-catalog"></div>
+              </section>
+
+              <section class="content-card spell-library magic-section" data-magic-section="magic-shop">
+                <div class="section-title">
+                  <div><p class="panel-kicker">Catálogo do SRD</p><h3>Comprar magias prontas</h3></div>
                   <div class="spell-filters">
                     <label><span>Classe</span><select id="spellClassFilter"></select></label>
-                    <label><span>Círculo</span><select id="spellLevelFilter"><option value="all">Todos</option><option value="0">Truques</option><option value="1">1º</option><option value="2">2º</option><option value="3">3º</option><option value="4">4º</option><option value="5">5º</option></select></label>
+                    <label><span>Círculo</span><select id="spellLevelFilter"><option value="all">Todos</option><option value="0">Truques</option><option value="1">1º</option><option value="2">2º</option><option value="3">3º</option><option value="4">4º</option><option value="5">5º</option><option value="6">6º</option><option value="7">7º</option><option value="8">8º</option><option value="9">9º</option></select></label>
                   </div>
                 </div>
+                <div class="shop-budget spell-budget">
+                  <span>Pontos <b id="spellBudget">0</b></span>
+                  <span>Gastos <b id="spellSpent">0</b></span>
+                  <span>Restantes <b id="spellRemaining">0</b></span>
+                </div>
                 <div id="spellCatalog" class="spell-catalog"></div>
+                <h3 class="subsection-title">Magias compradas</h3>
+                <div id="ownedSpells" class="spell-catalog"></div>
               </section>
             </section>
 

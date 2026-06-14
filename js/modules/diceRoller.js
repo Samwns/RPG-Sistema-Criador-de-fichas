@@ -232,64 +232,75 @@ function addLinework(mesh, geometry, theme, radius) {
 }
 
 function addFaceNumbers(mesh, geometry, sides, radius) {
-  const normals = collectFaceNormals(geometry);
+  const faces = collectFaces(geometry);
   const labels = sides === 100
     ? ["00", "10", "20", "30", "40", "50", "60", "70", "80", "90"]
-    : Array.from({ length: Math.min(sides, normals.length) }, (_, index) => String(index + 1));
-  normals.slice(0, labels.length).forEach((normal, index) => {
-    const sprite = createNumberSprite(labels[index], radius);
-    sprite.position.copy(normal).multiplyScalar(radius * .72);
-    mesh.add(sprite);
+    : Array.from({ length: Math.min(sides, faces.length) }, (_, index) => String(index + 1));
+  faces.slice(0, labels.length).forEach((face, index) => {
+    mesh.add(createFaceNumber(labels[index], face, radius));
   });
 }
 
-function collectFaceNormals(geometry) {
+function collectFaces(geometry) {
   const source = geometry.index ? geometry.toNonIndexed() : geometry;
   const positions = source.getAttribute("position");
-  const normals = [];
+  const faces = [];
   for (let index = 0; index < positions.count; index += 3) {
     const a = new THREE.Vector3().fromBufferAttribute(positions, index);
     const b = new THREE.Vector3().fromBufferAttribute(positions, index + 1);
     const c = new THREE.Vector3().fromBufferAttribute(positions, index + 2);
-    const normal = new THREE.Vector3().crossVectors(
-      b.clone().sub(a),
-      c.clone().sub(a)
-    ).normalize();
-    const existing = normals.find(candidate => candidate.dot(normal) > .985);
-    if (!existing) normals.push(normal);
+    const cross = new THREE.Vector3().crossVectors(b.clone().sub(a), c.clone().sub(a));
+    const area = cross.length() * .5;
+    const normal = cross.normalize();
+    const centroid = a.clone().add(b).add(c).divideScalar(3);
+    if (normal.dot(centroid) < 0) normal.negate();
+    const existing = faces.find(face => face.normal.dot(normal) > .995);
+    if (existing) {
+      existing.centroid.addScaledVector(centroid, area);
+      existing.area += area;
+    } else {
+      faces.push({ normal, centroid: centroid.multiplyScalar(area), area });
+    }
   }
+  faces.forEach(face => face.centroid.divideScalar(face.area));
   if (source !== geometry) source.dispose();
-  return normals;
+  return faces;
 }
 
-function createNumberSprite(text, radius) {
+function createFaceNumber(text, face, radius) {
   const canvas = document.createElement("canvas");
-  canvas.width = 128;
-  canvas.height = 128;
+  canvas.width = 256;
+  canvas.height = 256;
   const context = canvas.getContext("2d");
   context.textAlign = "center";
   context.textBaseline = "middle";
-  context.font = `900 ${text.length > 1 ? 48 : 58}px Inter, Arial, sans-serif`;
+  context.font = `900 ${text.length > 1 ? 96 : 116}px Inter, Arial, sans-serif`;
   context.shadowColor = "#fff7b0";
-  context.shadowBlur = 18;
+  context.shadowBlur = 28;
   context.fillStyle = "#fffbe8";
-  context.fillText(text, 64, 67);
-  context.shadowBlur = 4;
+  context.fillText(text, 128, 134);
+  context.shadowBlur = 7;
   context.strokeStyle = "#30242c";
-  context.lineWidth = 5;
-  context.strokeText(text, 64, 67);
-  context.fillText(text, 64, 67);
+  context.lineWidth = 9;
+  context.strokeText(text, 128, 134);
+  context.fillText(text, 128, 134);
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
-  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+  const size = Math.min(radius * .72, Math.sqrt(face.area) * .72);
+  const label = new THREE.Mesh(
+    new THREE.PlaneGeometry(size, size),
+    new THREE.MeshBasicMaterial({
     map: texture,
     transparent: true,
     depthTest: true,
-    depthWrite: false
-  }));
-  sprite.scale.set(radius * .72, radius * .72, 1);
-  sprite.renderOrder = 4;
-  return sprite;
+      depthWrite: false,
+      side: THREE.DoubleSide
+    })
+  );
+  label.position.copy(face.centroid).addScaledVector(face.normal, radius * .018);
+  label.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), face.normal);
+  label.renderOrder = 4;
+  return label;
 }
 
 function createGeometry(sides, radius) {

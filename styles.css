@@ -129,7 +129,7 @@ textarea:focus-visible {
 }
 
 .stat-sidebar-title {
-  height: 70px;
+  height: 62px;
   margin: -25px 8px 8px -25px;
   overflow: hidden;
   border-radius: 16px 0 16px 0;
@@ -140,7 +140,7 @@ textarea:focus-visible {
 .stat-sidebar-title span {
   display: block;
   margin-right: -4px;
-  padding-top: 32px;
+  padding-top: 26px;
   font: italic 800 3.55rem/.7 var(--serif);
   letter-spacing: 1px;
   background: var(--gradient);
@@ -152,8 +152,8 @@ textarea:focus-visible {
   position: relative;
   display: grid;
   grid-template-columns: 98px minmax(0, 1fr);
-  min-height: 112px;
-  margin-top: 22px;
+  min-height: 106px;
+  margin-top: 12px;
 }
 
 .stat-score {
@@ -168,7 +168,7 @@ textarea:focus-visible {
   font: italic 800 4.8rem/1.35 var(--serif);
   text-align: right;
   letter-spacing: -7px;
-  padding-right: 12px;
+  padding-right: 3px;
   border-right: 2px solid color-mix(in srgb, var(--blue) 55%, transparent);
 }
 
@@ -190,7 +190,7 @@ textarea:focus-visible {
   max-width: 100%;
   position: absolute;
   top: -4px;
-  left: -98px;
+  left: -106px;
   margin: 0;
   padding: 5px 8px 5px 10px;
   border-radius: 10px;
@@ -207,7 +207,7 @@ textarea:focus-visible {
 }
 
 .stat-copy p {
-  margin: 30px 0 0;
+  margin: 26px 0 0;
   white-space: nowrap;
 }
 
@@ -260,6 +260,7 @@ textarea:focus-visible {
 
 .hero-copy {
   max-width: 580px;
+  padding-right: 120px;
 }
 
 .eyebrow,
@@ -294,6 +295,9 @@ textarea:focus-visible {
   top: 28px;
   display: flex;
   gap: 8px;
+  max-width: 430px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .hero-actions button,
@@ -327,6 +331,16 @@ textarea:focus-visible {
   pointer-events: none;
 }
 
+.banner-url {
+  width: 150px;
+  color: #eee;
+}
+
+.banner-url input {
+  padding: 8px;
+  background: rgba(255, 255, 255, .92);
+}
+
 .hero-actions button:hover,
 .action-buttons button:hover,
 .panel-heading > button:hover,
@@ -345,8 +359,8 @@ textarea:focus-visible {
   position: relative;
   z-index: 3;
   display: flex;
-  gap: 10px;
-  margin: -26px 30px 0;
+  gap: 6px;
+  margin: -26px 18px 0;
   padding: 0 0 16px;
   overflow-x: auto;
   scrollbar-width: none;
@@ -358,15 +372,15 @@ textarea:focus-visible {
 
 .tab-button {
   flex: 0 0 auto;
-  min-width: 94px;
+  min-width: 78px;
   border: 0;
   border-radius: 7px;
-  padding: 11px 15px;
+  padding: 10px 11px;
   background: #e4e4e4;
   box-shadow: 3px 3px 0 #444, 4px 4px 0 rgba(227, 227, 227, .65);
   color: #444;
-  font: 800 .64rem/1 var(--mono);
-  letter-spacing: .15em;
+  font: 800 .6rem/1 var(--mono);
+  letter-spacing: .1em;
   text-transform: uppercase;
 }
 
@@ -387,6 +401,136 @@ textarea:focus-visible {
 
 .tab-panel.active {
   display: block;
+}
+
+.compact-filter {
+  min-width: 210px;
+}
+
+.inner-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+  padding: 7px;
+  border-radius: 11px;
+  background: #d9d9d6;
+}
+
+.inner-tab {
+  border: 0;
+  border-radius: 7px;
+  padding: 11px 15px;
+  background: transparent;
+  color: #555;
+  font: 800 .68rem/1 var(--mono);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.inner-tab.active {
+  background: #444;
+  color: #eee;
+  box-shadow: 2px 2px 0 var(--orange);
+}
+
+.magic-section {
+  display: none;
+}
+
+.magic-section.active {
+  display: grid;
+}
+
+.class-overview {
+  display: grid;
+  grid-template-columns: .7fr 1fr 1.4fr;
+  gap: 18px;
+  border-top: 4px solid var(--blue);
+}
+
+.class-browser {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 16px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.class-browser button,
+.inline-pill {
+  border: 0;
+  border-radius: 999px;
+  padding: 9px 12px;
+  background: #e4e4e2;
+  color: #444;
+  font: 800 .68rem/1 var(--mono);
+  text-transform: uppercase;
+}
+
+.class-browser button.active,
+.inline-pill.active {
+  background: #444;
+  color: #eee;
+  box-shadow: 2px 2px 0 var(--orange);
+}
+
+.inline-pill {
+  margin: 3px 5px 3px 0;
+}
+
+.class-overview p {
+  margin: 6px 0 0;
+  color: #666;
+  line-height: 1.55;
+}
+
+.progression-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.progression-level {
+  display: grid;
+  grid-template-columns: 58px 1fr;
+  gap: 13px;
+  align-items: center;
+  padding: 14px;
+  border-radius: 11px;
+  background: rgba(246, 246, 244, .9);
+  box-shadow: 3px 3px 8px rgba(68, 68, 68, .08);
+}
+
+.progression-level > span {
+  color: color-mix(in srgb, var(--blue) 62%, #444);
+  font: italic 800 2.2rem/1 var(--serif);
+  text-align: right;
+}
+
+.progression-level b {
+  font: 800 .72rem/1 var(--mono);
+  text-transform: uppercase;
+}
+
+.progression-level p {
+  margin: 5px 0 0;
+  color: #686868;
+  font-size: .78rem;
+}
+
+.spell-budget {
+  justify-content: flex-start;
+  margin-top: 16px;
+}
+
+.spell-card.owned {
+  border-top-color: var(--orange);
+}
+
+.spell-card.owned button + button {
+  margin-left: 6px;
+  background: #a84d43;
 }
 
 @keyframes panelIn {
@@ -1246,6 +1390,21 @@ input[type="file"] {
   font: italic 800 1.2rem/1.1 var(--serif);
 }
 
+.spell-card p {
+  margin: 0 0 6px;
+  color: #666;
+  font-size: .76rem;
+  line-height: 1.45;
+}
+
+#system-races .reference-grid small,
+#system-classes .reference-grid small {
+  display: block;
+  margin-top: 10px;
+  color: #777;
+  font: 700 .68rem/1.45 var(--mono);
+}
+
 .spell-card button {
   align-self: flex-start;
   background: #444;
@@ -1652,6 +1811,10 @@ input[type="file"] {
     grid-template-columns: 1fr;
   }
 
+  .class-overview {
+    grid-template-columns: 1fr;
+  }
+
   .reference-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1730,15 +1893,27 @@ input[type="file"] {
   }
 
   .sheet-hero {
-    min-height: 210px;
-    padding: 38px 24px 64px;
+    min-height: 300px;
+    padding: 38px 24px 150px;
   }
 
   .hero-actions {
     top: auto;
-    right: auto;
-    left: 24px;
-    bottom: 30px;
+    right: 18px;
+    left: 18px;
+    bottom: 24px;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    max-width: none;
+  }
+
+  .banner-url {
+    order: 4;
+    width: 100%;
+  }
+
+  .hero-copy {
+    padding-right: 0;
   }
 
   .sheet-tabs {
@@ -1794,6 +1969,10 @@ input[type="file"] {
 
   .dice-canvas-area {
     height: 430px;
+  }
+
+  .progression-grid {
+    grid-template-columns: 1fr;
   }
 }
 

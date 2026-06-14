@@ -2,6 +2,27 @@ export const spellcastingClasses = [
   "Bardo", "Clérigo", "Druida", "Paladino", "Patrulheiro", "Feiticeiro", "Bruxo", "Mago"
 ];
 
+export const classGrantedSpells = {
+  Bardo: [{ level: 1, spells: ["Zombaria Viciosa", "Luz", "Curar Ferimentos"] }, { level: 3, spells: ["Sugestão"] }, { level: 5, spells: ["Dissipar Magia"] }],
+  "Clérigo": [{ level: 1, spells: ["Orientação", "Taumaturgia", "Curar Ferimentos"] }, { level: 3, spells: ["Arma Espiritual"] }, { level: 5, spells: ["Espíritos Guardiões"] }],
+  Druida: [{ level: 1, spells: ["Orientação", "Falar com Animais", "Curar Ferimentos"] }, { level: 3, spells: ["Passos sem Pegadas"] }, { level: 5, spells: ["Dissipar Magia"] }],
+  Paladino: [{ level: 2, spells: ["Curar Ferimentos", "Punição Ardente"] }, { level: 5, spells: ["Proteção contra a Morte"] }],
+  Patrulheiro: [{ level: 2, spells: ["Golpe Enredante", "Falar com Animais"] }, { level: 5, spells: ["Passos sem Pegadas"] }],
+  Feiticeiro: [{ level: 1, spells: ["Estouro Feiticeiro", "Orbe Cromático", "Escudo"] }, { level: 3, spells: ["Passo Nebuloso"] }, { level: 5, spells: ["Bola de Fogo"] }],
+  Bruxo: [{ level: 1, spells: ["Rajada Mística", "Maldição", "Repreensão Infernal"] }, { level: 3, spells: ["Escuridão"] }, { level: 5, spells: ["Contramágica"] }],
+  Mago: [{ level: 1, spells: ["Luz", "Mãos Mágicas", "Mísseis Mágicos", "Escudo"] }, { level: 3, spells: ["Passo Nebuloso"] }, { level: 5, spells: ["Bola de Fogo"] }, { level: 11, spells: ["Desintegrar"] }]
+};
+
+export const raceGrantedSpells = {
+  "Alto Elfo": ["Mãos Mágicas"],
+  Drow: ["Luz", "Escuridão"],
+  "Linhagem Infernal": ["Taumaturgia", "Repreensão Infernal"],
+  "Linhagem Abissal": ["Estouro Feiticeiro"],
+  "Ancestral de Fogo": ["Punição Ardente"],
+  "Gigante de Fogo": ["Luz"],
+  "Gigante das Nuvens": ["Passo Nebuloso"]
+};
+
 export const spellCatalog = [
   { name: "Luz", level: 0, school: "Evocação", classes: ["Bardo", "Clérigo", "Feiticeiro", "Mago"] },
   { name: "Mãos Mágicas", level: 0, school: "Conjuração", classes: ["Bardo", "Feiticeiro", "Bruxo", "Mago"] },
@@ -34,5 +55,30 @@ export const spellCatalog = [
   { name: "Comunhão com a Natureza", level: 5, school: "Adivinhação", classes: ["Druida", "Patrulheiro"] },
   { name: "Cone de Frio", level: 5, school: "Evocação", classes: ["Feiticeiro", "Mago"] },
   { name: "Curar Ferimentos em Massa", level: 5, school: "Abjuração", classes: ["Bardo", "Clérigo", "Druida"] },
-  { name: "Imobilizar Monstro", level: 5, school: "Encantamento", classes: ["Bardo", "Feiticeiro", "Bruxo", "Mago"] }
+  { name: "Imobilizar Monstro", level: 5, school: "Encantamento", classes: ["Bardo", "Feiticeiro", "Bruxo", "Mago"] },
+  { name: "Orbe Cromático", level: 1, school: "Evocação", classes: ["Feiticeiro", "Mago"], effect: "Ataque elemental com tipo de dano escolhido." },
+  { name: "Sussurros Dissonantes", level: 1, school: "Encantamento", classes: ["Bardo"], effect: "Dano psíquico e movimento de fuga." },
+  { name: "Faca de Gelo", level: 1, school: "Conjuração", classes: ["Druida", "Feiticeiro", "Mago"], effect: "Projétil de gelo que explode em área." },
+  { name: "Raio de Enfermidade", level: 1, school: "Necromancia", classes: ["Feiticeiro", "Mago"], effect: "Dano venenoso com chance de envenenar." },
+  { name: "Punição Ardente", level: 1, school: "Evocação", classes: ["Paladino"], effect: "Ataque causa dano de fogo persistente." },
+  { name: "Golpe Enredante", level: 1, school: "Conjuração", classes: ["Patrulheiro"], effect: "Vinculos vegetais restringem o alvo." },
+  { name: "Maldição", level: 1, school: "Encantamento", classes: ["Bruxo"], effect: "Aumenta o dano contra uma criatura marcada." },
+  { name: "Estouro Feiticeiro", level: 0, school: "Evocação", classes: ["Feiticeiro"], effect: "Truque de energia variável." },
+  { name: "Luz Estelar", level: 0, school: "Evocação", classes: ["Bardo", "Druida"], effect: "Luz ofensiva que dificulta invisibilidade." },
+  { name: "Elementalismo", level: 0, school: "Transmutação", classes: ["Druida", "Feiticeiro", "Mago"], effect: "Pequenos efeitos ligados aos elementos." },
+  { name: "Sopro do Dragão", level: 2, school: "Transmutação", classes: ["Feiticeiro", "Mago"], effect: "Concede um sopro elemental temporário." },
+  { name: "Pico Mental", level: 2, school: "Adivinhação", classes: ["Feiticeiro", "Bruxo", "Mago"], effect: "Dano psíquico e rastreamento do alvo." },
+  { name: "Força Fantasmagórica", level: 2, school: "Ilusão", classes: ["Bardo", "Feiticeiro", "Mago"], effect: "Cria uma ilusão percebida por um único alvo." },
+  { name: "Esfera Vitriólica", level: 4, school: "Evocação", classes: ["Feiticeiro", "Mago"], effect: "Explosão ácida com dano posterior." },
+  { name: "Encantar Monstro", level: 4, school: "Encantamento", classes: ["Bardo", "Druida", "Feiticeiro", "Bruxo", "Mago"], effect: "Enfeitiça uma criatura de qualquer tipo." },
+  { name: "Aura de Vida", level: 4, school: "Abjuração", classes: ["Clérigo", "Paladino"], effect: "Protege aliados contra energia necrótica." },
+  { name: "Invocar Dragão", level: 5, school: "Conjuração", classes: ["Mago"], effect: "Invoca um espírito dracônico aliado." },
+  { name: "Desintegrar", level: 6, school: "Transmutação", classes: ["Feiticeiro", "Mago"], effect: "Raio de grande dano de força." },
+  { name: "Cura Completa", level: 6, school: "Abjuração", classes: ["Clérigo", "Druida"], effect: "Restaura grande quantidade de vida." },
+  { name: "Teleporte", level: 7, school: "Conjuração", classes: ["Bardo", "Feiticeiro", "Mago"], effect: "Transporta o grupo para um destino distante." },
+  { name: "Regeneração", level: 7, school: "Transmutação", classes: ["Bardo", "Clérigo", "Druida"], effect: "Restaura vida continuamente e membros perdidos." },
+  { name: "Tsunami", level: 8, school: "Conjuração", classes: ["Druida"], effect: "Uma muralha de água avança pelo campo." },
+  { name: "Palavra de Poder: Atordoar", level: 8, school: "Encantamento", classes: ["Bardo", "Feiticeiro", "Bruxo", "Mago"], effect: "Atordoa uma criatura vulnerável." },
+  { name: "Desejo", level: 9, school: "Conjuração", classes: ["Feiticeiro", "Mago"], effect: "Replica magias ou altera a realidade sob risco." },
+  { name: "Palavra de Poder: Curar", level: 9, school: "Encantamento", classes: ["Bardo", "Clérigo"], effect: "Restauração extrema e remoção de condições." }
 ];

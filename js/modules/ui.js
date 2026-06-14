@@ -134,6 +134,7 @@ export function renderSummary() {
   const characterName = elements.nome.value || 'novo personagem';
   const characterMeta = [
     elements.raca.value,
+    document.getElementById('subraca')?.value,
     elements.classe1.value,
     `nível ${elements.nivel.value || 1}`
   ].filter(Boolean).join(' · ');
