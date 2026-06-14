@@ -243,6 +243,10 @@ function formatAttributeLabel(attribute) {
     .join('/');
 }
 
+function compactValueLabel(value) {
+  return String(value || '').replace(/\s+ou\s+/g, '/').replace(/\s+/g, ' ');
+}
+
 function getBestClassAttackAttribute(data) {
   const options = String(data?.attackStat || 'for')
     .split('/')
@@ -573,7 +577,7 @@ function renderSkillCollection() {
     editButton.addEventListener('click', () => editSkill(index));
     const useButton = document.createElement('button');
     useButton.type = 'button';
-    useButton.textContent = 'Usar';
+    markUseButton(useButton, skill);
     useButton.addEventListener('click', () => usePower(skill, useButton));
     const deleteButton = document.createElement('button');
     deleteButton.type = 'button';
@@ -880,7 +884,7 @@ function renderClassCombatStats() {
   const damageBonus = getAttributeModifier(attackAttribute);
   document.getElementById('classCombatTitle').textContent = `${elements.classe1.value}: ataque base`;
   document.getElementById('combatAttackStat').textContent = formatAttributeLabel(data.attackStat);
-  document.getElementById('combatAttackDie').textContent = data.attackDie;
+  document.getElementById('combatAttackDie').textContent = compactValueLabel(data.attackDie);
   container.innerHTML = `
     <span><b>${formatAttributeLabel(data.attackStat)}</b><small>Atributo usado</small></span>
     <span><b>${data.attackDie}</b><small>Dado de ataque</small></span>
@@ -998,6 +1002,15 @@ function formatPowerEffect(power) {
   return `${profile.diceCount}d${profile.die} ${formatSigned(profile.bonus)} ${labels[power.effectType || 'damage']}`;
 }
 
+function formatUseLabel(power) {
+  return `Usar · mana ${getAutoPowerProfile(power).manaCost}`;
+}
+
+function markUseButton(button, power) {
+  button.classList.add('use-power-button');
+  button.textContent = formatUseLabel(power);
+}
+
 function setResourceMessage(message) {
   const target = document.getElementById('resourceMessage');
   if (target) target.textContent = message;
@@ -1040,6 +1053,8 @@ function usePower(power, button = null) {
   const type = power.effectType || 'damage';
   if (type === 'utility') {
     setResourceMessage(`${power.name} usado. Mana restante: ${mana.value}.`);
+    elements.rollResult.innerHTML = `<span class="dice-icon">✓</span><span>${power.name}: usado</span>`;
+    if (button) animateRollButton(button);
     saveDraftSoon();
     return;
   }
@@ -1295,6 +1310,18 @@ function renderAutomaticAbilities() {
     const card = document.createElement('article');
     card.className = 'spell-card owned';
     card.innerHTML = `<span>${ability.source}</span><h4>${ability.name}</h4><p>${ability.description}</p><small>Liberada pela progressão, sem gastar pontos de compra.</small>`;
+    const useButton = document.createElement('button');
+    useButton.type = 'button';
+    const power = {
+      name: ability.name,
+      description: ability.description,
+      origin: ability.source,
+      effectType: 'utility',
+      manaCost: 0
+    };
+    markUseButton(useButton, power);
+    useButton.addEventListener('click', () => usePower(power, useButton));
+    card.appendChild(useButton);
     container.appendChild(card);
   });
 }
@@ -1330,8 +1357,9 @@ function renderFreeSpells() {
     card.innerHTML = `<span>${spell.level === 0 ? 'Truque' : `${spell.level}º círculo`} · ${spell.school}</span><h4>${spell.name}</h4><p>${describeSpell(spell)}</p>`;
     const useButton = document.createElement('button');
     useButton.type = 'button';
-    useButton.textContent = 'Usar';
-    useButton.addEventListener('click', () => usePower(spellToPower(spell), useButton));
+    const power = spellToPower(spell);
+    markUseButton(useButton, power);
+    useButton.addEventListener('click', () => usePower(power, useButton));
     const button = document.createElement('button');
     button.type = 'button';
     button.textContent = 'Preparar';
@@ -1411,8 +1439,9 @@ function renderSpellCatalog() {
     prepareButton.addEventListener('click', () => prepareSpell(spell));
     const useButton = document.createElement('button');
     useButton.type = 'button';
-    useButton.textContent = 'Usar';
-    useButton.addEventListener('click', () => usePower(spellToPower(spell), useButton));
+    const power = spellToPower(spell);
+    markUseButton(useButton, power);
+    useButton.addEventListener('click', () => usePower(power, useButton));
     const sellButton = document.createElement('button');
     sellButton.type = 'button';
     sellButton.textContent = 'Vender';
@@ -1496,7 +1525,7 @@ function renderCustomSpells() {
     card.innerHTML = `<span>${spell.origin} · ${formatPowerEffect(spell)}</span><h4>${spell.name}</h4><p>${spell.description}</p>`;
     const useButton = document.createElement('button');
     useButton.type = 'button';
-    useButton.textContent = 'Usar';
+    markUseButton(useButton, spell);
     useButton.addEventListener('click', () => usePower(spell, useButton));
     const deleteButton = document.createElement('button');
     deleteButton.type = 'button';
@@ -1728,6 +1757,131 @@ function deleteCharacter(index) {
 function clearAllCharacters() {
   localStorage.removeItem('savedCharacters');
   loadSavedCharacters();
+}
+
+function downloadTextFile(filename, content, type = 'application/json') {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function getExportFilename(extension) {
+  const name = (elements.nome.value || 'personagem')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/gi, '-')
+    .replace(/^-|-$/g, '')
+    .toLowerCase() || 'personagem';
+  return `${name}-ficha.${extension}`;
+}
+
+function exportCharacterFile() {
+  const payload = {
+    version: 2,
+    exportedAt: new Date().toISOString(),
+    character: getCharacterData()
+  };
+  downloadTextFile(getExportFilename('json'), JSON.stringify(payload, null, 2));
+  setResourceMessage('Arquivo da ficha exportado em JSON.');
+}
+
+function importCharacterFile(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(String(reader.result || '{}'));
+      const character = parsed.character || parsed;
+      loadCharacter(character);
+      localStorage.setItem('lastCharacterDraft', JSON.stringify(getCharacterData()));
+      saveCharacter();
+      setResourceMessage('Ficha importada e salva no baú.');
+      document.querySelector('[data-target="tab-ficha"]')?.click();
+    } catch {
+      setResourceMessage('Arquivo inválido. Importe um JSON exportado por esta ficha.');
+    } finally {
+      event.target.value = '';
+    }
+  };
+  reader.readAsText(file);
+}
+
+function getPreparedSpellLines() {
+  return [...document.querySelectorAll('[data-store^="spell-"]')]
+    .map(input => {
+      const value = input.value.trim();
+      return value ? `<li><b>${input.dataset.store.replace('spell-', '')}º:</b> ${value.replace(/\n/g, ', ')}</li>` : '';
+    })
+    .filter(Boolean)
+    .join('');
+}
+
+function exportCharacterPdf() {
+  const character = getCharacterData();
+  const automatic = getAutomaticAbilities();
+  const freeSpells = getFreeSpells();
+  const items = inventory
+    .map(itemId => getEquipmentCatalog().find(item => item.id === itemId))
+    .filter(Boolean);
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    setResourceMessage('Permita pop-ups para exportar a ficha em PDF.');
+    return;
+  }
+  const photo = character.photo ? `<img src="${character.photo}" alt="Retrato">` : '<div class="empty-photo">Sem retrato</div>';
+  printWindow.document.write(`<!doctype html>
+    <html lang="pt-BR">
+    <head>
+      <meta charset="utf-8">
+      <title>${character.nome || 'Ficha'} · PDF</title>
+      <style>
+        @page { size: A4; margin: 14mm; }
+        * { box-sizing: border-box; }
+        body { margin: 0; color: #303030; font-family: Georgia, serif; background: #f7f3ec; }
+        .sheet { padding: 22px; border: 2px solid #333; border-radius: 18px; background: #fffaf2; }
+        header { display: grid; grid-template-columns: 130px 1fr; gap: 18px; align-items: center; border-bottom: 2px solid #333; padding-bottom: 16px; }
+        img, .empty-photo { width: 130px; height: 160px; object-fit: contain; border: 2px solid #333; border-radius: 12px; background: #eee; display: grid; place-items: center; font: 700 12px sans-serif; }
+        h1 { margin: 0; font-size: 42px; line-height: .95; font-style: italic; text-transform: lowercase; }
+        h2 { margin: 18px 0 8px; font-size: 20px; border-bottom: 1px solid #aaa; }
+        .meta, .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .box { padding: 9px; border: 1px solid #aaa; border-radius: 8px; background: #fff; min-height: 44px; }
+        .box b { display: block; font: 700 10px sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #666; }
+        ul { margin: 6px 0 0; padding-left: 18px; }
+        .wide { grid-column: 1 / -1; }
+        .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      </style>
+    </head>
+    <body>
+      <main class="sheet">
+        <header>${photo}<div><h1>${character.nome || 'Novo personagem'}</h1><p>${character.raca} · ${character.subraca} · ${character.classe1} ${character.nivelC1} · Nível ${character.nivel}</p></div></header>
+        <h2>Status</h2>
+        <section class="meta">
+          <div class="box"><b>PV</b>${document.getElementById('currentHp').value} / ${getCalculatedMaxHp()}</div>
+          <div class="box"><b>Mana</b>${document.getElementById('currentMana').value} / ${getCalculatedMaxMana()}</div>
+          <div class="box"><b>CA</b>${getCalculatedArmorClass()}</div>
+          <div class="box"><b>Proficiência</b>${elements.profBonus.value}</div>
+          <div class="box"><b>Deslocamento</b>${getCalculatedSpeed()}</div>
+          <div class="box"><b>Dado de vida</b>${character.hitDie}</div>
+        </section>
+        <h2>Atributos</h2>
+        <section class="grid">${['For','Dex','Con','Int','Sab','Car'].map(key => `<div class="box"><b>${key.toUpperCase()}</b>${document.getElementById(`total${key}`).textContent} (${document.getElementById(`mod${key}`).textContent})</div>`).join('')}</section>
+        <section class="two">
+          <div><h2>Habilidades</h2><ul>${automatic.map(item => `<li><b>${item.name}</b>: ${item.description}</li>`).join('')}${purchasedSkills.map(item => `<li><b>${item.name}</b> · mana ${getAutoPowerProfile(item).manaCost}: ${item.description}</li>`).join('')}</ul></div>
+          <div><h2>Magias</h2><ul>${freeSpells.map(item => `<li><b>${item.name}</b>: ${describeSpell(item)}</li>`).join('')}${customSpells.map(item => `<li><b>${item.name}</b> · mana ${getAutoPowerProfile(item).manaCost}: ${item.description}</li>`).join('')}${getPreparedSpellLines()}</ul></div>
+        </section>
+        <h2>Equipamento</h2><ul>${items.map(item => `<li><b>${item.name}</b>: ${item.description}</li>`).join('') || '<li>Nenhum item.</li>'}</ul>
+        <h2>História</h2><div class="box wide">${character.historia || 'Sem história registrada.'}</div>
+      </main>
+      <script>window.addEventListener('load', () => { window.print(); });</script>
+    </body></html>`);
+  printWindow.document.close();
 }
 
 function saveDraftNow() {
@@ -2076,6 +2230,9 @@ function init() {
   document.getElementById('skillPhotoInput').addEventListener('change', handleSkillPhotoUpload);
   document.getElementById('addCustomItem').addEventListener('click', addCustomItem);
   document.getElementById('addCustomSpell').addEventListener('click', addCustomSpell);
+  document.getElementById('exportPdf').addEventListener('click', exportCharacterPdf);
+  document.getElementById('exportCharacterFile').addEventListener('click', exportCharacterFile);
+  document.getElementById('importCharacterFile').addEventListener('change', importCharacterFile);
   document.getElementById('applyDamage').addEventListener('click', () => updateResource('damage', document.getElementById('resourceAmount').value));
   document.getElementById('applyHealing').addEventListener('click', () => updateResource('heal', document.getElementById('resourceAmount').value));
   document.getElementById('spendMana').addEventListener('click', () => updateResource('spendMana', document.getElementById('resourceAmount').value));

@@ -92,7 +92,7 @@ textarea:focus-visible {
 
 .character-sheet {
   display: grid;
-  grid-template-columns: 280px minmax(0, 1fr);
+  grid-template-columns: 260px minmax(0, 1fr);
   min-height: 900px;
   overflow: hidden;
   border-radius: 18px;
@@ -106,7 +106,7 @@ textarea:focus-visible {
   position: relative;
   z-index: 2;
   min-width: 0;
-  padding: 25px;
+  padding: 20px;
   overflow: hidden;
   color: #e4e4e4;
   background:
@@ -130,7 +130,7 @@ textarea:focus-visible {
 
 .stat-sidebar-title {
   height: 62px;
-  margin: -25px 8px 8px -25px;
+  margin: -20px 0 8px -20px;
   overflow: hidden;
   border-radius: 16px 0 16px 0;
   background: #393939;
@@ -139,9 +139,9 @@ textarea:focus-visible {
 
 .stat-sidebar-title span {
   display: block;
-  margin-right: -4px;
+  margin-right: 6px;
   padding-top: 26px;
-  font: italic 800 3.55rem/.7 var(--serif);
+  font: italic 800 clamp(2.75rem, 4.4vw, 3.35rem)/.7 var(--serif);
   letter-spacing: 1px;
   background: var(--gradient);
   background-clip: text;
@@ -151,21 +151,21 @@ textarea:focus-visible {
 .stat-block {
   position: relative;
   display: grid;
-  grid-template-columns: 98px minmax(0, 1fr);
+  grid-template-columns: 92px minmax(0, 1fr);
   min-height: 106px;
   margin-top: 12px;
 }
 
 .stat-score {
-  width: 112px;
+  width: 104px;
   height: 100px;
-  margin-left: -25px;
+  margin-left: -20px;
   overflow: hidden;
   border-radius: 0 15px 15px 0;
   background: #4c4c4c;
   box-shadow: 2px 2px 7px #333;
   color: #dedede;
-  font: italic 800 4.8rem/1.35 var(--serif);
+  font: italic 800 4.35rem/1.38 var(--serif);
   text-align: right;
   letter-spacing: -7px;
   padding-right: 3px;
@@ -177,9 +177,9 @@ textarea:focus-visible {
   z-index: 1;
   align-self: center;
   min-width: 0;
-  padding-left: 10px;
-  font: 600 .72rem/1.65 var(--mono);
-  letter-spacing: .08em;
+  padding-left: 8px;
+  font: 600 .66rem/1.65 var(--mono);
+  letter-spacing: .06em;
   text-transform: uppercase;
   text-shadow: 1px 1px 2px #333;
 }
@@ -190,15 +190,15 @@ textarea:focus-visible {
   max-width: 100%;
   position: absolute;
   top: -4px;
-  left: -106px;
+  left: -98px;
   margin: 0;
   padding: 5px 8px 5px 10px;
   border-radius: 10px;
   background: var(--gradient);
   box-shadow: 2px 2px 5px #333;
   color: #444;
-  font: 800 .58rem/1 var(--serif);
-  letter-spacing: .18em;
+  font: 800 .53rem/1 var(--serif);
+  letter-spacing: .12em;
   white-space: nowrap;
 }
 
@@ -208,7 +208,7 @@ textarea:focus-visible {
 
 .stat-copy p {
   margin: 26px 0 0;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .sheet-main {
@@ -303,6 +303,7 @@ textarea:focus-visible {
 .hero-actions button,
 .banner-upload,
 .action-buttons button,
+.import-character-button,
 .panel-heading > button,
 .saved-card button {
   border: 0;
@@ -323,7 +324,8 @@ textarea:focus-visible {
   cursor: pointer;
 }
 
-.banner-upload input {
+.banner-upload input,
+.import-character-button input {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -353,6 +355,13 @@ textarea:focus-visible {
 .button-muted {
   background: rgba(238, 238, 238, .9);
   color: #444;
+}
+
+.import-character-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
 }
 
 .sheet-tabs {
@@ -540,6 +549,13 @@ textarea:focus-visible {
 .spell-card.owned button + button {
   margin-left: 6px;
   background: #a84d43;
+}
+
+.spell-card button.use-power-button,
+.skill-card-actions button.use-power-button {
+  background: linear-gradient(135deg, var(--blue), var(--orange));
+  color: #fff;
+  box-shadow: 3px 3px 0 rgba(68, 68, 68, .28);
 }
 
 @keyframes panelIn {
@@ -921,7 +937,7 @@ input[type="file"] {
 
 .skill-collection {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 12px;
   margin-top: 18px;
 }
@@ -966,8 +982,8 @@ input[type="file"] {
 }
 
 .skill-price {
-  display: inline-flex;
-  width: max-content;
+  display: inline-block;
+  max-width: 100%;
   margin-top: 7px;
   padding: .28rem .6rem;
   border-radius: 999px;
@@ -975,6 +991,7 @@ input[type="file"] {
   color: #fff;
   font-size: .58rem;
   font-weight: 900;
+  line-height: 1.25;
   letter-spacing: .08em;
   text-transform: uppercase;
   box-shadow: 0 8px 18px rgba(0, 0, 0, .16);
@@ -996,6 +1013,10 @@ input[type="file"] {
 
 .skill-card-actions button:last-child {
   background: #963f39;
+}
+
+.skill-card-actions .use-power-button {
+  min-width: 118px;
 }
 
 .summary-card {
@@ -1029,13 +1050,15 @@ input[type="file"] {
 .combat-vitals,
 .magic-stats {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
   gap: 12px;
 }
 
 .combat-vitals > div,
 .magic-stats > div {
-  padding: 20px;
+  min-width: 0;
+  min-height: 112px;
+  padding: 16px;
   border-radius: 14px;
   background: #444;
   color: #eee;
@@ -1054,10 +1077,14 @@ input[type="file"] {
 .magic-stats strong {
   display: block;
   margin-top: 9px;
-  font: italic 800 2.4rem/.9 var(--serif);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font: italic 800 clamp(1.55rem, 4vw, 2.15rem)/.95 var(--serif);
   background: var(--gradient);
   background-clip: text;
   color: transparent;
+  overflow-wrap: normal;
 }
 
 .combat-vitals input,
@@ -1347,6 +1374,10 @@ input[type="file"] {
   font: 800 .72rem/1 var(--mono);
   text-transform: uppercase;
   box-shadow: 2px 2px 0 rgba(68, 68, 68, .22);
+}
+
+.spell-card button {
+  margin: 6px 6px 0 0;
 }
 
 .pool-actions #rollPoolButton {
