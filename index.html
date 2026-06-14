@@ -17,28 +17,43 @@
 </head>
 <body>
   <div id="ui-container">
-    <div class="top-bar">
-      <p class="bar-text">DADOS</p>
-      <label class="select">
-        <select id="diceCount">
-          <option value="1">1</option>
-          <option value="2">2</option>
-          <option value="3" selected>3</option>
-          <option value="4">4</option>
-          <option value="5">5</option>
-          <option value="6">6</option>
-          <option value="10">10</option>
-          <option value="20">20</option>
-        </select>
-      </label>
-    </div>
+    <div class="dice-roller-section">
+      <div class="dice-roller-header">
+        <h2 class="dice-roller-title">Rolar Dados</h2>
+        <p class="dice-roller-subtitle">Clique no dado para ativar a magia</p>
+      </div>
+      
+      <div class="dice-roller-wrapper">
+        <div class="dice-canvas-area">
+          <!-- Canvas será inserido aqui pelo JavaScript -->
+        </div>
+        
+        <div class="dice-controls">
+          <label class="dice-label">
+            <span class="label-text">Quantidade</span>
+            <select id="diceCount" class="dice-select">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3" selected>3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="10">10</option>
+              <option value="20">20</option>
+            </select>
+          </label>
+        </div>
+      </div>
 
-    <div id="result-board">
-      <span id="total-score">0</span>
-      <span class="sub-text" id="detail-score"></span>
+      <div class="dice-result-container">
+        <div class="result-card">
+          <span class="result-label">Total</span>
+          <span id="total-score" class="result-value">0</span>
+          <span class="sub-text" id="detail-score"></span>
+        </div>
+        <p class="dice-hint">Clique no dado para rolar</p>
+      </div>
     </div>
-
-    <div class="hint">Clique para rolar dados</div>
   </div>
 
   <main class="app-shell">

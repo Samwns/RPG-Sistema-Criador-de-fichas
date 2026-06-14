@@ -8,6 +8,7 @@ let isHolding = false;
 let needsResultCheck = false;
 let mouse = new THREE.Vector2();
 let raycaster = new THREE.Raycaster();
+let canvasContainer = null;
 
 const FRUSTUM_SIZE = 23;
 let dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -15);
@@ -28,10 +29,15 @@ const commonColors = {
 };
 
 export function initDiceRoller() {
+  canvasContainer = document.querySelector('.dice-canvas-area');
+  if (!canvasContainer) return; // Não inicializa se o container não existir
+
   scene = new THREE.Scene();
   scene.background = new THREE.Color("#F6F3EB");
 
-  const aspect = window.innerWidth / window.innerHeight;
+  const containerWidth = canvasContainer.clientWidth;
+  const containerHeight = canvasContainer.clientHeight;
+  const aspect = containerWidth / containerHeight;
   
   camera = new THREE.OrthographicCamera(
     (FRUSTUM_SIZE * aspect) / -2,
@@ -46,10 +52,11 @@ export function initDiceRoller() {
   camera.lookAt(0, 0, 0); 
 
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(containerWidth, containerHeight);
   renderer.domElement.style.touchAction = 'none'; 
   renderer.domElement.style.userSelect = 'none';
-  document.body.appendChild(renderer.domElement);
+  renderer.domElement.style.display = 'block';
+  canvasContainer.appendChild(renderer.domElement);
 
   world = new CANNON.World();
   world.gravity.set(0, -40, 0);
@@ -69,12 +76,16 @@ export function initDiceRoller() {
   createPhysicsWalls(wallMat);
   updateDiceCount(3);
 
-  window.addEventListener("resize", onWindowResize);
-  window.addEventListener("mousedown", onInputStart);
+  // Usar ResizeObserver para monitorar mudanças no container
+  const resizeObserver = new ResizeObserver(() => onWindowResize());
+  resizeObserver.observe(canvasContainer);
+
+  // Event listeners para canvas e window
+  renderer.domElement.addEventListener("mousedown", onInputStart);
   window.addEventListener("mousemove", onInputMove);
   window.addEventListener("mouseup", onInputEnd);
-  document.body.addEventListener("mouseleave", onInputEnd); 
-  window.addEventListener("touchstart", onInputStart, { passive: false });
+  renderer.domElement.addEventListener("mouseleave", onInputEnd);
+  renderer.domElement.addEventListener("touchstart", onInputStart, { passive: false });
   window.addEventListener("touchmove", onInputMove, { passive: false });
   window.addEventListener("touchend", onInputEnd);
 
@@ -222,15 +233,23 @@ function updateMousePosition(e) {
     x = e.clientX;
     y = e.clientY;
   }
-  mouse.x = (x / window.innerWidth) * 2 - 1;
-  mouse.y = -(y / window.innerHeight) * 2 + 1;
+  
+  // Calcular coordenadas relativas ao container
+  if (canvasContainer) {
+    const rect = canvasContainer.getBoundingClientRect();
+    const relX = x - rect.left;
+    const relY = y - rect.top;
+    
+    mouse.x = (relX / canvasContainer.clientWidth) * 2 - 1;
+    mouse.y = -(relY / canvasContainer.clientHeight) * 2 + 1;
+  }
 }
 
 function onInputStart(e) {
   if (
     e.target.tagName === "SELECT" ||
     e.target.tagName === "LABEL" ||
-    e.target.closest(".top-bar")
+    e.target.closest(".dice-controls")
   )
     return;
 
@@ -430,7 +449,11 @@ function animate() {
 }
 
 function onWindowResize() {
-  const aspect = window.innerWidth / window.innerHeight;
+  if (!canvasContainer) return;
+  
+  const containerWidth = canvasContainer.clientWidth;
+  const containerHeight = canvasContainer.clientHeight;
+  const aspect = containerWidth / containerHeight;
   
   camera.left = (-FRUSTUM_SIZE * aspect) / 2;
   camera.right = (FRUSTUM_SIZE * aspect) / 2;
@@ -438,5 +461,5 @@ function onWindowResize() {
   camera.bottom = -FRUSTUM_SIZE / 2;
 
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(containerWidth, containerHeight);
 }
