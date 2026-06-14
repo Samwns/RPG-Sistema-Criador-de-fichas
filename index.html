@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RPG Criador de Fichas</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">RPG Criador de Fichas</p>
+        <h1>Ficha de Personagem Interativa</h1>
+        <p>Transforme o script da planilha em um criador de fichas responsivo para celular.</p>
+      </div>
+      <div class="hero-actions">
+        <button id="resetButton" type="button">Resetar ficha</button>
+      </div>
+    </header>
+
+    <nav class="tabs" role="tablist">
+      <button class="tab-button active" data-target="tab-ficha" type="button">Ficha</button>
+      <button class="tab-button" data-target="tab-livro1" type="button">Livro 1</button>
+      <button class="tab-button" data-target="tab-livro2" type="button">Livro 2</button>
+      <button class="tab-button" data-target="tab-livro3" type="button">Livro 3</button>
+      <button class="tab-button" data-target="tab-referencia" type="button">Referência</button>
+    </nav>
+
+    <section class="tab-panel active" id="tab-ficha">
+      <section class="card">
+        <h2>1. Informações Básicas</h2>
+        <div class="form-grid">
+          <label><span>Nome do Personagem</span><input id="nome" type="text" placeholder="Nome" /></label>
+          <label><span>Jogador</span><input id="jogador" type="text" placeholder="Nome do jogador" /></label>
+          <label><span>Nível atual</span><input id="nivel" type="number" min="1" max="20" value="5" /></label>
+          <label><span>Experiência (XP)</span><input id="xp" type="number" min="0" value="0" /></label>
+          <label><span>Bônus de Proficiência</span><input id="profBonus" type="text" readonly value="+3" /></label>
+          <label><span>Vida Máxima</span><input id="vidaMaxima" type="number" min="1" value="30" /></label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>2. Raça, Origem e Classe</h2>
+        <div class="form-grid">
+          <label><span>Raça</span><select id="raca"></select></label>
+          <label><span>Origem</span><select id="origem"></select></label>
+          <label><span>Classe 1</span><select id="classe1"></select></label>
+          <label><span>Nível C1</span><input id="nivelC1" type="number" min="1" max="20" value="5" /></label>
+          <label class="toggle-row"><span>Ativar Multiclasse?</span><input id="multiclasse" type="checkbox" /></label>
+        </div>
+        <div id="multiclasseFields" class="multiclass-grid hidden">
+          <label><span>Classe 2</span><select id="classe2"></select></label>
+          <label><span>Nível C2</span><input id="nivelC2" type="number" min="1" max="20" value="1" /></label>
+          <label><span>Classe 3</span><select id="classe3"></select></label>
+          <label><span>Nível C3</span><input id="nivelC3" type="number" min="1" max="20" value="1" /></label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>3. Atributos</h2>
+        <div class="points-overview">
+          <div><strong id="budgetLabel">Distribua 40 pontos</strong></div>
+          <div><strong>Usados:</strong> <span id="usedPoints">0</span></div>
+          <div><strong>Restantes:</strong> <span id="remainingPoints">40</span></div>
+        </div>
+        <div class="atributos-grid">
+          <label><span>FOR</span><input id="distFor" class="dist-input" type="number" min="0" max="15" value="0" /></label>
+          <label><span>DEX</span><input id="distDex" class="dist-input" type="number" min="0" max="15" value="0" /></label>
+          <label><span>CON</span><input id="distCon" class="dist-input" type="number" min="0" max="15" value="0" /></label>
+          <label><span>INT</span><input id="distInt" class="dist-input" type="number" min="0" max="15" value="0" /></label>
+          <label><span>SAB</span><input id="distSab" class="dist-input" type="number" min="0" max="15" value="0" /></label>
+        </div>
+        <div class="atributos-grid">
+          <label><span>Bônus Raça FOR</span><input id="raceFor" type="number" min="0" max="5" value="0" /></label>
+          <label><span>Bônus Raça DEX</span><input id="raceDex" type="number" min="0" max="5" value="0" /></label>
+          <label><span>Bônus Raça CON</span><input id="raceCon" type="number" min="0" max="5" value="0" /></label>
+          <label><span>Bônus Raça INT</span><input id="raceInt" type="number" min="0" max="5" value="0" /></label>
+          <label><span>Bônus Raça SAB</span><input id="raceSab" type="number" min="0" max="5" value="0" /></label>
+        </div>
+        <div class="total-grid">
+          <div class="stat-card"><strong>Total FOR</strong><span id="totalFor">10</span></div>
+          <div class="stat-card"><strong>Mod FOR</strong><span id="modFor">+0</span></div>
+          <div class="stat-card"><strong>Total DEX</strong><span id="totalDex">10</span></div>
+          <div class="stat-card"><strong>Mod DEX</strong><span id="modDex">+0</span></div>
+          <div class="stat-card"><strong>Total CON</strong><span id="totalCon">10</span></div>
+          <div class="stat-card"><strong>Mod CON</strong><span id="modCon">+0</span></div>
+          <div class="stat-card"><strong>Total INT</strong><span id="totalInt">10</span></div>
+          <div class="stat-card"><strong>Mod INT</strong><span id="modInt">+0</span></div>
+          <div class="stat-card"><strong>Total SAB</strong><span id="totalSab">10</span></div>
+          <div class="stat-card"><strong>Mod SAB</strong><span id="modSab">+0</span></div>
+        </div>
+        <div class="limit-warning"><span id="budgetWarning"></span></div>
+      </section>
+
+      <section class="card">
+        <h2>4. Magia e Vida</h2>
+        <div class="form-grid">
+          <label><span>Pontos p/ Magia</span><input id="pontosMagia" type="number" min="0" value="15" /></label>
+          <label><span>Pontos p/ Vida</span><input id="pontosVida" type="number" min="0" value="15" /></label>
+          <label class="full-width"><span>Total Magia + Vida</span><output id="totalMagiaVida">30</output></label>
+        </div>
+        <p class="hint">O total deve ser 30 para manter o limite do sistema.</p>
+      </section>
+
+      <section class="card">
+        <h2>5. Habilidades e Perícias</h2>
+        <div class="form-grid">
+          <label><span>Hab. Raça / Perícia</span><input id="skillRaca" type="text" placeholder="Descreva habilidade ou perícia" /></label>
+          <label><span>Hab. Classe 1 / Perícia</span><input id="skillClasse1" type="text" placeholder="Descreva habilidade ou perícia" /></label>
+          <label><span>Hab. Classe 2 / Perícia</span><input id="skillClasse2" type="text" placeholder="Descreva habilidade ou perícia" /></label>
+          <label><span>Hab. Classe 3 / Perícia</span><input id="skillClasse3" type="text" placeholder="Descreva habilidade ou perícia" /></label>
+        </div>
+        <div class="form-grid full-width-grid">
+          <label class="full-width"><span>Perícia 1</span><input id="pericia1" type="text" placeholder="Acrobacia, Arcanismo, etc." /></label>
+          <label class="full-width"><span>Perícia 2</span><input id="pericia2" type="text" placeholder="Acrobacia, Arcanismo, etc." /></label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>6. Rolagens Automáticas</h2>
+        <div class="roll-list">
+          <button type="button" data-action="dados" data-type="for" class="roll-button">⚔️ Ataque Físico (FOR + Prof)</button>
+          <button type="button" data-action="dados" data-type="dex" class="roll-button">🏹 Ataque Distância/Furtivo (DEX + Prof)</button>
+          <button type="button" data-action="dados" data-type="dexNoProf" class="roll-button">🛡️ Esquiva / Agilidade (Somente DEX)</button>
+          <button type="button" data-action="dados" data-type="int" class="roll-button">✨ Magia / Feitiço (INT + Prof)</button>
+        </div>
+        <div class="roll-output">
+          <strong>Resultado:</strong>
+          <p id="rollResult">Clique em uma rolagem para ver o resultado.</p>
+        </div>
+      </section>
+    </section>
+
+    <section class="tab-panel" id="tab-livro1">
+      <section class="card">
+        <h2>Livro 1 - Raças e Origens</h2>
+        <div class="book-grid">
+          <div class="book-card book-header">Raças</div>
+          <div class="book-card book-section">
+            <h3>Constructos</h3>
+            <p><strong>Forjado Bélico</strong>: +2 CON, +1 FOR — Imunidade a veneno, corpo metálico (+1 CA)</p>
+            <p><strong>Autognomo</strong>: +2 INT, +1 CON — Reparação própria, magia inata</p>
+          </div>
+          <div class="book-card book-section">
+            <h3>Elfos</h3>
+            <p><strong>Elfo da Floresta</strong>: +2 DEX, +1 SAB — Visão Escura, +5 pés movimento, Arcos</p>
+            <p><strong>Alto Elfo</strong>: +2 DEX, +1 INT — Magia arcana, Truque extra</p>
+            <p><strong>Drow</strong>: +2 DEX, +1 CAR — Visão Escura (120 pés), Magia drow</p>
+          </div>
+          <div class="book-card book-section">
+            <h3>Gnomos</h3>
+            <p><strong>Gnomo das Rochas</strong>: +2 INT, +1 CON — Artifice, +1 armadura</p>
+            <p><strong>Gnomo da Floresta</strong>: +2 INT, +1 SAB — Magia, Rastreamento</p>
+          </div>
+          <div class="book-card book-section">
+            <h3>Raças Bestiais</h3>
+            <p><strong>Homem-Rato</strong>: +2 DEX, +1 INT — Escuridão Perfeita, Infiltração</p>
+            <p><strong>Minotauro</strong>: +2 FOR, +1 CON — Chifres (1d6), Defesa Labírinto</p>
+            <p><strong>Lizardfolk</strong>: +2 CON, +1 FOR — Frio Sanguíneo, Cauda (reação)</p>
+            <p><strong>Tabaxi</strong>: +2 DEX, +1 CAR — Garras (1d4), +10 pés movimento</p>
+          </div>
+          <div class="book-card book-section">
+            <h3>Outras Raças</h3>
+            <p><strong>Halfling</strong>: +2 DEX, +1 SAB — Sorte, +5 pés movimento</p>
+            <p><strong>Goliata</strong>: +2 FOR, +1 CON — Gigante (7 pés), Fúria gigante</p>
+            <p><strong>Firbolg</strong>: +2 SAB, +1 INT — Gigante (8 pés), Magia druida</p>
+            <p><strong>Orc</strong>: +2 FOR, +1 CAR (negativa) — Chifres, Agressão extra</p>
+            <p><strong>Goblinoide</strong>: +2 DEX, +1 INT — Escuridão, Arco de fuga</p>
+            <p><strong>Bugbear</strong>: +2 FOR, +1 SAB — Garras, Surpresa extra (1d6)</p>
+            <p><strong>Tiefling</strong>: +2 CAR, +1 INT — Resistência fogo, Chifres, Cauda</p>
+            <p><strong>Dragonborn</strong>: +2 FOR, +1 CAR — Arma de respiração (2d6), Resistência</p>
+            <p><strong>Anão</strong>: +2 CON, +1 FOR — Visão Escura, Resiliência de Aço</p>
+          </div>
+          <div class="book-card book-header">Origens</div>
+          <div class="book-card book-section">
+            <p><strong>Acolhido</strong>: Você foi criado pela comunidade local. Vantagem em testes sociais.</p>
+            <p><strong>Aventureiro Nato</strong>: Você sempre desejou explorar. +1 perícia Sobrevivência.</p>
+            <p><strong>Criminoso Redimido</strong>: Você deixou seu passado para trás. +1 perícia Furtividade.</p>
+            <p><strong>Soldado Veterano</strong>: Você serviu em um exército. +1 perícia Intimidação.</p>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <section class="tab-panel" id="tab-livro2">
+      <section class="card">
+        <h2>Livro 2 - Classes</h2>
+        <div class="book-grid">
+          <div class="book-card book-header">Classes Marciais</div>
+          <div class="book-card book-section">
+            <p><strong>Bárbaro</strong>: d12 — FOR — Fúria (reduz dano 50%), Golpe Agressivo</p>
+            <p><strong>Guerreiro</strong>: d10 — FOR/DEX — Surto de Ação, Ataque Múltiplo (2x)</p>
+            <p><strong>Paladino</strong>: d10 — FOR/CAR — Aura de Proteção, Dano Radiante ⭐</p>
+            <p><strong>Patrulheiro</strong>: d10 — DEX/SAB — Inimigo Predileto (+4 vs Dragão), Ataque Duplo</p>
+          </div>
+          <div class="book-card book-header">Classes Especialistas</div>
+          <div class="book-card book-section">
+            <p><strong>Ladino</strong>: d8 — DEX — Ataque Furtivo (+3d6), Esquiva Sobrenatural</p>
+            <p><strong>Monge</strong>: d8 — DEX/SAB — Ataque Desarmado, Golpe Atordoante</p>
+            <p><strong>Bardo</strong>: d8 — CAR — Inspiração Bardica (d8), Cura em Área</p>
+          </div>
+          <div class="book-card book-header">Classes Conjuradores</div>
+          <div class="book-card book-section">
+            <p><strong>Clérigo</strong>: d8 — SAB/CAR — Magia Cura, Dano Radiante ⭐</p>
+            <p><strong>Mago</strong>: d6 — INT — Controle de Campo, Magia Destrutiva</p>
+            <p><strong>Feiticeiro</strong>: d6 — CAR — Dano Potente, Metamagia</p>
+            <p><strong>Bruxo</strong>: d8 — CAR — Invocação Mística, Golpe Eldritch</p>
+            <p><strong>Druida</strong>: d8 — SAB — Forma Selvagem, Magia de Controle</p>
+          </div>
+          <div class="book-card book-header">Dicas</div>
+          <div class="book-card book-section">
+            <p>⭐ Paladino e Clérigo: Dano Radiante é super efetivo contra dragões.</p>
+            <p>🎯 Patrulheiro: +4 bônus contra Ignisrath (inimigo predileto).</p>
+            <p>🛡️ Bárbaro: Reduz dano do fogo em 50% com Fúria.</p>
+            <p>⚔️ Guerreiro: Ataque múltiplo aumenta suas chances de acertar.</p>
+            <p>💨 Ladino: Evasão ajuda contra ataques de área do dragão.</p>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <section class="tab-panel" id="tab-livro3">
+      <section class="card">
+        <h2>Livro 3 - Perícias</h2>
+        <div class="book-grid">
+          <div class="book-card book-header">Perícias Disponíveis</div>
+          <div class="book-card book-section">
+            <p><strong>Acrobacia</strong> — Movimentos, equilíbrio e dança (DEX)</p>
+            <p><strong>Adestramento Animal</strong> — Lidar e controlar animais (SAB)</p>
+            <p><strong>Arcanismo</strong> — Conhecimento mágico e arcano (INT)</p>
+            <p><strong>Atletismo</strong> — Força física, corrida e nado (FOR)</p>
+            <p><strong>Atuação</strong> — Drama, teatro e dramatização (CAR)</p>
+            <p><strong>Enganação</strong> — Mentir, blefar e enganar (CAR)</p>
+            <p><strong>Escala</strong> — Subir em superfícies (FOR)</p>
+            <p><strong>Esconderijo</strong> — Se esconder e se camuflar (DEX)</p>
+            <p><strong>Esotérico</strong> — Conhecimento oculto e arcano (INT)</p>
+            <p><strong>Furtividade</strong> — Se mover silenciosamente (DEX)</p>
+            <p><strong>História</strong> — Conhecimento histórico e lendas (INT)</p>
+            <p><strong>Insight</strong> — Ler pessoas e intenções (SAB)</p>
+            <p><strong>Intimidação</strong> — Assustar e ameaçar outros (CAR)</p>
+            <p><strong>Investigação</strong> — Procurar pistas e evidências (INT)</p>
+            <p><strong>Medicina</strong> — Curar feridas e doenças (SAB)</p>
+            <p><strong>Natureza</strong> — Conhecimento da natureza selvagem (INT)</p>
+            <p><strong>Percepção</strong> — Notar coisas ao redor (SAB)</p>
+            <p><strong>Performance</strong> — Música, dança e canto (CAR)</p>
+            <p><strong>Persuasão</strong> — Convencer e negociar (CAR)</p>
+            <p><strong>Prestidigitação</strong> — Truques de mão e ilusões (DEX)</p>
+            <p><strong>Profissão</strong> — Habilidades profissionais (SAB)</p>
+            <p><strong>Punição</strong> — Detectar mentiras e enganação (SAB)</p>
+            <p><strong>Religião</strong> — Conhecimento divino e sagrado (INT)</p>
+            <p><strong>Sleight of Hand</strong> — Roubar e manipular objetos (DEX)</p>
+            <p><strong>Sobrevivência</strong> — Rastrear e acampar (SAB)</p>
+          </div>
+          <div class="book-card book-header">Perícias por Atributo</div>
+          <div class="book-card book-section">
+            <p><strong>FOR</strong>: Atletismo, Escala</p>
+            <p><strong>DEX</strong>: Acrobacia, Esconderijo, Furtividade, Prestidigitação, Sleight of Hand</p>
+            <p><strong>CON</strong>: Resistência (especial)</p>
+            <p><strong>INT</strong>: Arcanismo, Esotérico, História, Investigação, Natureza, Religião</p>
+            <p><strong>SAB</strong>: Adestramento Animal, Insight, Medicina, Percepção, Profissão, Punição, Sobrevivência</p>
+            <p><strong>CAR</strong>: Atuação, Enganação, Intimidação, Performance, Persuasão</p>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <section class="tab-panel" id="tab-referencia">
+      <section class="card">
+        <h2>Referência</h2>
+        <div class="book-grid">
+          <div class="book-card book-section">
+            <h3>O Mundo</h3>
+            <p>Aethelgard é um reino forjado nas cinzas de uma guerra entre deuses e titãs. A magia aqui é uma cicatriz na terra.</p>
+          </div>
+          <div class="book-card book-section">
+            <h3>A Ameaça</h3>
+            <p>Ignisrath, o Devorador de Estrelas, um dragão ancião desperta no Pico de Obsidiana. Sua presença corrompe o céu e transforma rios em lava.</p>
+          </div>
+          <div class="book-card book-section">
+            <h3>O Conflito</h3>
+            <p>Ignisrath acredita que as raças atuais são erros. Pretende reiniciar o mundo através de purificação pelo fogo. Os jogadores são a última defesa.</p>
+          </div>
+          <div class="book-card book-section">
+            <h3>Estrutura da Aventura</h3>
+            <p><strong>Ato 1:</strong> Resgatar Zix (Goblin) — Ele tem o mapa das passagens secretas até o Pico.</p>
+            <p><strong>Ato 2:</strong> Túneis de Lava — Atravessar os túneis subfundos com testes INT ou FOR.</p>
+            <p><strong>Ato 3:</strong> Confronto Final — Enfrente Ignisrath no Pico; ele usa ataques de área e lava.</p>
+          </div>
+          <div class="book-card book-section">
+            <h3>Níveis e Proficiência</h3>
+            <p>Nível 1: 0 XP — Prof +2</p>
+            <p>Nível 2: 300 XP — Prof +2</p>
+            <p>Nível 3: 900 XP — Prof +2</p>
+            <p>Nível 4: 2700 XP — Prof +2</p>
+            <p>Nível 5: 6500 XP — Prof +3</p>
+            <p>Nível 6: 14000 XP — Prof +3</p>
+            <p>Nível 7: 23000 XP — Prof +3</p>
+            <p>Nível 8: 34000 XP — Prof +3</p>
+            <p>Nível 9: 48000 XP — Prof +4</p>
+            <p>Nível 10: 64000 XP — Prof +4</p>
+          </div>
+          <div class="book-card book-section">
+            <h3>Sistema de Combate</h3>
+            <p><strong>Iniciativa:</strong> d20 + Mod DEX</p>
+            <p><strong>CA:</strong> Armadura + DEX (sem armadura: 10 + DEX)</p>
+            <p><strong>Ataque:</strong> d20 + Atributo + Proficiência</p>
+            <p><strong>Dano:</strong> Dado da arma + Atributo</p>
+            <p><strong>Perícias:</strong> d20 + Atributo + Proficiência (se treinado)</p>
+          </div>
+          <div class="book-card book-section">
+            <h3>Modificador de Atributo</h3>
+            <p>8 → -1, 9 → -1, 10 → +0, 11 → +0, 12 → +1, 13 → +1, 14 → +2, 15 → +2, 16 → +3, 17 → +3, 18 → +4, 19 → +4, 20 → +5</p>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+  <script src="script.js"></script>
+</body>
+</html>
