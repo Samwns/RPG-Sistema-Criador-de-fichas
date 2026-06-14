@@ -222,6 +222,27 @@ function formatSigned(value) {
   return Number(value) >= 0 ? `+ ${Number(value)}` : `- ${Math.abs(Number(value))}`;
 }
 
+function formatAttributeLabel(attribute) {
+  const labels = { for: 'FOR', dex: 'DEX', con: 'CON', int: 'INT', sab: 'SAB', car: 'CAR' };
+  return String(attribute || '')
+    .split('/')
+    .map(part => labels[part] || part.toUpperCase())
+    .join('/');
+}
+
+function getBestClassAttackAttribute(data) {
+  const options = String(data?.attackStat || 'for')
+    .split('/')
+    .filter(Boolean);
+  return options.reduce((best, attribute) => {
+    return getAttributeModifier(attribute) > getAttributeModifier(best) ? attribute : best;
+  }, options[0] || 'for');
+}
+
+function getClassAttackDie(data) {
+  return Number(String(data?.attackDie || '1d6').match(/d(\d+)/)?.[1] || 6);
+}
+
 function openDiceTab() {
   document.querySelector('[data-target="tab-dados"]')?.click();
 }
@@ -302,6 +323,7 @@ function handleRoll(type) {
   const mods = {
     for: Number(elements.modFor.textContent.replace('+', '')),
     dex: Number(elements.modDex.textContent.replace('+', '')),
+    con: Number(elements.modCon.textContent.replace('+', '')),
     int: Number(elements.modInt.textContent.replace('+', '')),
     sab: Number(elements.modSab.textContent.replace('+', '')),
     car: Number(elements.modCar.textContent.replace('+', ''))
@@ -322,6 +344,26 @@ function handleRoll(type) {
     case 'dexNoProf':
       modifier = mods.dex;
       label = 'Esquiva';
+      break;
+    case 'dodge':
+      modifier = mods.dex + prof;
+      label = 'Esquiva treinada';
+      break;
+    case 'reflex':
+      modifier = mods.dex + prof;
+      label = 'Defesa de reflexos';
+      break;
+    case 'fortitude':
+      modifier = mods.con + prof;
+      label = 'Defesa de fortitude';
+      break;
+    case 'will':
+      modifier = mods.sab + prof;
+      label = 'Defesa de vontade';
+      break;
+    case 'concentration':
+      modifier = mods.con + prof;
+      label = 'Concentração';
       break;
     case 'int':
       modifier = mods.int + prof;
@@ -761,10 +803,68 @@ function renderWeaponList() {
   });
 }
 
+function renderClassCombatStats() {
+  const data = classData[elements.classe1.value];
+  const container = document.getElementById('classCombatStats');
+  if (!data || !container) return;
+  const attackAttribute = getBestClassAttackAttribute(data);
+  const proficiency = Number(elements.profBonus.value.replace('+', '')) || 0;
+  const attackBonus = getAttributeModifier(attackAttribute) + proficiency;
+  const damageDie = getClassAttackDie(data);
+  const damageBonus = getAttributeModifier(attackAttribute);
+  document.getElementById('classCombatTitle').textContent = `${elements.classe1.value}: ataque base`;
+  document.getElementById('combatAttackStat').textContent = formatAttributeLabel(data.attackStat);
+  document.getElementById('combatAttackDie').textContent = data.attackDie;
+  container.innerHTML = `
+    <span><b>${formatAttributeLabel(data.attackStat)}</b><small>Atributo usado</small></span>
+    <span><b>${data.attackDie}</b><small>Dado de ataque</small></span>
+    <span><b>${formatSigned(attackBonus).replace(' ', '')}</b><small>Bônus base</small></span>
+    <span><b>${data.hitDie}</b><small>Dado de vida</small></span>
+    <p>${data.weaponStyle}</p>
+  `;
+  const actions = document.createElement('div');
+  actions.className = 'class-combat-actions';
+  const attackButton = document.createElement('button');
+  attackButton.type = 'button';
+  attackButton.textContent = 'Rolar ataque da classe';
+  attackButton.addEventListener('click', () => {
+    rollDice({
+      sides: 20,
+      quantity: 1,
+      modifier: attackBonus,
+      label: `Ataque base de ${elements.classe1.value}`,
+      onComplete: ({ results, total }) => {
+        elements.rollResult.innerHTML = `<span class="dice-icon">${results[0]}</span><span>${elements.classe1.value}: ataque ${total}</span>`;
+      }
+    });
+    animateRollButton(attackButton);
+    openDiceTab();
+  });
+  const damageButton = document.createElement('button');
+  damageButton.type = 'button';
+  damageButton.textContent = 'Rolar dano base';
+  damageButton.addEventListener('click', () => {
+    rollDice({
+      sides: damageDie,
+      quantity: 1,
+      modifier: damageBonus,
+      label: `Dano base de ${elements.classe1.value}`,
+      onComplete: ({ results, total }) => {
+        elements.rollResult.innerHTML = `<span class="dice-icon">${results[0]}</span><span>${elements.classe1.value}: dano ${total}</span>`;
+      }
+    });
+    animateRollButton(damageButton);
+    openDiceTab();
+  });
+  actions.append(attackButton, damageButton);
+  container.appendChild(actions);
+}
+
 function getAttributeModifier(attribute) {
   const labels = {
     for: elements.modFor,
     dex: elements.modDex,
+    con: elements.modCon,
     int: elements.modInt,
     sab: elements.modSab,
     car: elements.modCar
@@ -956,6 +1056,8 @@ function renderClassProgression() {
   renderClassBrowser(className);
   overview.innerHTML = `
     <div><p class="panel-kicker">Dado de vida ${data.hitDie}</p><h3>${className}</h3></div>
+    <div><b>Status de ataque</b><p>${formatAttributeLabel(data.attackStat)} · ${data.attackDie} · ${data.weaponStyle}</p></div>
+    <div><b>Conjuração</b><p>${data.castingStat ? formatAttributeLabel(data.castingStat) : 'Não conjurador base'}</p></div>
     <div><b>Clique numa subclasse</b><p>${data.subclasses.map(name => `<button type="button" class="inline-pill" data-subclass-name="${name}">${name}</button>`).join('')}</p></div>
     <div><b>Recursos centrais</b><p>${data.core.join(' · ')}</p></div>
   `;
@@ -1216,7 +1318,7 @@ function renderClassReference() {
   grid.innerHTML = '';
   Object.entries(classData).forEach(([name, data]) => {
     const article = document.createElement('article');
-    article.innerHTML = `<h3>${name}</h3><b>${data.hitDie}</b><p>${data.core.map(feature => `${feature}: ${describeFeature(feature)}`).join(' ')}</p><small>Subclasses: ${data.subclasses.map(subclass => `${subclass} (${describeSubclass(subclass)})`).join(' · ')}</small>`;
+    article.innerHTML = `<h3>${name}</h3><b>${data.hitDie} · ATK ${formatAttributeLabel(data.attackStat)} · ${data.attackDie}</b><p>${data.weaponStyle}. ${data.core.map(feature => `${feature}: ${describeFeature(feature)}`).join(' ')}</p><small>Conjuração: ${data.castingStat ? formatAttributeLabel(data.castingStat) : 'não conjurador base'} · Subclasses: ${data.subclasses.map(subclass => `${subclass} (${describeSubclass(subclass)})`).join(' · ')}</small>`;
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'inline-pill';
@@ -1291,6 +1393,7 @@ function synchronize() {
   document.getElementById('combatSpeed').textContent = getCalculatedSpeed();
   document.getElementById('combatVision').textContent = document.getElementById('vision').value || '-';
   document.getElementById('combatHitDie').textContent = document.getElementById('hitDie').value;
+  renderClassCombatStats();
   saveDraftSoon();
 }
 

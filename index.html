@@ -299,6 +299,18 @@
                 <div><span>DV</span><strong id="combatHitDie">d10</strong></div>
                 <div><span>Prof.</span><strong id="combatProf">+3</strong></div>
                 <div><span>Iniciativa</span><strong id="combatInit">+0</strong></div>
+                <div><span>Atributo atk</span><strong id="combatAttackStat">FOR</strong></div>
+                <div><span>Dado atk</span><strong id="combatAttackDie">1d8</strong></div>
+              </section>
+
+              <section class="content-card class-combat-card">
+                <div class="section-title">
+                  <div>
+                    <p class="panel-kicker">Base da classe</p>
+                    <h3 id="classCombatTitle">Ataque da classe</h3>
+                  </div>
+                </div>
+                <div id="classCombatStats" class="class-combat-stats"></div>
               </section>
 
               <section class="content-card">
@@ -324,6 +336,11 @@
                   <button type="button" data-action="dados" data-type="for" class="roll-button">Ataque físico · FOR + Prof</button>
                   <button type="button" data-action="dados" data-type="dex" class="roll-button">Ataque à distância · DEX + Prof</button>
                   <button type="button" data-action="dados" data-type="dexNoProf" class="roll-button">Esquiva · somente DEX</button>
+                  <button type="button" data-action="dados" data-type="dodge" class="roll-button">Esquiva treinada · DEX + Prof</button>
+                  <button type="button" data-action="dados" data-type="reflex" class="roll-button">Defesa reflexos · DEX + Prof</button>
+                  <button type="button" data-action="dados" data-type="fortitude" class="roll-button">Defesa fortitude · CON + Prof</button>
+                  <button type="button" data-action="dados" data-type="will" class="roll-button">Defesa vontade · SAB + Prof</button>
+                  <button type="button" data-action="dados" data-type="concentration" class="roll-button">Concentração · CON + Prof</button>
                   <button type="button" data-action="dados" data-type="int" class="roll-button">Feitiço · INT + Prof</button>
                 </div>
               </section>
