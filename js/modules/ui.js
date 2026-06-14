@@ -43,6 +43,8 @@ export const elements = {
   modCon: document.getElementById('modCon'),
   modInt: document.getElementById('modInt'),
   modSab: document.getElementById('modSab'),
+  totalCar: document.getElementById('totalCar'),
+  modCar: document.getElementById('modCar'),
   pontosMagia: document.getElementById('pontosMagia'),
   pontosVida: document.getElementById('pontosVida'),
   totalMagiaVida: document.getElementById('totalMagiaVida'),
@@ -86,14 +88,16 @@ export function updateTotals(totals) {
   elements.totalCon.textContent = totals[2];
   elements.totalInt.textContent = totals[3];
   elements.totalSab.textContent = totals[4];
+  elements.totalCar.textContent = totals[5];
 
   elements.modFor.textContent = computeModifier(totals[0]);
   elements.modDex.textContent = computeModifier(totals[1]);
   elements.modCon.textContent = computeModifier(totals[2]);
   elements.modInt.textContent = computeModifier(totals[3]);
   elements.modSab.textContent = computeModifier(totals[4]);
+  elements.modCar.textContent = computeModifier(totals[5]);
 
-  const sideValues = ['For', 'Dex', 'Con', 'Int', 'Sab'];
+  const sideValues = ['For', 'Dex', 'Con', 'Int', 'Sab', 'Car'];
   sideValues.forEach((key, index) => {
     const score = document.getElementById(`side${key}`);
     const modifier = document.getElementById(`sideMod${key}`);
@@ -163,6 +167,15 @@ export function setupTabs() {
         target.classList.add('active');
         window.dispatchEvent(new Event('resize'));
       }
+    });
+  });
+
+  document.querySelectorAll('.system-tab').forEach(button => {
+    button.addEventListener('click', () => {
+      document.querySelectorAll('.system-tab').forEach(tab => tab.classList.remove('active'));
+      document.querySelectorAll('.system-panel').forEach(panel => panel.classList.remove('active'));
+      button.classList.add('active');
+      document.getElementById(button.dataset.systemTarget)?.classList.add('active');
     });
   });
 }

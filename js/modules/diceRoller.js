@@ -1,394 +1,371 @@
 import * as THREE from "https://esm.sh/three";
 import * as CANNON from "https://esm.sh/cannon-es";
 
-let scene, camera, renderer, world;
+const palette = [
+  "#EAA14D", "#E05A47", "#4D9BEA", "#5FB376",
+  "#D869A8", "#F2C94C", "#9B51E0", "#F8FAFC"
+];
+
+let scene;
+let camera;
+let renderer;
+let world;
+let canvasContainer;
 let diceObjects = [];
+let selectedSides = 20;
 let isHolding = false;
 let needsResultCheck = false;
-let mouse = new THREE.Vector2();
-let raycaster = new THREE.Raycaster();
-let canvasContainer = null;
+let pendingRoll = null;
 let resultFallbackTimer = null;
+let resizeObserver;
 
-const FRUSTUM_SIZE = 23;
-let dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -15);
+const mouse = new THREE.Vector2();
+const raycaster = new THREE.Raycaster();
+const dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -14);
+const FRUSTUM_SIZE = 24;
 
 const uiResult = document.getElementById("result-board");
 const uiTotal = document.getElementById("total-score");
 const uiDetail = document.getElementById("detail-score");
-
-const palette = [
-  "#EAA14D", "#E05A47", "#4D9BEA", "#5FB376", 
-  "#D869A8", "#F2C94C", "#9B51E0", "#FFFFFF" 
-];
-
-const commonColors = {
-  outline: "#725349",
-  shadow: "#F3BD2E"
-};
-
-const GOLDEN_RATIO = (1 + Math.sqrt(5)) / 2;
-const D20_RAW_VERTICES = [
-  [-1, GOLDEN_RATIO, 0], [1, GOLDEN_RATIO, 0], [-1, -GOLDEN_RATIO, 0], [1, -GOLDEN_RATIO, 0],
-  [0, -1, GOLDEN_RATIO], [0, 1, GOLDEN_RATIO], [0, -1, -GOLDEN_RATIO], [0, 1, -GOLDEN_RATIO],
-  [GOLDEN_RATIO, 0, -1], [GOLDEN_RATIO, 0, 1], [-GOLDEN_RATIO, 0, -1], [-GOLDEN_RATIO, 0, 1]
-];
-const D20_FACES = [
-  [0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11],
-  [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8],
-  [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9],
-  [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1]
-];
-const D20_FACE_VALUES = [
-  20, 2, 14, 8, 12,
-  6, 16, 4, 18, 10,
-  7, 15, 3, 19, 11,
-  13, 5, 17, 1, 9
-];
-let d20FaceNormals = [];
+const uiBadge = document.getElementById("diceTypeBadge");
 
 export function initDiceRoller() {
-  canvasContainer = document.querySelector('.dice-canvas-area');
-  if (!canvasContainer) return; // Não inicializa se o container não existir
+  canvasContainer = document.querySelector(".dice-canvas-area");
+  if (!canvasContainer) return;
 
   scene = new THREE.Scene();
   scene.background = new THREE.Color("#F6F3EB");
 
-  const containerWidth = canvasContainer.clientWidth;
-  const containerHeight = canvasContainer.clientHeight;
-  const aspect = containerWidth / containerHeight;
-  
-  camera = new THREE.OrthographicCamera(
-    (FRUSTUM_SIZE * aspect) / -2,
-    (FRUSTUM_SIZE * aspect) / 2,
-    FRUSTUM_SIZE / 2,
-    FRUSTUM_SIZE / -2,
-    1,
-    1000
-  );
-  
-  camera.position.set(50, 50, 50); 
-  camera.lookAt(0, 0, 0); 
+  camera = new THREE.OrthographicCamera();
+  camera.position.set(42, 42, 42);
+  camera.lookAt(0, 0, 0);
 
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setSize(containerWidth, containerHeight);
-  renderer.domElement.style.touchAction = 'none'; 
-  renderer.domElement.style.userSelect = 'none';
-  renderer.domElement.style.display = 'block';
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.domElement.style.touchAction = "none";
+  renderer.domElement.style.userSelect = "none";
   canvasContainer.appendChild(renderer.domElement);
 
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x777777, 2.3));
+  const keyLight = new THREE.DirectionalLight(0xffffff, 2);
+  keyLight.position.set(8, 18, 12);
+  scene.add(keyLight);
+
   world = new CANNON.World();
-  world.gravity.set(0, -40, 0);
-  world.broadphase = new CANNON.NaiveBroadphase();
-  world.solver.iterations = 20;
-  world.allowSleep = true; 
+  world.gravity.set(0, -32, 0);
+  world.allowSleep = true;
+  world.solver.iterations = 18;
 
-  const wallMat = new CANNON.Material();
-  const diceMat = new CANNON.Material();
-  world.addContactMaterial(
-    new CANNON.ContactMaterial(wallMat, diceMat, {
-      friction: 0.3,
-      restitution: 0.6
-    })
-  );
+  const surfaceMaterial = new CANNON.Material("surface");
+  const diceMaterial = new CANNON.Material("dice");
+  world.addContactMaterial(new CANNON.ContactMaterial(surfaceMaterial, diceMaterial, {
+    friction: .42,
+    restitution: .42
+  }));
+  createPhysicsBounds(surfaceMaterial);
 
-  createPhysicsWalls(wallMat);
-  updateDiceCount(3);
-
-  // Usar ResizeObserver para monitorar mudanças no container
-  const resizeObserver = new ResizeObserver(() => onWindowResize());
+  resizeObserver = new ResizeObserver(onResize);
   resizeObserver.observe(canvasContainer);
 
-  // Event listeners para canvas e window
-  renderer.domElement.addEventListener("mousedown", onInputStart);
-  window.addEventListener("mousemove", onInputMove);
-  window.addEventListener("mouseup", onInputEnd);
-  renderer.domElement.addEventListener("mouseleave", onInputEnd);
-  renderer.domElement.addEventListener("touchstart", onInputStart, { passive: false });
-  window.addEventListener("touchmove", onInputMove, { passive: false });
-  window.addEventListener("touchend", onInputEnd);
+  renderer.domElement.addEventListener("pointerdown", onInputStart);
+  window.addEventListener("pointermove", onInputMove);
+  window.addEventListener("pointerup", onInputEnd);
 
-  const countSelect = document.getElementById("diceCount");
-  if(countSelect) {
-      countSelect.addEventListener("change", (e) => {
-        updateDiceCount(parseInt(e.target.value));
+  document.getElementById("diceCount")?.addEventListener("change", event => {
+    createDiceSet(selectedSides, Number(event.target.value) || 1);
+  });
+
+  document.querySelectorAll("[data-die]").forEach(button => {
+    button.addEventListener("click", () => {
+      const sides = Number(button.dataset.die);
+      rollDice({
+        sides,
+        count: getSelectedCount(),
+        label: `Rolagem de d${sides}`
       });
-  }
+    });
+  });
 
+  createDiceSet(selectedSides, getSelectedCount());
+  onResize();
   animate();
 }
 
-function createPhysicsWalls(material) {
-  const floorBody = new CANNON.Body({ mass: 0, material: material });
-  floorBody.addShape(new CANNON.Plane());
-  floorBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
-  world.addBody(floorBody);
-
-  const wallDistance = 12;
-  const createWall = (x, z, rot) => {
-    const body = new CANNON.Body({ mass: 0, material: material });
-    body.addShape(new CANNON.Plane());
-    body.position.set(x, 0, z);
-    body.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), rot);
-    world.addBody(body);
-  };
-  createWall(wallDistance, 0, -Math.PI / 2);
-  createWall(-wallDistance, 0, Math.PI / 2);
-  createWall(0, -wallDistance, 0);
-  createWall(0, wallDistance, Math.PI);
+export function setDiceType(sides) {
+  selectedSides = normalizeSides(sides);
+  if (uiBadge) uiBadge.textContent = `D${selectedSides}`;
+  document.querySelectorAll("[data-die]").forEach(button => {
+    button.classList.toggle("active", Number(button.dataset.die) === selectedSides);
+  });
 }
 
-function createD20FaceTexture(number, colorHex) {
-  const size = 256;
-  const canvas = document.createElement("canvas");
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext("2d");
+export function rollDice({
+  sides = selectedSides,
+  count = 1,
+  modifier = 0,
+  label = "",
+  onComplete = null
+} = {}) {
+  if (!world || !scene) return;
 
-  ctx.fillStyle = colorHex;
-  ctx.fillRect(0, 0, size, size);
+  setDiceType(sides);
+  const countSelect = document.getElementById("diceCount");
+  if (countSelect && [...countSelect.options].some(option => Number(option.value) === count)) {
+    countSelect.value = String(count);
+  }
 
-  const gradient = ctx.createLinearGradient(0, 0, size, size);
-  gradient.addColorStop(0, "rgba(255,255,255,.28)");
-  gradient.addColorStop(1, "rgba(0,0,0,.18)");
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, size, size);
-
-  ctx.strokeStyle = "rgba(114,83,73,.65)";
-  ctx.lineWidth = 12;
-  ctx.strokeRect(6, 6, size - 12, size - 12);
-
-  ctx.fillStyle = colorHex === "#FFFFFF" ? "#331e18" : "#FFFFFF";
-  ctx.font = "900 104px Inter, Arial, sans-serif";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(String(number), size / 2, size * 0.58);
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  return texture;
+  createDiceSet(selectedSides, count);
+  pendingRoll = { sides: selectedSides, count, modifier, label, onComplete };
+  throwDice();
 }
 
-function createD20Geometry(radius) {
-  const normalizedVertices = D20_RAW_VERTICES.map(([x, y, z]) => {
-    const length = Math.hypot(x, y, z);
-    return new THREE.Vector3(
-      (x / length) * radius,
-      (y / length) * radius,
-      (z / length) * radius
+function normalizeSides(sides) {
+  const available = [4, 6, 8, 10, 12, 20, 100];
+  return available.includes(Number(sides)) ? Number(sides) : 20;
+}
+
+function getSelectedCount() {
+  return Number(document.getElementById("diceCount")?.value) || 1;
+}
+
+function createPhysicsBounds(material) {
+  const floor = new CANNON.Body({ mass: 0, material });
+  floor.addShape(new CANNON.Plane());
+  floor.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
+  world.addBody(floor);
+
+  const distance = 12;
+  const walls = [
+    [distance, 0, -Math.PI / 2],
+    [-distance, 0, Math.PI / 2],
+    [0, -distance, 0],
+    [0, distance, Math.PI]
+  ];
+  walls.forEach(([x, z, rotation]) => {
+    const wall = new CANNON.Body({ mass: 0, material });
+    wall.addShape(new CANNON.Plane());
+    wall.position.set(x, 0, z);
+    wall.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), rotation);
+    world.addBody(wall);
+  });
+}
+
+function createDiceSet(sides, count) {
+  disposeDice();
+  const radius = count > 6 ? 1.35 : count > 3 ? 1.65 : 2.05;
+
+  for (let index = 0; index < count; index += 1) {
+    const geometry = createGeometry(sides, radius);
+    const color = palette[index % palette.length];
+    const material = new THREE.MeshStandardMaterial({
+      color,
+      roughness: .55,
+      metalness: .05,
+      flatShading: true
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+
+    const edges = new THREE.LineSegments(
+      new THREE.EdgesGeometry(geometry, 12),
+      new THREE.LineBasicMaterial({ color: 0x725349, transparent: true, opacity: .85 })
     );
-  });
-  const positions = [];
-  const uvs = [];
-
-  d20FaceNormals = D20_FACES.map(face => {
-    const [a, b, c] = face.map(index => normalizedVertices[index]);
-    positions.push(
-      a.x, a.y, a.z,
-      b.x, b.y, b.z,
-      c.x, c.y, c.z
-    );
-    uvs.push(.5, 1, 0, 0, 1, 0);
-    return a.clone().add(b).add(c).normalize();
-  });
-
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
-  geometry.computeVertexNormals();
-  D20_FACES.forEach((_, index) => geometry.addGroup(index * 3, 3, index));
-
-  return { geometry, normalizedVertices };
-}
-
-function updateDiceCount(count) {
-  diceObjects.forEach((obj) => {
-    scene.remove(obj.mesh);
-    scene.remove(obj.outline);
-    scene.remove(obj.shadow);
-    world.removeBody(obj.body);
-    if (obj.mesh.material) {
-      obj.mesh.material.forEach((m) => {
-        if (m.map) m.map.dispose();
-        m.dispose();
-      });
-    }
-  });
-  diceObjects = [];
-  if(uiResult) uiResult.classList.remove("show");
-
-  const radius = 2.05;
-  const { geometry, normalizedVertices } = createD20Geometry(radius);
-  const outlineGeo = geometry.clone();
-  const shadowGeo = new THREE.CircleGeometry(radius * 0.75, 32);
-  const shape = new CANNON.ConvexPolyhedron({
-    vertices: normalizedVertices.map(vertex => new CANNON.Vec3(vertex.x, vertex.y, vertex.z)),
-    faces: D20_FACES.map(face => [...face])
-  });
-  
-  const outlineMat = new THREE.MeshBasicMaterial({ color: commonColors.outline, side: THREE.BackSide });
-  const shadowMat = new THREE.MeshBasicMaterial({ color: commonColors.shadow, transparent: true, opacity: 0.2 });
-
-  for (let i = 0; i < count; i++) {
-    const randomColor = palette[Math.floor(Math.random() * palette.length)];
-    const diceMaterials = D20_FACE_VALUES.map(value => new THREE.MeshBasicMaterial({
-      map: createD20FaceTexture(value, randomColor)
-    }));
-    const mesh = new THREE.Mesh(geometry, diceMaterials);
+    mesh.add(edges);
+    mesh.add(createLabelSprite(`d${sides}`, color === "#F8FAFC" ? "#331e18" : "#ffffff", radius));
     scene.add(mesh);
 
-    const outline = new THREE.Mesh(outlineGeo, outlineMat);
-    outline.position.copy(mesh.position);
-    outline.scale.setScalar(1.06);
-    scene.add(outline);
-
-    const shadow = new THREE.Mesh(shadowGeo, shadowMat);
+    const shadow = new THREE.Mesh(
+      new THREE.CircleGeometry(radius * .78, 28),
+      new THREE.MeshBasicMaterial({ color: 0xf3bd2e, transparent: true, opacity: .2 })
+    );
     shadow.rotation.x = -Math.PI / 2;
-    shadow.position.y = 0.01;
+    shadow.position.y = .02;
     scene.add(shadow);
 
     const columns = Math.min(count, 5);
-    const row = Math.floor(i / columns);
-    const column = i % columns;
+    const row = Math.floor(index / columns);
+    const column = index % columns;
     const rowCount = Math.min(columns, count - row * columns);
-    const startX = (column - (rowCount - 1) / 2) * 3.15;
-    const startZ = (row - Math.floor((count - 1) / columns) / 2) * 3.15;
+    const x = (column - (rowCount - 1) / 2) * radius * 2.05;
+    const z = (row - Math.floor((count - 1) / columns) / 2) * radius * 2.05;
+
     const body = new CANNON.Body({
-      mass: 5,
-      shape: shape,
-      position: new CANNON.Vec3(startX, radius + 1, startZ),
-      sleepSpeedLimit: 0.5
+      mass: 3,
+      shape: new CANNON.Sphere(radius * .78),
+      position: new CANNON.Vec3(x, radius + 1, z),
+      linearDamping: .22,
+      angularDamping: .25,
+      sleepSpeedLimit: .22,
+      sleepTimeLimit: .8
     });
     body.quaternion.setFromEuler(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
     world.addBody(body);
 
-    diceObjects.push({ mesh, outline, shadow, body, spinOffset: 0, isReturning: false });
+    diceObjects.push({
+      mesh,
+      shadow,
+      body,
+      radius,
+      spinOffset: Math.random() * 100
+    });
   }
 }
 
-function updateMousePosition(e) {
-  let x, y;
-  if (e.changedTouches) {
-    x = e.changedTouches[0].clientX;
-    y = e.changedTouches[0].clientY;
-  } else {
-    x = e.clientX;
-    y = e.clientY;
-  }
-  
-  // Calcular coordenadas relativas ao container
-  if (canvasContainer) {
-    const rect = canvasContainer.getBoundingClientRect();
-    const relX = x - rect.left;
-    const relY = y - rect.top;
-    
-    mouse.x = (relX / canvasContainer.clientWidth) * 2 - 1;
-    mouse.y = -(relY / canvasContainer.clientHeight) * 2 + 1;
+function createGeometry(sides, radius) {
+  switch (sides) {
+    case 4:
+      return new THREE.TetrahedronGeometry(radius);
+    case 6:
+      return new THREE.BoxGeometry(radius * 1.55, radius * 1.55, radius * 1.55);
+    case 8:
+      return new THREE.OctahedronGeometry(radius);
+    case 10:
+      return createBipyramidGeometry(5, radius);
+    case 12:
+      return new THREE.DodecahedronGeometry(radius);
+    case 100:
+      return createBipyramidGeometry(10, radius);
+    case 20:
+    default:
+      return new THREE.IcosahedronGeometry(radius);
   }
 }
 
-function onInputStart(e) {
-  if (
-    e.target.tagName === "SELECT" ||
-    e.target.tagName === "LABEL" ||
-    e.target.closest(".dice-controls")
-  )
-    return;
+function createBipyramidGeometry(segments, radius) {
+  const vertices = [0, radius * 1.18, 0, 0, -radius * 1.18, 0];
+  const indices = [];
+  for (let index = 0; index < segments; index += 1) {
+    const angle = (index / segments) * Math.PI * 2;
+    vertices.push(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
+  }
+  for (let index = 0; index < segments; index += 1) {
+    const current = 2 + index;
+    const next = 2 + ((index + 1) % segments);
+    indices.push(0, current, next, 1, next, current);
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  return geometry;
+}
 
-  if(e.preventDefault) e.preventDefault();
+function createLabelSprite(text, color, radius) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 128;
+  const context = canvas.getContext("2d");
+  context.fillStyle = "rgba(68,68,68,.78)";
+  context.beginPath();
+  context.roundRect(20, 24, 216, 80, 22);
+  context.fill();
+  context.fillStyle = color;
+  context.font = "900 52px Inter, Arial, sans-serif";
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.fillText(text, 128, 66);
 
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: new THREE.CanvasTexture(canvas),
+    transparent: true,
+    depthTest: false
+  }));
+  sprite.scale.set(radius * 1.25, radius * .62, 1);
+  sprite.position.set(0, radius * .72, 0);
+  sprite.renderOrder = 4;
+  return sprite;
+}
+
+function disposeDice() {
+  diceObjects.forEach(({ mesh, shadow, body }) => {
+    mesh.traverse(child => {
+      child.geometry?.dispose?.();
+      if (child.material?.map) child.material.map.dispose();
+      child.material?.dispose?.();
+    });
+    shadow.geometry.dispose();
+    shadow.material.dispose();
+    scene.remove(mesh, shadow);
+    world.removeBody(body);
+  });
+  diceObjects = [];
+}
+
+function updatePointer(event) {
+  const rect = canvasContainer.getBoundingClientRect();
+  mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+}
+
+function onInputStart(event) {
+  if (!event.target.closest("canvas")) return;
+  event.preventDefault();
+  updatePointer(event);
   isHolding = true;
   needsResultCheck = false;
-  if(uiResult) uiResult.classList.remove("show");
-  updateMousePosition(e);
-
-  diceObjects.forEach(obj => {
-      obj.body.wakeUp(); 
-      obj.spinOffset = Math.random() * 100; 
-      obj.isReturning = false;
-  });
+  pendingRoll = {
+    sides: selectedSides,
+    count: diceObjects.length,
+    modifier: 0,
+    label: `Rolagem de d${selectedSides}`,
+    onComplete: null
+  };
+  diceObjects.forEach(({ body }) => body.wakeUp());
 }
 
-function onInputMove(e) {
+function onInputMove(event) {
   if (!isHolding) return;
-  if(e.preventDefault) e.preventDefault();
-  updateMousePosition(e);
+  event.preventDefault();
+  updatePointer(event);
 }
 
-function onInputEnd(e) {
+function onInputEnd() {
   if (!isHolding) return;
   isHolding = false;
-  releaseDice();
+  throwDice();
 }
 
-function releaseDice() {
-  const SAFE_LIMIT = 9;
-
-  diceObjects.forEach((obj) => {
-    const { body } = obj;
-    
-    const isOutside = 
-      Math.abs(body.position.x) > SAFE_LIMIT || 
-      Math.abs(body.position.z) > SAFE_LIMIT;
-
-    if (isOutside) {
-      obj.isReturning = true;
-    } else {
-      body.wakeUp();
-      applyThrowForce(body);
-    }
+function throwDice() {
+  needsResultCheck = false;
+  diceObjects.forEach(({ body }) => {
+    body.wakeUp();
+    body.velocity.set(
+      -body.position.x * 1.3 + (Math.random() - .5) * 13,
+      10 + Math.random() * 7,
+      -body.position.z * 1.3 + (Math.random() - .5) * 13
+    );
+    body.angularVelocity.set(
+      (Math.random() - .5) * 28,
+      (Math.random() - .5) * 28,
+      (Math.random() - .5) * 28
+    );
   });
 
-  setTimeout(() => {
+  window.setTimeout(() => {
     needsResultCheck = true;
-  }, 500);
-
+  }, 650);
   clearTimeout(resultFallbackTimer);
-  resultFallbackTimer = setTimeout(() => {
-    if (!isHolding && needsResultCheck) calculateResult();
-  }, 4500);
+  resultFallbackTimer = window.setTimeout(finishRoll, 4200);
 }
 
-function applyThrowForce(body) {
-  const xDist = -body.position.x;
-  const zDist = -body.position.z;
-  
-  body.velocity.set(
-    xDist * 1.5 + (Math.random() - 0.5) * 15, 
-    -15 - Math.random() * 10,
-    zDist * 1.5 + (Math.random() - 0.5) * 15  
-  );
+function finishRoll() {
+  if (!pendingRoll || isHolding) return;
 
-  body.angularVelocity.set(
-    (Math.random() - 0.5) * 35,
-    (Math.random() - 0.5) * 35,
-    (Math.random() - 0.5) * 35
-  );
-}
-
-function calculateResult() {
-  let total = 0;
-  let details = [];
-
-  diceObjects.forEach(({ mesh }) => {
-    let maxDot = -Infinity;
-    let resultValue = 1;
-
-    d20FaceNormals.forEach((normal, index) => {
-      const worldNormal = normal.clone().applyQuaternion(mesh.quaternion);
-      if (worldNormal.y > maxDot) {
-        maxDot = worldNormal.y;
-        resultValue = D20_FACE_VALUES[index];
-      }
-    });
-
-    total += resultValue;
-    details.push(resultValue);
+  const results = Array.from({ length: pendingRoll.count }, () => {
+    return Math.floor(Math.random() * pendingRoll.sides) + 1;
   });
+  const rawTotal = results.reduce((sum, value) => sum + value, 0);
+  const total = rawTotal + Number(pendingRoll.modifier || 0);
+  const modifierText = pendingRoll.modifier
+    ? ` ${pendingRoll.modifier > 0 ? "+" : "-"} ${Math.abs(pendingRoll.modifier)}`
+    : "";
 
-  if(uiTotal) uiTotal.innerText = total;
-  if(uiDetail) uiDetail.innerText = details.length > 1 ? `(${details.join(" + ")})` : "";
-  if(uiResult) uiResult.classList.add("show");
+  if (uiTotal) uiTotal.textContent = total;
+  if (uiDetail) {
+    uiDetail.textContent = `${pendingRoll.label || `d${pendingRoll.sides}`} · [${results.join(" + ")}]${modifierText}`;
+  }
+  uiResult?.classList.add("show");
+  pendingRoll.onComplete?.({ results, rawTotal, total, modifier: pendingRoll.modifier });
+  pendingRoll = null;
   needsResultCheck = false;
   clearTimeout(resultFallbackTimer);
 }
@@ -398,109 +375,52 @@ function animate() {
 
   if (isHolding) {
     raycaster.setFromCamera(mouse, camera);
-    const targetPoint = new THREE.Vector3();
-    const intersect = raycaster.ray.intersectPlane(dragPlane, targetPoint);
-
-    if (intersect) {
-        const time = performance.now() * 0.01;
-
-        diceObjects.forEach((obj, i) => {
-            const offsetX = Math.sin(time + i) * 1.0; 
-            const offsetZ = Math.cos(time + i * 2) * 1.0;
-
-            obj.body.position.x += (targetPoint.x + offsetX - obj.body.position.x) * 0.25;
-            obj.body.position.y += (15 - obj.body.position.y) * 0.25; 
-            obj.body.position.z += (targetPoint.z + offsetZ - obj.body.position.z) * 0.25;
-
-            obj.body.quaternion.setFromEuler(
-                time * 2 + obj.spinOffset,
-                time * 3 + obj.spinOffset,
-                time * 1.5
-            );
-
-            obj.body.velocity.set(0, 0, 0);
-            obj.body.angularVelocity.set(0, 0, 0);
-            obj.isReturning = false;
-        });
+    const target = new THREE.Vector3();
+    if (raycaster.ray.intersectPlane(dragPlane, target)) {
+      const time = performance.now() * .01;
+      diceObjects.forEach((object, index) => {
+        object.body.position.x += (target.x + Math.sin(time + index) - object.body.position.x) * .22;
+        object.body.position.y += (13 - object.body.position.y) * .22;
+        object.body.position.z += (target.z + Math.cos(time + index * 2) - object.body.position.z) * .22;
+        object.body.quaternion.setFromEuler(
+          time * 1.7 + object.spinOffset,
+          time * 2.4 + object.spinOffset,
+          time * 1.3
+        );
+        object.body.velocity.setZero();
+        object.body.angularVelocity.setZero();
+      });
     }
   } else {
-    const time = performance.now() * 0.01;
-    
-    diceObjects.forEach((obj) => {
-      if (obj.isReturning) {
-        obj.body.position.x += (0 - obj.body.position.x) * 0.15;
-        obj.body.position.z += (0 - obj.body.position.z) * 0.15;
-        obj.body.position.y += (12 - obj.body.position.y) * 0.1;
-
-        obj.body.quaternion.setFromEuler(time * 5, time * 5, 0);
-
-        obj.body.velocity.set(0, 0, 0);
-        obj.body.angularVelocity.set(0, 0, 0);
-
-        if (Math.abs(obj.body.position.x) < 9 && Math.abs(obj.body.position.z) < 9) {
-          obj.isReturning = false;
-          obj.body.wakeUp();
-          applyThrowForce(obj.body);
-        }
-      }
-    });
-
     world.step(1 / 60);
   }
 
-  for (let i = 0; i < diceObjects.length; i++) {
-    const { mesh, outline, shadow, body } = diceObjects[i];
-
+  diceObjects.forEach(({ mesh, shadow, body }) => {
     mesh.position.copy(body.position);
     mesh.quaternion.copy(body.quaternion);
-
-    outline.position.copy(mesh.position);
-    outline.quaternion.copy(mesh.quaternion);
-
     shadow.position.x = body.position.x;
     shadow.position.z = body.position.z;
-
     const height = Math.max(0, body.position.y - 1);
-    const scale = Math.max(0.5, 1 - height * 0.04);
-    const opacity = Math.max(0, 0.2 - height * 0.01);
+    shadow.scale.setScalar(Math.max(.45, 1 - height * .04));
+    shadow.material.opacity = Math.max(.04, .22 - height * .012);
+  });
 
-    shadow.scale.setScalar(scale);
-    shadow.material.opacity = opacity;
-  }
-
-  if (needsResultCheck) {
-    let allStopped = true;
-    for (let o of diceObjects) {
-      if (o.isReturning) {
-        allStopped = false;
-        break;
-      }
-      if (
-        o.body.velocity.lengthSquared() > 0.1 ||
-        o.body.angularVelocity.lengthSquared() > 0.1
-      ) {
-        allStopped = false;
-        break;
-      }
-    }
-    if (allStopped) calculateResult();
+  if (needsResultCheck && diceObjects.every(({ body }) => body.sleepState === CANNON.Body.SLEEPING)) {
+    finishRoll();
   }
 
   renderer.render(scene, camera);
 }
 
-function onWindowResize() {
-  if (!canvasContainer) return;
-  
-  const containerWidth = canvasContainer.clientWidth;
-  const containerHeight = canvasContainer.clientHeight;
-  const aspect = containerWidth / containerHeight;
-  
+function onResize() {
+  if (!canvasContainer || !renderer || !camera) return;
+  const width = Math.max(1, canvasContainer.clientWidth);
+  const height = Math.max(1, canvasContainer.clientHeight);
+  const aspect = width / height;
   camera.left = (-FRUSTUM_SIZE * aspect) / 2;
   camera.right = (FRUSTUM_SIZE * aspect) / 2;
   camera.top = FRUSTUM_SIZE / 2;
   camera.bottom = -FRUSTUM_SIZE / 2;
-
   camera.updateProjectionMatrix();
-  renderer.setSize(containerWidth, containerHeight);
+  renderer.setSize(width, height, false);
 }

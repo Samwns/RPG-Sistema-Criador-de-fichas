@@ -19,14 +19,77 @@ import {
   setupTabs,
   animateRollButton
 } from './modules/ui.js';
-import { initDiceRoller } from './modules/diceRoller.js';
+import { initDiceRoller, rollDice } from './modules/diceRoller.js';
 
 let purchasedSkills = [];
 let skillPhoto = '';
 let editingSkillIndex = -1;
+let bannerPhoto = '';
+let inventory = [];
+let themeColors = { primary: '#7EBAEE', secondary: '#F0A06F' };
+
+const equipmentCatalog = [
+  { id: 'longsword', name: 'Espada longa', category: 'Arma', cost: 6, die: 8, attribute: 'for', range: 'corpo a corpo', description: 'Arma versátil de corte.' },
+  { id: 'shortbow', name: 'Arco curto', category: 'Arma', cost: 6, die: 6, attribute: 'dex', range: '24 m', description: 'Arma leve para ataques à distância.' },
+  { id: 'dagger', name: 'Adaga', category: 'Arma', cost: 3, die: 4, attribute: 'dex', range: '6 m', description: 'Arma leve e arremessável.' },
+  { id: 'greatsword', name: 'Espadão', category: 'Arma', cost: 9, die: 12, attribute: 'for', range: 'corpo a corpo', description: 'Arma pesada de duas mãos.' },
+  { id: 'shield', name: 'Escudo', category: 'Armadura', cost: 5, armorBonus: 2, description: '+2 na classe de armadura.' },
+  { id: 'leather', name: 'Armadura de couro', category: 'Armadura', cost: 5, armorBase: 11, dexterity: true, description: 'CA 11 + modificador de DEX.' },
+  { id: 'chain', name: 'Cota de malha', category: 'Armadura', cost: 9, armorBase: 16, description: 'Define a CA base como 16.' },
+  { id: 'healing', name: 'Poção de cura', category: 'Consumível', cost: 3, die: 4, healing: true, description: 'Recupera 2d4 + 2 pontos de vida.' },
+  { id: 'rope', name: 'Corda de 15 m', category: 'Aventura', cost: 2, description: 'Ferramenta para exploração.' },
+  { id: 'tools', name: 'Kit de ferramentas', category: 'Aventura', cost: 4, description: 'Ferramentas para testes especializados.' }
+];
+
+const raceBonuses = {
+  'Forjado Bélico': { con: 2, for: 1 },
+  'Autognomo': { int: 2, con: 1 },
+  'Elfo da Floresta': { dex: 2, sab: 1 },
+  'Alto Elfo': { dex: 2, int: 1 },
+  'Drow': { dex: 2, car: 1 },
+  'Gnomo das Rochas': { int: 2, con: 1 },
+  'Gnomo da Floresta': { int: 2, sab: 1 },
+  'Homem-Rato': { dex: 2, int: 1 },
+  'Minotauro': { for: 2, con: 1 },
+  'Lizardfolk': { con: 2, for: 1 },
+  'Tabaxi': { dex: 2, car: 1 },
+  'Halfling': { dex: 2, sab: 1 },
+  'Goliata': { for: 2, con: 1 },
+  'Firbolg': { sab: 2, int: 1 },
+  'Orc': { for: 2, con: 1 },
+  'Goblinoide': { dex: 2, int: 1 },
+  'Bugbear': { for: 2, sab: 1 },
+  'Tiefling': { car: 2, int: 1 },
+  'Dragonborn': { for: 2, car: 1 },
+  'Anão': { con: 2, for: 1 }
+};
 
 function getInputValues() {
   return distInputs.map(item => Number(document.getElementById(item.id).value || 0));
+}
+
+function formatSigned(value) {
+  return Number(value) >= 0 ? `+ ${Number(value)}` : `- ${Math.abs(Number(value))}`;
+}
+
+function openDiceTab() {
+  document.querySelector('[data-target="tab-dados"]')?.click();
+}
+
+function applySelectedRaceBonuses() {
+  const bonuses = raceBonuses[elements.raca.value] || {};
+  const inputs = {
+    for: 'raceFor',
+    dex: 'raceDex',
+    con: 'raceCon',
+    int: 'raceInt',
+    sab: 'raceSab',
+    car: 'raceCar'
+  };
+  Object.entries(inputs).forEach(([attribute, id]) => {
+    document.getElementById(id).value = bonuses[attribute] || 0;
+  });
+  synchronize();
 }
 
 function updateDistribuicaoLimits() {
@@ -63,43 +126,49 @@ function handleRoll(type) {
   const button = document.querySelector(`button[data-type="${type}"]`);
   if (button) animateRollButton(button);
 
-  const d20 = Math.floor(Math.random() * 20) + 1;
   const prof = Number(elements.profBonus.value.toString().replace('+', '')) || 0;
   const mods = {
     for: Number(elements.modFor.textContent.replace('+', '')),
     dex: Number(elements.modDex.textContent.replace('+', '')),
-    int: Number(elements.modInt.textContent.replace('+', ''))
+    int: Number(elements.modInt.textContent.replace('+', '')),
+    sab: Number(elements.modSab.textContent.replace('+', '')),
+    car: Number(elements.modCar.textContent.replace('+', ''))
   };
 
-  let total = 0;
-  let description = '';
+  let modifier = 0;
+  let label = '';
 
   switch (type) {
     case 'for':
-      total = d20 + mods.for + prof;
-      description = `d20 [${d20}] + Mod FOR [${mods.for}] + Prof [${prof}]`;
+      modifier = mods.for + prof;
+      label = 'Ataque físico';
       break;
     case 'dex':
-      total = d20 + mods.dex + prof;
-      description = `d20 [${d20}] + Mod DEX [${mods.dex}] + Prof [${prof}]`;
+      modifier = mods.dex + prof;
+      label = 'Ataque à distância';
       break;
     case 'dexNoProf':
-      total = d20 + mods.dex;
-      description = `d20 [${d20}] + Mod DEX [${mods.dex}] (sem Prof)`;
+      modifier = mods.dex;
+      label = 'Esquiva';
       break;
     case 'int':
-      total = d20 + mods.int + prof;
-      description = `d20 [${d20}] + Mod INT [${mods.int}] + Prof [${prof}]`;
+      modifier = mods.int + prof;
+      label = 'Ataque mágico';
       break;
     default:
       return;
   }
 
-  const resultText = `Resultado: ${total} — ${description}`;
-  elements.rollResult.innerHTML = `
-    <span class="dice-icon">${d20}</span>
-    <span>${resultText}</span>
-  `;
+  openDiceTab();
+  rollDice({
+    sides: 20,
+    count: 1,
+    modifier,
+    label,
+    onComplete: ({ results, total }) => {
+      elements.rollResult.innerHTML = `<span class="dice-icon">${results[0]}</span><span>${label}: ${total} (d20 ${results[0]} ${formatSigned(modifier)})</span>`;
+    }
+  });
 }
 
 function resetFicha() {
@@ -109,6 +178,13 @@ function resetFicha() {
   elements.nivel.value = 5;
   elements.xp.value = 0;
   elements.vidaMaxima.value = 30;
+  document.getElementById('currentHp').value = 30;
+  document.getElementById('armorClass').value = 10;
+  document.getElementById('speed').value = '9 m';
+  document.getElementById('vision').value = 'normal';
+  document.getElementById('hitDie').value = 'd10';
+  document.getElementById('castingStat').value = 'int';
+  document.getElementById('spellSlots').value = 0;
   elements.multiclasse.checked = false;
   elements.nivelC1.value = 5;
   elements.nivelC2.value = 1;
@@ -119,6 +195,9 @@ function resetFicha() {
   elements.descricaoHabilidade.value = '';
   elements.descricaoClasse.value = '';
   purchasedSkills = [];
+  inventory = [];
+  bannerPhoto = '';
+  applyDynamicTheme('#7EBAEE', '#F0A06F');
   resetSkillEditor();
   document.getElementById('skillRaca').value = '';
   document.getElementById('skillClasse1').value = '';
@@ -133,7 +212,14 @@ function resetFicha() {
   elements.photoInput.value = '';
   elements.photoPreview.innerHTML = 'Preview da foto';
   elements.photoPreview.dataset.photo = '';
+  elements.photoPreview.innerHTML = 'Adicione a imagem do personagem';
+  document.getElementById('bannerInput').value = '';
+  applyBanner('');
   elements.rollResult.textContent = 'Clique em uma rolagem para ver o resultado.';
+  document.querySelectorAll('[data-store]').forEach(input => {
+    input.value = input.classList.contains('slot-counter') ? '0 / 0' : '';
+  });
+  renderEquipment();
   synchronize();
 }
 
@@ -289,6 +375,249 @@ function saveSkillFromEditor() {
   updateSkillBudget();
 }
 
+function getEquipmentBudget() {
+  return 10 + (Math.max(1, Number(elements.nivel.value) || 1) * 2);
+}
+
+function getEquipmentSpent() {
+  return inventory.reduce((sum, itemId) => {
+    return sum + (equipmentCatalog.find(item => item.id === itemId)?.cost || 0);
+  }, 0);
+}
+
+function buyEquipment(itemId) {
+  const item = equipmentCatalog.find(entry => entry.id === itemId);
+  if (!item || inventory.includes(itemId)) return;
+  if (getEquipmentSpent() + item.cost > getEquipmentBudget()) return;
+  inventory.push(itemId);
+  renderEquipment();
+  synchronize();
+}
+
+function sellEquipment(itemId) {
+  inventory = inventory.filter(id => id !== itemId);
+  renderEquipment();
+  synchronize();
+}
+
+function renderEquipment() {
+  const shop = document.getElementById('equipmentShop');
+  const inventoryList = document.getElementById('inventoryList');
+  if (!shop || !inventoryList) return;
+
+  const budget = getEquipmentBudget();
+  const spent = getEquipmentSpent();
+  document.getElementById('equipmentBudget').textContent = budget;
+  document.getElementById('equipmentSpent').textContent = spent;
+  document.getElementById('equipmentRemaining').textContent = Math.max(0, budget - spent);
+
+  shop.innerHTML = '';
+  equipmentCatalog.forEach(item => {
+    const owned = inventory.includes(item.id);
+    const card = document.createElement('article');
+    card.className = 'shop-item';
+    card.innerHTML = `
+      <span>${item.category}</span>
+      <h4>${item.name}</h4>
+      <p>${item.description}</p>
+      <div><b>${item.cost} pts</b></div>
+    `;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = owned ? 'Comprado' : 'Comprar';
+    button.disabled = owned || spent + item.cost > budget;
+    button.addEventListener('click', () => buyEquipment(item.id));
+    card.querySelector('div').appendChild(button);
+    shop.appendChild(card);
+  });
+
+  inventoryList.innerHTML = '';
+  if (inventory.length === 0) {
+    inventoryList.innerHTML = '<p class="system-rule">Nenhum item comprado.</p>';
+  }
+  inventory.forEach(itemId => {
+    const item = equipmentCatalog.find(entry => entry.id === itemId);
+    if (!item) return;
+    const row = document.createElement('article');
+    row.className = 'inventory-item';
+    row.innerHTML = `<div><b>${item.name}</b><span>${item.category} · ${item.description}</span></div>`;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = 'Vender';
+    button.addEventListener('click', () => sellEquipment(item.id));
+    row.appendChild(button);
+    inventoryList.appendChild(row);
+  });
+
+  renderWeaponList();
+}
+
+function renderWeaponList() {
+  const weaponList = document.getElementById('weaponList');
+  if (!weaponList) return;
+  const weapons = inventory
+    .map(itemId => equipmentCatalog.find(item => item.id === itemId))
+    .filter(item => item?.category === 'Arma');
+
+  weaponList.innerHTML = '';
+  if (weapons.length === 0) {
+    weaponList.innerHTML = '<p class="system-rule">Compre armas na aba Equipamento para usá-las aqui.</p>';
+    return;
+  }
+
+  weapons.forEach(weapon => {
+    const modifier = getAttributeModifier(weapon.attribute);
+    const proficiency = Number(elements.profBonus.value.replace('+', '')) || 0;
+    const attackBonus = modifier + proficiency;
+    const card = document.createElement('article');
+    card.className = 'weapon-card';
+    card.innerHTML = `
+      <h4>${weapon.name}</h4>
+      <div class="weapon-tags">
+        <span>Ataque ${formatSigned(attackBonus)}</span>
+        <span>Dano 1d${weapon.die} ${formatSigned(modifier)}</span>
+        <span>${weapon.range}</span>
+      </div>
+    `;
+    const actions = document.createElement('div');
+    actions.className = 'weapon-actions';
+    const attackButton = document.createElement('button');
+    attackButton.type = 'button';
+    attackButton.textContent = 'Rolar ataque';
+    attackButton.addEventListener('click', () => {
+      openDiceTab();
+      rollDice({
+        sides: 20,
+        count: 1,
+        modifier: attackBonus,
+        label: `Ataque com ${weapon.name}`,
+        onComplete: ({ results, total }) => {
+          elements.rollResult.innerHTML = `<span class="dice-icon">${results[0]}</span><span>${weapon.name}: ataque ${total}</span>`;
+        }
+      });
+    });
+    const damageButton = document.createElement('button');
+    damageButton.type = 'button';
+    damageButton.textContent = 'Rolar dano';
+    damageButton.addEventListener('click', () => {
+      openDiceTab();
+      rollDice({
+        sides: weapon.die,
+        count: 1,
+        modifier,
+        label: `Dano de ${weapon.name}`,
+        onComplete: ({ results, total }) => {
+          elements.rollResult.innerHTML = `<span class="dice-icon">${results[0]}</span><span>${weapon.name}: dano ${total}</span>`;
+        }
+      });
+    });
+    actions.append(attackButton, damageButton);
+    card.appendChild(actions);
+    weaponList.appendChild(card);
+  });
+}
+
+function getAttributeModifier(attribute) {
+  const labels = {
+    for: elements.modFor,
+    dex: elements.modDex,
+    int: elements.modInt,
+    sab: elements.modSab,
+    car: elements.modCar
+  };
+  return Number(labels[attribute]?.textContent.replace('+', '')) || 0;
+}
+
+function getCalculatedArmorClass() {
+  const manual = Number(document.getElementById('armorClass').value) || 10;
+  const dexterity = getAttributeModifier('dex');
+  let calculated = manual;
+  inventory.forEach(itemId => {
+    const item = equipmentCatalog.find(entry => entry.id === itemId);
+    if (!item) return;
+    if (item.armorBase) calculated = Math.max(calculated, item.armorBase + (item.dexterity ? dexterity : 0));
+    if (item.armorBonus) calculated += item.armorBonus;
+  });
+  return calculated;
+}
+
+function applyBanner(photo) {
+  bannerPhoto = photo || '';
+  const heroWave = document.getElementById('heroWave');
+  heroWave.classList.toggle('has-banner', Boolean(bannerPhoto));
+  heroWave.style.setProperty('--banner-image', bannerPhoto ? `url("${bannerPhoto}")` : 'none');
+}
+
+function applyDynamicTheme(primary, secondary) {
+  themeColors = { primary, secondary };
+  document.documentElement.style.setProperty('--blue', primary);
+  document.documentElement.style.setProperty('--orange', secondary);
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', primary);
+}
+
+function extractThemeFromImage(source) {
+  if (!source) return;
+  const image = new Image();
+  image.onload = () => {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+    canvas.width = 64;
+    canvas.height = 64;
+    context.drawImage(image, 0, 0, 64, 64);
+    const data = context.getImageData(0, 0, 64, 64).data;
+    const colors = [];
+
+    for (let index = 0; index < data.length; index += 64) {
+      const [r, g, b, alpha] = [data[index], data[index + 1], data[index + 2], data[index + 3]];
+      if (alpha < 180) continue;
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      const saturation = max - min;
+      const brightness = (r + g + b) / 3;
+      if (saturation < 28 || brightness < 35 || brightness > 235) continue;
+      colors.push({ r, g, b, saturation, brightness });
+    }
+
+    if (colors.length < 2) return;
+    colors.sort((a, b) => b.saturation - a.saturation);
+    const primary = colors[0];
+    const secondary = colors
+      .slice(1)
+      .sort((a, b) => themeColorScore(b, primary) - themeColorScore(a, primary))[0];
+    applyDynamicTheme(rgbToHex(primary), rgbToHex(secondary));
+  };
+  image.src = source;
+}
+
+function colorDistance(a, b) {
+  return Math.hypot(a.r - b.r, a.g - b.g, a.b - b.b);
+}
+
+function themeColorScore(color, primary) {
+  return (colorDistance(color, primary) * 3)
+    + (color.saturation * .8)
+    - (Math.abs(color.brightness - 155) * 1.2);
+}
+
+function rgbToHex({ r, g, b }) {
+  const brightness = (r + g + b) / 3;
+  const scale = brightness > 205 ? 205 / brightness : brightness < 75 ? 75 / brightness : 1;
+  return `#${[r, g, b].map(value => {
+    return Math.min(255, Math.round(value * scale)).toString(16).padStart(2, '0');
+  }).join('')}`;
+}
+
+function updateSpellStats() {
+  const castingStat = document.getElementById('castingStat').value;
+  const modifier = getAttributeModifier(castingStat);
+  const proficiency = Number(elements.profBonus.value.replace('+', '')) || 0;
+  const labels = { int: 'INT', sab: 'SAB', car: 'CAR' };
+  document.getElementById('spellSaveDc').textContent = 8 + proficiency + modifier;
+  document.getElementById('spellAttackBonus').textContent = formatSigned(proficiency + modifier).replace(' ', '');
+  document.getElementById('spellCastingStat').textContent = labels[castingStat];
+  document.getElementById('spellSlotTotal').textContent = document.getElementById('spellSlots').value || 0;
+}
+
 function synchronize() {
   elements.profBonus.value = computeProfBonus(elements.nivel.value);
   updateBudgetText(getRemainingPoints(elements.nivel.value, getInputValues()));
@@ -298,6 +627,8 @@ function synchronize() {
   renderSummary();
   updateFeaturedSkillSummary();
   updateSkillBudget();
+  updateSpellStats();
+  renderEquipment();
 
   const combatHp = document.getElementById('combatHp');
   const combatProf = document.getElementById('combatProf');
@@ -306,9 +637,10 @@ function synchronize() {
   if (combatHp) combatHp.textContent = elements.vidaMaxima.value || 0;
   if (combatProf) combatProf.textContent = elements.profBonus.value;
   if (combatInit) combatInit.textContent = elements.modDex.textContent;
-  if (combatDefense) {
-    combatDefense.textContent = 10 + Number(elements.modDex.textContent.replace('+', ''));
-  }
+  if (combatDefense) combatDefense.textContent = getCalculatedArmorClass();
+  document.getElementById('combatSpeed').textContent = document.getElementById('speed').value || '-';
+  document.getElementById('combatVision').textContent = document.getElementById('vision').value || '-';
+  document.getElementById('combatHitDie').textContent = document.getElementById('hitDie').value;
 }
 
 function loadSavedCharacters() {
@@ -317,6 +649,10 @@ function loadSavedCharacters() {
   saved.forEach((character, index) => {
     const card = document.createElement('div');
     card.className = 'saved-card';
+    if (character.banner) {
+      card.style.setProperty('--saved-banner', `url("${character.banner}")`);
+      card.classList.add('has-saved-banner');
+    }
 
     const header = document.createElement('div');
     header.className = 'saved-card-header';
@@ -343,7 +679,7 @@ function loadSavedCharacters() {
     if (character.photo) {
       const img = document.createElement('img');
       img.src = character.photo;
-      img.alt = `${character.nome} photo`;
+      img.alt = `Retrato de ${character.nome}`;
       img.className = 'saved-photo';
       card.appendChild(img);
     }
@@ -397,6 +733,11 @@ function getCharacterData() {
     xp: elements.xp.value,
     profBonus: elements.profBonus.value,
     vidaMaxima: elements.vidaMaxima.value,
+    currentHp: document.getElementById('currentHp').value,
+    armorClass: document.getElementById('armorClass').value,
+    speed: document.getElementById('speed').value,
+    vision: document.getElementById('vision').value,
+    hitDie: document.getElementById('hitDie').value,
     raca: elements.raca.value,
     origem: elements.origem.value,
     classe1: elements.classe1.value,
@@ -416,21 +757,31 @@ function getCharacterData() {
     raceCon: document.getElementById('raceCon').value,
     raceInt: document.getElementById('raceInt').value,
     raceSab: document.getElementById('raceSab').value,
+    raceCar: document.getElementById('raceCar').value,
+    distCar: document.getElementById('distCar').value,
     pontosMagia: elements.pontosMagia.value,
     pontosVida: elements.pontosVida.value,
+    castingStat: document.getElementById('castingStat').value,
+    spellSlots: document.getElementById('spellSlots').value,
     historia: elements.historia.value,
     habilidades: elements.habilidades.value,
     tituloHabilidade: elements.tituloHabilidade.value,
     descricaoHabilidade: elements.descricaoHabilidade.value,
     descricaoClasse: elements.descricaoClasse.value,
     purchasedSkills,
+    inventory,
+    themeColors,
+    storedFields: Object.fromEntries(
+      [...document.querySelectorAll('[data-store]')].map(input => [input.dataset.store, input.value])
+    ),
     skillRaca: document.getElementById('skillRaca').value,
     skillClasse1: document.getElementById('skillClasse1').value,
     skillClasse2: document.getElementById('skillClasse2').value,
     skillClasse3: document.getElementById('skillClasse3').value,
     pericia1: document.getElementById('pericia1').value,
     pericia2: document.getElementById('pericia2').value,
-    photo: elements.photoPreview.dataset.photo || ''
+    photo: elements.photoPreview.dataset.photo || '',
+    banner: bannerPhoto
   };
 }
 
@@ -445,6 +796,11 @@ function loadCharacter(index) {
   elements.nivel.value = character.nivel || 1;
   elements.xp.value = character.xp || 0;
   elements.vidaMaxima.value = character.vidaMaxima || 30;
+  document.getElementById('currentHp').value = character.currentHp || character.vidaMaxima || 30;
+  document.getElementById('armorClass').value = character.armorClass || 10;
+  document.getElementById('speed').value = character.speed || '9 m';
+  document.getElementById('vision').value = character.vision || 'normal';
+  document.getElementById('hitDie').value = character.hitDie || 'd10';
   elements.raca.value = character.raca || 'Forjado Bélico';
   elements.origem.value = character.origem || 'Acolhido';
   elements.classe1.value = character.classe1 || 'Bárbaro';
@@ -460,19 +816,25 @@ function loadCharacter(index) {
   document.getElementById('distCon').value = character.distCon || 0;
   document.getElementById('distInt').value = character.distInt || 0;
   document.getElementById('distSab').value = character.distSab || 0;
+  document.getElementById('distCar').value = character.distCar || 0;
   document.getElementById('raceFor').value = character.raceFor || 0;
   document.getElementById('raceDex').value = character.raceDex || 0;
   document.getElementById('raceCon').value = character.raceCon || 0;
   document.getElementById('raceInt').value = character.raceInt || 0;
   document.getElementById('raceSab').value = character.raceSab || 0;
+  document.getElementById('raceCar').value = character.raceCar || 0;
   elements.pontosMagia.value = character.pontosMagia || 15;
   elements.pontosVida.value = character.pontosVida || 15;
+  document.getElementById('castingStat').value = character.castingStat || 'int';
+  document.getElementById('spellSlots').value = character.spellSlots || 0;
   elements.historia.value = character.historia || '';
   elements.habilidades.value = character.habilidades || '';
   elements.tituloHabilidade.value = character.tituloHabilidade || '';
   elements.descricaoHabilidade.value = character.descricaoHabilidade || '';
   elements.descricaoClasse.value = character.descricaoClasse || '';
   purchasedSkills = Array.isArray(character.purchasedSkills) ? character.purchasedSkills : [];
+  inventory = Array.isArray(character.inventory) ? character.inventory : [];
+  themeColors = character.themeColors || { primary: '#7EBAEE', secondary: '#F0A06F' };
   resetSkillEditor();
   renderSkillCollection();
   document.getElementById('skillRaca').value = character.skillRaca || '';
@@ -481,6 +843,10 @@ function loadCharacter(index) {
   document.getElementById('skillClasse3').value = character.skillClasse3 || '';
   document.getElementById('pericia1').value = character.pericia1 || '';
   document.getElementById('pericia2').value = character.pericia2 || '';
+  Object.entries(character.storedFields || {}).forEach(([key, value]) => {
+    const input = document.querySelector(`[data-store="${key}"]`);
+    if (input) input.value = value;
+  });
 
   if (character.photo) {
     elements.photoPreview.innerHTML = `<img src="${character.photo}" alt="Personagem" />`;
@@ -489,6 +855,10 @@ function loadCharacter(index) {
     elements.photoPreview.innerHTML = 'Preview da foto';
     elements.photoPreview.dataset.photo = '';
   }
+
+  applyBanner(character.banner || '');
+  applyDynamicTheme(themeColors.primary, themeColors.secondary);
+  renderEquipment();
 
   synchronize();
 }
@@ -505,6 +875,7 @@ function handlePhotoUpload(event) {
   reader.onload = () => {
     elements.photoPreview.innerHTML = `<img src="${reader.result}" alt="Foto do personagem" />`;
     elements.photoPreview.dataset.photo = reader.result;
+    if (!bannerPhoto) extractThemeFromImage(reader.result);
     renderSummary();
   };
   reader.readAsDataURL(file);
@@ -518,6 +889,17 @@ function handleSkillPhotoUpload(event) {
   reader.onload = () => {
     skillPhoto = reader.result;
     document.getElementById('skillPhotoPreview').innerHTML = `<img src="${reader.result}" alt="Imagem da habilidade">`;
+  };
+  reader.readAsDataURL(file);
+}
+
+function handleBannerUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    applyBanner(reader.result);
+    extractThemeFromImage(reader.result);
   };
   reader.readAsDataURL(file);
 }
@@ -539,12 +921,19 @@ function init() {
   elements.nivelC3.addEventListener('input', () => { if (Number(elements.nivelC3.value) < 1) elements.nivelC3.value = 1; });
 
   elements.multiclasse.addEventListener('change', toggleMulticlassFields);
+  elements.raca.addEventListener('change', applySelectedRaceBonuses);
 
   [
     elements.nome,
     elements.raca,
     elements.classe1,
     elements.vidaMaxima,
+    document.getElementById('armorClass'),
+    document.getElementById('speed'),
+    document.getElementById('vision'),
+    document.getElementById('hitDie'),
+    document.getElementById('castingStat'),
+    document.getElementById('spellSlots'),
     elements.tituloHabilidade,
     elements.descricaoHabilidade,
     elements.descricaoClasse
@@ -579,6 +968,7 @@ function init() {
   });
 
   elements.photoInput.addEventListener('change', handlePhotoUpload);
+  document.getElementById('bannerInput').addEventListener('change', handleBannerUpload);
   document.getElementById('skillPhotoInput').addEventListener('change', handleSkillPhotoUpload);
   document.getElementById('addSkill').addEventListener('click', saveSkillFromEditor);
   document.getElementById('cancelSkillEdit').addEventListener('click', resetSkillEditor);
@@ -593,7 +983,7 @@ function init() {
 
   document.querySelectorAll('[data-store]').forEach(input => {
     const key = `input-${input.dataset.store}`;
-    input.value = localStorage.getItem(key) || '';
+    input.value = localStorage.getItem(key) ?? input.value;
     input.addEventListener('input', event => {
       localStorage.setItem(key, event.target.value);
     });
@@ -602,6 +992,7 @@ function init() {
   setupTabs();
   initDiceRoller();
   toggleMulticlassFields();
+  applySelectedRaceBonuses();
   loadSavedCharacters();
   renderSkillCollection();
   synchronize();

@@ -15,7 +15,8 @@ export const distInputs = [
   { id: 'distDex', label: 'DEX' },
   { id: 'distCon', label: 'CON' },
   { id: 'distInt', label: 'INT' },
-  { id: 'distSab', label: 'SAB' }
+  { id: 'distSab', label: 'SAB' },
+  { id: 'distCar', label: 'CAR' }
 ];
 
 export const raceBonusInputs = [
@@ -23,7 +24,8 @@ export const raceBonusInputs = [
   { id: 'raceDex' },
   { id: 'raceCon' },
   { id: 'raceInt' },
-  { id: 'raceSab' }
+  { id: 'raceSab' },
+  { id: 'raceCar' }
 ];
 
 export function computeProfBonus(level) {

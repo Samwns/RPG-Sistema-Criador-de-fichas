@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#444444">
   <title>RPG Criador de Fichas</title>
+  <link rel="icon" type="image/svg+xml" href="docs/ofs-256.svg">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -64,9 +66,9 @@
           </article>
 
           <article class="stat-block">
-            <div class="stat-score">10</div>
+            <div class="stat-score" id="sideCar">10</div>
             <div class="stat-copy">
-              <h2><span>+0</span> Carisma</h2>
+              <h2><span id="sideModCar">+0</span> Carisma</h2>
               <p>Persuasão</p>
               <p>Intimidação</p>
               <p>Atuação</p>
@@ -76,13 +78,17 @@
 
         <main class="sheet-main">
           <header class="sheet-hero">
-            <div class="hero-wave" aria-hidden="true"></div>
+            <div id="heroWave" class="hero-wave" aria-hidden="true"></div>
             <div class="hero-copy">
               <p class="eyebrow">RPG · ficha interativa</p>
               <h1 id="heroCharacterName">novo personagem</h1>
               <p id="heroCharacterMeta">Escolha raça, classe e nível</p>
             </div>
             <div class="hero-actions">
+              <label class="banner-upload">
+                <span>Banner</span>
+                <input id="bannerInput" type="file" accept="image/*">
+              </label>
               <button id="createSheetButton" type="button">Criar ficha</button>
               <button id="resetButton" type="button">Resetar</button>
             </div>
@@ -91,10 +97,11 @@
           <nav class="sheet-tabs" role="tablist" aria-label="Seções da ficha">
             <button class="tab-button active" data-target="tab-ficha" type="button">Ficha</button>
             <button class="tab-button" data-target="tab-combate" type="button">Combate</button>
-            <button class="tab-button" data-target="tab-magia" type="button">Magia</button>
+            <button class="tab-button" data-target="tab-magia" type="button">Magias</button>
+            <button class="tab-button" data-target="tab-equipamento" type="button">Equipamento</button>
             <button class="tab-button" data-target="tab-dados" type="button">Dados 3D</button>
             <button class="tab-button" data-target="tab-saved" type="button">Meu Baú</button>
-            <button class="tab-button" data-target="tab-livros" type="button">Livros</button>
+            <button class="tab-button" data-target="tab-livros" type="button">Sistema</button>
           </nav>
 
           <div class="sheet-content">
@@ -127,6 +134,10 @@
                   <label><span>Experiência</span><input id="xp" type="number" min="0" value="0"></label>
                   <label><span>Proficiência</span><input id="profBonus" type="text" readonly value="+3"></label>
                   <label><span>Vida máxima</span><input id="vidaMaxima" type="number" min="1" value="30"></label>
+                  <label><span>Classe de armadura</span><input id="armorClass" type="number" min="0" value="10"></label>
+                  <label><span>Deslocamento</span><input id="speed" type="text" value="9 m"></label>
+                  <label><span>Visão</span><input id="vision" type="text" value="normal"></label>
+                  <label><span>Dado de vida</span><select id="hitDie"><option>d6</option><option>d8</option><option selected>d10</option><option>d12</option></select></label>
                   <label><span>Raça</span><select id="raca"></select></label>
                   <label><span>Origem</span><select id="origem"></select></label>
                   <label><span>Classe principal</span><select id="classe1"></select></label>
@@ -160,6 +171,7 @@
                   <label><span>CON</span><input id="distCon" class="dist-input" type="number" min="0" max="15" value="0"><small>Bônus racial</small><input id="raceCon" type="number" min="0" max="5" value="0"></label>
                   <label><span>INT</span><input id="distInt" class="dist-input" type="number" min="0" max="15" value="0"><small>Bônus racial</small><input id="raceInt" type="number" min="0" max="5" value="0"></label>
                   <label><span>SAB</span><input id="distSab" class="dist-input" type="number" min="0" max="15" value="0"><small>Bônus racial</small><input id="raceSab" type="number" min="0" max="5" value="0"></label>
+                  <label><span>CAR</span><input id="distCar" class="dist-input" type="number" min="0" max="15" value="0"><small>Bônus racial</small><input id="raceCar" type="number" min="0" max="5" value="0"></label>
                 </div>
 
                 <div class="totals-grid">
@@ -168,6 +180,7 @@
                   <div><span>CON</span><strong id="totalCon">10</strong><small id="modCon">+0</small></div>
                   <div><span>INT</span><strong id="totalInt">10</strong><small id="modInt">+0</small></div>
                   <div><span>SAB</span><strong id="totalSab">10</strong><small id="modSab">+0</small></div>
+                  <div><span>CAR</span><strong id="totalCar">10</strong><small id="modCar">+0</small></div>
                 </div>
                 <p class="warning" id="budgetWarning"></p>
               </section>
@@ -229,14 +242,22 @@
               </div>
 
               <section class="combat-vitals">
-                <div><span>PV máximo</span><strong id="combatHp">30</strong></div>
-                <div><span>Proficiência</span><strong id="combatProf">+3</strong></div>
+                <div><span>PV</span><strong><input id="currentHp" type="number" min="0" value="30"> / <b id="combatHp">30</b></strong></div>
+                <div><span>CA</span><strong id="combatDefense">10</strong></div>
+                <div><span>Desloc.</span><strong id="combatSpeed">9 m</strong></div>
+                <div><span>Visão</span><strong id="combatVision">normal</strong></div>
+                <div><span>DV</span><strong id="combatHitDie">d10</strong></div>
+                <div><span>Prof.</span><strong id="combatProf">+3</strong></div>
                 <div><span>Iniciativa</span><strong id="combatInit">+0</strong></div>
-                <div><span>Defesa base</span><strong id="combatDefense">10</strong></div>
               </section>
 
               <section class="content-card">
-                <h3>Habilidades e perícias</h3>
+                <h3>Armas equipadas</h3>
+                <div id="weaponList" class="weapon-list"></div>
+              </section>
+
+              <section class="content-card">
+                <h3>Perícias de classe</h3>
                 <div class="form-grid">
                   <label><span>Raça / perícia</span><input id="skillRaca" type="text"></label>
                   <label><span>Classe 1 / perícia</span><input id="skillClasse1" type="text"></label>
@@ -248,18 +269,15 @@
               </section>
 
               <section class="content-card">
-                <h3>Rolagens rápidas</h3>
+                <h3>Testes e ações</h3>
                 <div class="roll-list">
                   <button type="button" data-action="dados" data-type="for" class="roll-button">Ataque físico · FOR + Prof</button>
                   <button type="button" data-action="dados" data-type="dex" class="roll-button">Ataque à distância · DEX + Prof</button>
                   <button type="button" data-action="dados" data-type="dexNoProf" class="roll-button">Esquiva · somente DEX</button>
                   <button type="button" data-action="dados" data-type="int" class="roll-button">Feitiço · INT + Prof</button>
                 </div>
-                <div class="roll-output">
-                  <span>Resultado</span>
-                  <div id="rollResult">Clique em uma rolagem para ver o resultado.</div>
-                </div>
               </section>
+
             </section>
 
             <section class="tab-panel" id="tab-magia">
@@ -268,55 +286,97 @@
               </div>
 
               <section class="magic-stats">
-                <div><strong id="requiredMagicLife">30</strong><span>Meta total</span></div>
-                <div><strong id="totalMagiaVida">30</strong><span>Total atual</span></div>
-                <div><strong id="magicDifference">OK</strong><span>Diferença</span></div>
+                <div><strong id="spellSaveDc">11</strong><span>CD de resistência</span></div>
+                <div><strong id="spellAttackBonus">+3</strong><span>Bônus de ataque</span></div>
+                <div><strong id="spellCastingStat">INT</strong><span>Atributo de conjuração</span></div>
+                <div><strong id="spellSlotTotal">0</strong><span>Espaços totais</span></div>
               </section>
 
               <section class="content-card">
                 <div class="form-grid">
                   <label><span>Pontos para magia</span><input id="pontosMagia" type="number" min="0" value="15"></label>
                   <label><span>Pontos para vida</span><input id="pontosVida" type="number" min="0" value="15"></label>
+                  <label><span>Atributo de conjuração</span><select id="castingStat"><option value="int">INT</option><option value="sab">SAB</option><option value="car">CAR</option></select></label>
+                  <label><span>Espaços totais</span><input id="spellSlots" type="number" min="0" value="0"></label>
+                </div>
+                <div class="magic-budget">
+                  <span>Meta <b id="requiredMagicLife">30</b></span>
+                  <span>Total <b id="totalMagiaVida">30</b></span>
+                  <span>Diferença <b id="magicDifference">OK</b></span>
                 </div>
                 <p class="magic-note" id="magicNote">O total deve respeitar o limite do sistema.</p>
               </section>
 
               <section class="spellbook">
-                <article><span>1º círculo</span><h3>Magias preparadas</h3><textarea data-store="spell-1" placeholder="Escreva suas magias aqui..."></textarea></article>
-                <article><span>2º círculo</span><h3>Magias preparadas</h3><textarea data-store="spell-2"></textarea></article>
-                <article><span>3º círculo</span><h3>Magias preparadas</h3><textarea data-store="spell-3"></textarea></article>
+                <article><span>1º círculo</span><label>Usados / Total <input class="slot-counter" data-store="slots-1" data-slot-level="1" type="text" value="0 / 0"></label><textarea data-store="spell-1" placeholder="Escreva suas magias aqui..."></textarea></article>
+                <article><span>2º círculo</span><label>Usados / Total <input class="slot-counter" data-store="slots-2" data-slot-level="2" type="text" value="0 / 0"></label><textarea data-store="spell-2"></textarea></article>
+                <article><span>3º círculo</span><label>Usados / Total <input class="slot-counter" data-store="slots-3" data-slot-level="3" type="text" value="0 / 0"></label><textarea data-store="spell-3"></textarea></article>
+                <article><span>4º círculo</span><label>Usados / Total <input class="slot-counter" data-store="slots-4" data-slot-level="4" type="text" value="0 / 0"></label><textarea data-store="spell-4"></textarea></article>
+                <article><span>5º círculo</span><label>Usados / Total <input class="slot-counter" data-store="slots-5" data-slot-level="5" type="text" value="0 / 0"></label><textarea data-store="spell-5"></textarea></article>
+              </section>
+            </section>
+
+            <section class="tab-panel" id="tab-equipamento">
+              <div class="panel-heading">
+                <div><p class="panel-kicker">Compra inicial</p><h2>Equipamento e inventário</h2></div>
+                <div class="shop-budget">
+                  <span>Pontos <b id="equipmentBudget">20</b></span>
+                  <span>Gastos <b id="equipmentSpent">0</b></span>
+                  <span>Restantes <b id="equipmentRemaining">20</b></span>
+                </div>
+              </div>
+              <p class="system-rule">Os pontos de equipamento aumentam com o nível. Compre armas, armaduras, ferramentas e consumíveis antes de começar a aventura.</p>
+              <section>
+                <h3 class="subsection-title">Loja inicial</h3>
+                <div id="equipmentShop" class="equipment-shop"></div>
+              </section>
+              <section class="content-card">
+                <h3>Itens comprados</h3>
+                <div id="inventoryList" class="inventory-list"></div>
               </section>
             </section>
 
             <section class="tab-panel" id="tab-dados">
               <div class="panel-heading">
-                <div><p class="panel-kicker">Rolador físico</p><h2>Dados d20 em 3D</h2></div>
+                <div><p class="panel-kicker">Rolador físico</p><h2>Dados e resultados em 3D</h2></div>
               </div>
-
               <section id="ui-container" class="dice-roller-section">
                 <div class="dice-stage-copy">
                   <div>
-                    <span class="dice-type-badge">D20</span>
-                    <h3>Arraste e solte para rolar</h3>
-                    <p>O rolador só ocupa esta aba e não bloqueia o restante da ficha.</p>
+                    <span id="diceTypeBadge" class="dice-type-badge">D20</span>
+                    <h3>Arraste, solte ou escolha um dado</h3>
+                    <p>Ataques, danos e testes feitos nas outras abas aparecem neste mesmo tabuleiro.</p>
                   </div>
                   <label class="dice-label">
                     <span>Quantidade</span>
                     <select id="diceCount" class="dice-select">
-                      <option value="1">1</option>
+                      <option value="1" selected>1</option>
                       <option value="2">2</option>
-                      <option value="3" selected>3</option>
+                      <option value="3">3</option>
                       <option value="4">4</option>
                       <option value="5">5</option>
                       <option value="6">6</option>
                       <option value="10">10</option>
-                      <option value="20">20</option>
                     </select>
                   </label>
                 </div>
 
-                <div class="dice-canvas-area" aria-label="Área interativa dos dados d20"></div>
+                <div class="dice-toolbar" aria-label="Escolha o dado">
+                  <button type="button" data-die="100">d100</button>
+                  <button type="button" data-die="20" class="active">d20</button>
+                  <button type="button" data-die="12">d12</button>
+                  <button type="button" data-die="10">d10</button>
+                  <button type="button" data-die="8">d8</button>
+                  <button type="button" data-die="6">d6</button>
+                  <button type="button" data-die="4">d4</button>
+                </div>
 
+                <div class="dice-canvas-area" aria-label="Área interativa dos dados 3D"></div>
+
+                <div class="roll-output">
+                  <span>Resultado</span>
+                  <div id="rollResult">Clique em uma rolagem para ver o resultado.</div>
+                </div>
                 <div id="result-board" class="dice-result-container">
                   <span class="result-label">Total</span>
                   <strong id="total-score" class="result-value">0</strong>
@@ -335,37 +395,111 @@
 
             <section class="tab-panel" id="tab-livros">
               <div class="panel-heading">
-                <div><p class="panel-kicker">Referência</p><h2>Livros do sistema</h2></div>
+                <div><p class="panel-kicker">Referência completa</p><h2>Como o sistema funciona</h2></div>
               </div>
-              <div class="book-grid">
-                <article class="book-card">
-                  <span>Livro I</span>
-                  <h3>Raças e origens</h3>
-                  <p><b>Elfos:</b> destreza, visão no escuro e magia inata.</p>
-                  <p><b>Anões:</b> constituição, robustez e resistência.</p>
-                  <p><b>Dragonborn:</b> força, carisma e sopro elemental.</p>
-                  <p><b>Origens:</b> concedem contexto narrativo e uma perícia temática.</p>
+              <nav class="system-tabs" aria-label="Capítulos do sistema">
+                <button type="button" class="system-tab active" data-system-target="system-start">Comece aqui</button>
+                <button type="button" class="system-tab" data-system-target="system-races">Raças</button>
+                <button type="button" class="system-tab" data-system-target="system-classes">Classes</button>
+                <button type="button" class="system-tab" data-system-target="system-skills">Perícias</button>
+                <button type="button" class="system-tab" data-system-target="system-spells">Feitiços</button>
+                <button type="button" class="system-tab" data-system-target="system-abilities">Habilidades</button>
+                <button type="button" class="system-tab" data-system-target="system-equipment">Equipamentos</button>
+              </nav>
+
+              <div class="system-panel active" id="system-start">
+                <div class="book-grid">
+                  <article class="book-card"><span>Passo 1</span><h3>Crie a identidade</h3><p>Escolha nome, raça, origem, classe e nível. Retrato e banner são imagens diferentes: o retrato identifica o personagem; o banner define a apresentação e as cores do tema.</p></article>
+                  <article class="book-card"><span>Passo 2</span><h3>Distribua atributos</h3><p>FOR mede força, DEX agilidade, CON resistência, INT raciocínio, SAB percepção e CAR presença. O modificador é calculado automaticamente a partir do total.</p></article>
+                  <article class="book-card"><span>Passo 3</span><h3>Compre recursos</h3><p>Cada 3 pontos distribuídos liberam uma habilidade, limitada pelo nível. Equipamentos usam outro orçamento: 10 + 2 pontos por nível.</p></article>
+                  <article class="book-card"><span>Passo 4</span><h3>Jogue</h3><p>Testes e ataques usam d20. Clique nos botões de ação ou nos dados para ver a rolagem no tabuleiro 3D. Danos usam o dado indicado pela arma.</p></article>
+                </div>
+                <article class="rule-example">
+                  <span>Exemplo rápido</span>
+                  <p>Uma personagem de nível 5 distribuiu 12 pontos. Ela pode comprar até 4 habilidades, pois 12 ÷ 3 = 4 e esse valor não ultrapassa seu nível. Seu orçamento de equipamento é 20 pontos: 10 + (5 × 2).</p>
                 </article>
-                <article class="book-card">
-                  <span>Livro II</span>
-                  <h3>Classes e magia</h3>
-                  <p><b>Marciais:</b> Bárbaro, Guerreiro, Paladino e Patrulheiro.</p>
-                  <p><b>Especialistas:</b> Ladino, Monge e Bardo.</p>
-                  <p><b>Conjuradores:</b> Clérigo, Mago, Feiticeiro, Bruxo e Druida.</p>
-                </article>
-                <article class="book-card">
-                  <span>Livro III</span>
-                  <h3>Perícias e combate</h3>
-                  <p>Testes usam d20 + modificador do atributo + proficiência quando treinado.</p>
-                  <p>Ataques, iniciativa, defesa e salvaguardas seguem a mesma base.</p>
-                </article>
-                <article class="book-card">
-                  <span>Sistema de habilidades</span>
-                  <h3>Compra e progressão</h3>
-                  <p>O personagem libera 1 espaço de habilidade para cada 3 pontos distribuídos nos atributos.</p>
-                  <p>O total de habilidades compradas nunca pode ultrapassar o nível atual do personagem.</p>
-                  <p>Cada habilidade salva nome, descrição e uma imagem própria, podendo ser editada depois.</p>
-                </article>
+              </div>
+
+              <div class="system-panel" id="system-races">
+                <div class="reference-grid">
+                  <article><h3>Forjado Bélico</h3><b>+2 CON, +1 FOR</b><p>Corpo metálico, resistência a veneno e +1 de CA.</p></article>
+                  <article><h3>Autognomo</h3><b>+2 INT, +1 CON</b><p>Constructo pequeno, reparação própria e magia inata.</p></article>
+                  <article><h3>Elfo da Floresta</h3><b>+2 DEX, +1 SAB</b><p>Visão no escuro, movimento ampliado e treinamento com arcos.</p></article>
+                  <article><h3>Alto Elfo</h3><b>+2 DEX, +1 INT</b><p>Visão no escuro, truque arcano e treinamento élfico.</p></article>
+                  <article><h3>Drow</h3><b>+2 DEX, +1 CAR</b><p>Visão no escuro superior e magia drow.</p></article>
+                  <article><h3>Gnomo das Rochas</h3><b>+2 INT, +1 CON</b><p>Conhecimento de artífice e resistência mental.</p></article>
+                  <article><h3>Gnomo da Floresta</h3><b>+2 INT, +1 SAB</b><p>Ilusão menor e comunicação com pequenos animais.</p></article>
+                  <article><h3>Homem-Rato</h3><b>+2 DEX, +1 INT</b><p>Infiltração, visão no escuro e movimentação furtiva.</p></article>
+                  <article><h3>Minotauro</h3><b>+2 FOR, +1 CON</b><p>Chifres, investida e orientação em labirintos.</p></article>
+                  <article><h3>Lizardfolk</h3><b>+2 CON, +1 FOR</b><p>Mordida, adaptação aquática e armadura natural.</p></article>
+                  <article><h3>Tabaxi</h3><b>+2 DEX, +1 CAR</b><p>Garras, explosão de velocidade e percepção felina.</p></article>
+                  <article><h3>Halfling</h3><b>+2 DEX, +1 SAB</b><p>Sorte, coragem e facilidade para se esconder.</p></article>
+                  <article><h3>Goliata</h3><b>+2 FOR, +1 CON</b><p>Corpo poderoso, resistência ao frio e vigor de gigante.</p></article>
+                  <article><h3>Firbolg</h3><b>+2 SAB, +1 INT</b><p>Magia natural, força de gigante e fala com animais.</p></article>
+                  <article><h3>Orc</h3><b>+2 FOR, +1 CON</b><p>Agressividade, resistência física e visão no escuro.</p></article>
+                  <article><h3>Goblinoide</h3><b>+2 DEX, +1 INT</b><p>Fuga rápida, visão no escuro e esperteza tática.</p></article>
+                  <article><h3>Bugbear</h3><b>+2 FOR, +1 SAB</b><p>Alcance longo, surpresa e furtividade incomum.</p></article>
+                  <article><h3>Tiefling</h3><b>+2 CAR, +1 INT</b><p>Resistência a fogo, visão no escuro e magia infernal.</p></article>
+                  <article><h3>Dragonborn</h3><b>+2 FOR, +1 CAR</b><p>Sopro elemental e resistência ao mesmo elemento.</p></article>
+                  <article><h3>Anão</h3><b>+2 CON, +1 FOR</b><p>Resiliência, visão no escuro e treinamento com armas.</p></article>
+                </div>
+                <article class="rule-example"><span>Origens</span><p><b>Acolhido:</b> vantagem social na comunidade. <b>Aventureiro Nato:</b> Sobrevivência. <b>Criminoso Redimido:</b> Furtividade. <b>Soldado Veterano:</b> Intimidação.</p></article>
+              </div>
+
+              <div class="system-panel" id="system-classes">
+                <div class="reference-grid">
+                  <article><h3>Bárbaro</h3><b>d12 · FOR</b><p>Fúria, resistência e grande dano corpo a corpo.</p></article>
+                  <article><h3>Guerreiro</h3><b>d10 · FOR/DEX</b><p>Versátil, resistente e especialista em múltiplos ataques.</p></article>
+                  <article><h3>Paladino</h3><b>d10 · FOR/CAR</b><p>Auras, cura e punições com dano radiante.</p></article>
+                  <article><h3>Patrulheiro</h3><b>d10 · DEX/SAB</b><p>Rastreamento, exploração e combate à distância.</p></article>
+                  <article><h3>Ladino</h3><b>d8 · DEX</b><p>Furtividade, perícias e ataque furtivo.</p></article>
+                  <article><h3>Monge</h3><b>d8 · DEX/SAB</b><p>Mobilidade, golpes desarmados e controle de energia.</p></article>
+                  <article><h3>Bardo</h3><b>d8 · CAR</b><p>Inspiração, perícias sociais e magia versátil.</p></article>
+                  <article><h3>Clérigo</h3><b>d8 · SAB</b><p>Cura, proteção e magia divina.</p></article>
+                  <article><h3>Mago</h3><b>d6 · INT</b><p>Grande variedade de feitiços e controle de campo.</p></article>
+                  <article><h3>Feiticeiro</h3><b>d6 · CAR</b><p>Magia inata e metamagia para alterar feitiços.</p></article>
+                  <article><h3>Bruxo</h3><b>d8 · CAR</b><p>Pacto, invocações e poucos espaços recuperados rapidamente.</p></article>
+                  <article><h3>Druida</h3><b>d8 · SAB</b><p>Forma selvagem, cura e magia da natureza.</p></article>
+                </div>
+              </div>
+
+              <div class="system-panel" id="system-skills">
+                <article class="rule-example"><span>Como testar</span><p>Role d20 + modificador do atributo. Se o personagem for treinado, some também a proficiência. Exemplo: Furtividade usa DEX; com DEX +3 e proficiência +2, o teste recebe +5.</p></article>
+                <div class="reference-grid compact">
+                  <article><h3>FOR</h3><p>Atletismo e Escalada.</p></article>
+                  <article><h3>DEX</h3><p>Acrobacia, Furtividade, Esconderijo e Prestidigitação.</p></article>
+                  <article><h3>INT</h3><p>Arcanismo, História, Investigação, Natureza e Religião.</p></article>
+                  <article><h3>SAB</h3><p>Adestramento, Intuição, Medicina, Percepção e Sobrevivência.</p></article>
+                  <article><h3>CAR</h3><p>Atuação, Enganação, Intimidação, Performance e Persuasão.</p></article>
+                  <article><h3>CON</h3><p>Usada principalmente em salvaguardas de resistência física.</p></article>
+                </div>
+              </div>
+
+              <div class="system-panel" id="system-spells">
+                <div class="book-grid">
+                  <article class="book-card"><span>CD</span><h3>Resistência</h3><p>CD = 8 + proficiência + modificador do atributo de conjuração. O alvo precisa igualar ou superar esse valor.</p></article>
+                  <article class="book-card"><span>Ataque</span><h3>Bônus mágico</h3><p>Proficiência + modificador de INT, SAB ou CAR. Role d20 e some esse bônus.</p></article>
+                  <article class="book-card"><span>Espaços</span><h3>Uso diário</h3><p>Cada feitiço consome um espaço do círculo correspondente ou superior. Registre usados e total na aba Magias.</p></article>
+                  <article class="book-card"><span>Preparação</span><h3>Lista conhecida</h3><p>Escreva as magias por círculo. Algumas classes preparam uma lista por descanso; outras conhecem um número fixo.</p></article>
+                </div>
+              </div>
+
+              <div class="system-panel" id="system-abilities">
+                <article class="rule-example"><span>Regra de compra</span><p>Some apenas os pontos distribuídos, antes dos bônus raciais. A cada 3 pontos, libere 1 habilidade. O limite final é o nível atual.</p></article>
+                <div class="book-grid">
+                  <article class="book-card"><span>1</span><h3>Distribua pontos</h3><p>Ex.: 9 pontos distribuídos liberam 3 espaços.</p></article>
+                  <article class="book-card"><span>2</span><h3>Adicione a habilidade</h3><p>Informe foto, nome e descrição clara com efeito, alcance, custo e recarga.</p></article>
+                  <article class="book-card"><span>3</span><h3>Edite quando precisar</h3><p>Use Editar no cartão. A alteração substitui a habilidade existente e não consome outro espaço.</p></article>
+                </div>
+              </div>
+
+              <div class="system-panel" id="system-equipment">
+                <article class="rule-example"><span>Orçamento</span><p>Pontos iniciais = 10 + (nível × 2). Nível 1 começa com 12; nível 5 começa com 20; nível 10 começa com 30.</p></article>
+                <div class="book-grid">
+                  <article class="book-card"><span>Armas</span><h3>Ataque e dano</h3><p>Armas aparecem em Combate. Ataque usa d20 + atributo + proficiência; dano usa o dado da arma + atributo.</p></article>
+                  <article class="book-card"><span>Armaduras</span><h3>Classe de armadura</h3><p>Armaduras definem uma CA base. Escudos acrescentam bônus e o sistema recalcula o valor mostrado.</p></article>
+                  <article class="book-card"><span>Venda</span><h3>Troca antes do jogo</h3><p>Venda um item pelo mesmo custo para recuperar os pontos e experimentar outra configuração inicial.</p></article>
+                </div>
               </div>
             </section>
           </div>
