@@ -21,22 +21,44 @@
 
     <nav class="tabs" role="tablist">
       <button class="tab-button active" data-target="tab-ficha" type="button">Ficha</button>
+      <button class="tab-button" data-target="tab-saved" type="button">Personagens</button>
       <button class="tab-button" data-target="tab-livro1" type="button">Livro 1</button>
       <button class="tab-button" data-target="tab-livro2" type="button">Livro 2</button>
       <button class="tab-button" data-target="tab-livro3" type="button">Livro 3</button>
       <button class="tab-button" data-target="tab-referencia" type="button">Referência</button>
+      <button class="tab-button" data-target="tab-preferencia" type="button">Preferências</button>
     </nav>
 
     <section class="tab-panel active" id="tab-ficha">
       <section class="card">
-        <h2>1. Informações Básicas</h2>
+        <div class="section-header">
+          <div>
+            <h2>1. Informações Básicas</h2>
+            <p class="small-note">Escolha o sistema e salve quantos personagens quiser.</p>
+          </div>
+          <div class="action-buttons">
+            <button id="saveCharacter" type="button" class="secondary-button">Salvar personagem</button>
+            <button id="newCharacter" type="button" class="secondary-button">Nova ficha</button>
+          </div>
+        </div>
         <div class="form-grid">
           <label><span>Nome do Personagem</span><input id="nome" type="text" placeholder="Nome" /></label>
           <label><span>Jogador</span><input id="jogador" type="text" placeholder="Nome do jogador" /></label>
+          <label><span>Sistema</span><select id="sistema"><option value="D&D">D&D</option><option value="Outro">Outro</option></select></label>
           <label><span>Nível atual</span><input id="nivel" type="number" min="1" max="20" value="5" /></label>
           <label><span>Experiência (XP)</span><input id="xp" type="number" min="0" value="0" /></label>
           <label><span>Bônus de Proficiência</span><input id="profBonus" type="text" readonly value="+3" /></label>
           <label><span>Vida Máxima</span><input id="vidaMaxima" type="number" min="1" value="30" /></label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>1.1 Foto, História e Habilidades</h2>
+        <div class="form-grid">
+          <label class="full-width"><span>Foto do personagem</span><input id="photoInput" type="file" accept="image/*" /></label>
+          <div class="photo-preview" id="photoPreview">Preview da foto</div>
+          <label class="full-width"><span>História</span><textarea id="historia" rows="4" placeholder="Conte a história do personagem..."></textarea></label>
+          <label class="full-width"><span>Habilidades especiais</span><textarea id="habilidades" rows="4" placeholder="Liste habilidades, talentos e poderes..."></textarea></label>
         </div>
       </section>
 
@@ -98,9 +120,13 @@
         <div class="form-grid">
           <label><span>Pontos p/ Magia</span><input id="pontosMagia" type="number" min="0" value="15" /></label>
           <label><span>Pontos p/ Vida</span><input id="pontosVida" type="number" min="0" value="15" /></label>
-          <label class="full-width"><span>Total Magia + Vida</span><output id="totalMagiaVida">30</output></label>
         </div>
-        <p class="hint">O total deve ser 30 para manter o limite do sistema.</p>
+        <div class="magic-summary">
+          <div><span>Meta</span><strong id="requiredMagicLife">30</strong></div>
+          <div><span>Total atual</span><strong id="totalMagiaVida">30</strong></div>
+          <div><span>Diferença</span><strong id="magicDifference">0</strong></div>
+        </div>
+        <p class="hint" id="magicNote">O total deve ser 30 para manter o limite do sistema.</p>
       </section>
 
       <section class="card">
@@ -127,8 +153,26 @@
         </div>
         <div class="roll-output">
           <strong>Resultado:</strong>
-          <p id="rollResult">Clique em uma rolagem para ver o resultado.</p>
+          <div class="roll-result-badge" id="rollResult">
+            <span class="dice-icon">20</span>
+            <span>Clique em uma rolagem para ver o resultado.</span>
+          </div>
         </div>
+      </section>
+    </section>
+
+    <section class="tab-panel" id="tab-saved">
+      <section class="card">
+        <div class="section-header">
+          <div>
+            <h2>Personagens Salvos</h2>
+            <p class="small-note">Use o armazenamento local para salvar e carregar suas fichas.</p>
+          </div>
+          <div class="action-buttons">
+            <button id="clearAll" type="button" class="secondary-button danger-button">Limpar tudo</button>
+          </div>
+        </div>
+        <div id="savedList" class="saved-list"></div>
       </section>
     </section>
 
@@ -270,47 +314,55 @@
         <h2>Referência</h2>
         <div class="book-grid">
           <div class="book-card book-section">
-            <h3>O Mundo</h3>
-            <p>Aethelgard é um reino forjado nas cinzas de uma guerra entre deuses e titãs. A magia aqui é uma cicatriz na terra.</p>
+            <h3>Raças</h3>
+            <p><strong>Elfos</strong>: +2 DEX, +1 INT / Visão Escura, Magia inata.</p>
+            <p><strong>Anões</strong>: +2 CON, +1 FOR / Resistência a veneno, robustez.</p>
+            <p><strong>Gnomos</strong>: +2 INT, +1 SAB / Inteligência aguçada, magia sutil.</p>
+            <p><strong>Halflings</strong>: +2 DEX, +1 SAB / Sorte, furtividade.</p>
+            <p><strong>Dragonborn</strong>: +2 FOR, +1 CAR / Sopros elementais, presença marcante.</p>
           </div>
           <div class="book-card book-section">
-            <h3>A Ameaça</h3>
-            <p>Ignisrath, o Devorador de Estrelas, um dragão ancião desperta no Pico de Obsidiana. Sua presença corrompe o céu e transforma rios em lava.</p>
+            <h3>Classes</h3>
+            <p><strong>Bárbaro</strong>: d12, FOR, fúria e resistência física.</p>
+            <p><strong>Guerreiro</strong>: d10, FOR/DEX, ataque múltiplo e defesa sólida.</p>
+            <p><strong>Mago</strong>: d6, INT, magias poderosas e frágil em combate corpo a corpo.</p>
+            <p><strong>Ladino</strong>: d8, DEX, furtividade, ataque surpresa.</p>
+            <p><strong>Clérigo</strong>: d8, SAB, cura, proteção e magia divina.</p>
           </div>
           <div class="book-card book-section">
-            <h3>O Conflito</h3>
-            <p>Ignisrath acredita que as raças atuais são erros. Pretende reiniciar o mundo através de purificação pelo fogo. Os jogadores são a última defesa.</p>
+            <h3>Sistema D</h3>
+            <p>O sistema do D está atrelado ao conjunto de regras de D&D: atributos, rolagens de d20 e proficiência.</p>
+            <p>Use o valor de atributo para calcular modificadores: cada 2 pontos acima de 10 dá +1, abaixo de 10 dá -1.</p>
+            <p>O bônus de proficiência aumenta com o nível e é aplicado a ataques, perícias treinadas e testes de resistência.</p>
+            <p>O total de magia e vida deve seguir o limite de sistema baseado no nível com soma igual a 20 + nível * 2.</p>
           </div>
           <div class="book-card book-section">
-            <h3>Estrutura da Aventura</h3>
-            <p><strong>Ato 1:</strong> Resgatar Zix (Goblin) — Ele tem o mapa das passagens secretas até o Pico.</p>
-            <p><strong>Ato 2:</strong> Túneis de Lava — Atravessar os túneis subfundos com testes INT ou FOR.</p>
-            <p><strong>Ato 3:</strong> Confronto Final — Enfrente Ignisrath no Pico; ele usa ataques de área e lava.</p>
+            <h3>Perícias</h3>
+            <p>Use d20 + Mod atributo + Proficiência se treinado.</p>
+            <p>Perícias de INT e SAB são ideais para investigação, magia e percepção de campo.</p>
+            <p>Perícias de FOR e DEX são ideais para força bruta, esportes e furtividade.</p>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <section class="tab-panel" id="tab-preferencia">
+      <section class="card">
+        <h2>Preferências</h2>
+        <div class="book-grid">
+          <div class="book-card book-section">
+            <h3>Combate</h3>
+            <p><strong>Iniciativa:</strong> d20 + Mod DEX.</p>
+            <p><strong>CA:</strong> 10 + Mod DEX + Armadura/Forma de defesa.</p>
+            <p><strong>Ataque:</strong> d20 + Mod atributo + Proficiência.</p>
+            <p><strong>Dano:</strong> Dado da arma + Mod atributo relevante.</p>
+            <p><strong>Crítico:</strong> 20 natural amplifica o dano; 1 natural falha.</p>
           </div>
           <div class="book-card book-section">
-            <h3>Níveis e Proficiência</h3>
-            <p>Nível 1: 0 XP — Prof +2</p>
-            <p>Nível 2: 300 XP — Prof +2</p>
-            <p>Nível 3: 900 XP — Prof +2</p>
-            <p>Nível 4: 2700 XP — Prof +2</p>
-            <p>Nível 5: 6500 XP — Prof +3</p>
-            <p>Nível 6: 14000 XP — Prof +3</p>
-            <p>Nível 7: 23000 XP — Prof +3</p>
-            <p>Nível 8: 34000 XP — Prof +3</p>
-            <p>Nível 9: 48000 XP — Prof +4</p>
-            <p>Nível 10: 64000 XP — Prof +4</p>
-          </div>
-          <div class="book-card book-section">
-            <h3>Sistema de Combate</h3>
-            <p><strong>Iniciativa:</strong> d20 + Mod DEX</p>
-            <p><strong>CA:</strong> Armadura + DEX (sem armadura: 10 + DEX)</p>
-            <p><strong>Ataque:</strong> d20 + Atributo + Proficiência</p>
-            <p><strong>Dano:</strong> Dado da arma + Atributo</p>
-            <p><strong>Perícias:</strong> d20 + Atributo + Proficiência (se treinado)</p>
-          </div>
-          <div class="book-card book-section">
-            <h3>Modificador de Atributo</h3>
-            <p>8 → -1, 9 → -1, 10 → +0, 11 → +0, 12 → +1, 13 → +1, 14 → +2, 15 → +2, 16 → +3, 17 → +3, 18 → +4, 19 → +4, 20 → +5</p>
+            <h3>Regras do Sistema D</h3>
+            <p>O sistema D usa atributos, modificadores e rolagens de d20 para todas as ações.</p>
+            <p>A soma de magia e vida deve respeitar o limite do sistema: 20 + nível * 2.</p>
+            <p>Habilidades e perícias seguem o mesmo padrão de bônus de proficiência e modificador.</p>
           </div>
         </div>
       </section>
