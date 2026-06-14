@@ -22,8 +22,11 @@ Este projeto fornece um criador de fichas para RPG com foco em D&D, usando uma i
 - Compra de habilidades com nome, descrição e imagem
 - Uma habilidade liberada a cada 3 pontos distribuídos, limitada pelo nível
 - Edição e exclusão das habilidades compradas
-- Rolagens rápidas de combate
-- Rolador físico de dados d20 em 3D em uma aba própria
-- Livros de referência do sistema
+- Banner e retrato independentes
+- Tema dinâmico extraído das cores do banner ou retrato
+- Compra inicial de armas, armaduras e itens por pontos
+- Rolagens 3D de d4, d6, d8, d10, d12, d20 e d100
+- Ataques e danos conectados ao mesmo tabuleiro 3D
+- Sistema com subabas didáticas para raças, classes, perícias, feitiços, habilidades e equipamentos
 
 O design funciona em dispositivos móveis e desktop.
