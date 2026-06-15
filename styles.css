@@ -643,9 +643,9 @@ textarea:focus-visible {
 }
 
 .photo-preview {
-  aspect-ratio: 4 / 5;
-  min-height: 0;
-  padding: 6px;
+    aspect-ratio: 3 / 5;
+    min-height: 0;
+    padding: 0px;
 }
 
 .photo-preview img,
