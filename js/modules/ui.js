@@ -169,9 +169,9 @@ export function renderSummary() {
 }
 
 export function setupTabs() {
-  document.querySelectorAll('.tab-button').forEach(button => {
+  document.querySelectorAll('.tab-button, .utility-tab-button').forEach(button => {
     button.addEventListener('click', () => {
-      document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-button, .utility-tab-button').forEach(btn => btn.classList.remove('active'));
       document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
 
       button.classList.add('active');

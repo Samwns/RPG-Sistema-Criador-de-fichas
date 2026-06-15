@@ -173,7 +173,7 @@ function createDiceSet(specs) {
     });
     const mesh = new THREE.Mesh(geometry, material);
     addLinework(mesh, geometry, theme, radius);
-    addFaceNumbers(mesh, geometry, sides, radius);
+    const faceLabels = addFaceNumbers(mesh, geometry, sides, radius);
     scene.add(mesh);
 
     const shadow = new THREE.Mesh(
@@ -205,7 +205,7 @@ function createDiceSet(specs) {
       playCollisionSound(impact);
     });
     world.addBody(body);
-    diceObjects.push({ mesh, shadow, body, radius, sides, spinOffset: Math.random() * 100 });
+    diceObjects.push({ mesh, shadow, body, radius, sides, faceLabels, spinOffset: Math.random() * 100 });
   });
 }
 
@@ -242,9 +242,12 @@ function addFaceNumbers(mesh, geometry, sides, radius) {
   const labels = sides === 100
     ? ["00", "10", "20", "30", "40", "50", "60", "70", "80", "90"]
     : Array.from({ length: Math.min(sides, faces.length) }, (_, index) => String(index + 1));
+  const faceLabels = [];
   faces.slice(0, labels.length).forEach((face, index) => {
+    faceLabels.push({ label: labels[index], normal: face.normal.clone() });
     mesh.add(createFaceNumber(labels[index], face, radius));
   });
+  return faceLabels;
 }
 
 function collectFaces(geometry) {
@@ -454,10 +457,16 @@ function playCollisionSound(impact) {
 
 function finishRoll() {
   if (!pendingRoll || isHolding) return;
-  const groupedResults = pendingRoll.specs.map(spec => ({
-    ...spec,
-    results: Array.from({ length: spec.count }, () => Math.floor(Math.random() * spec.sides) + 1)
-  }));
+  const availableDice = [...diceObjects];
+  const groupedResults = pendingRoll.specs.map(spec => {
+    const results = [];
+    for (let index = 0; index < spec.count; index += 1) {
+      const dieIndex = availableDice.findIndex(die => die.sides === spec.sides);
+      const [die] = dieIndex >= 0 ? availableDice.splice(dieIndex, 1) : [];
+      results.push(die ? getTopFaceValue(die) : Math.floor(Math.random() * spec.sides) + 1);
+    }
+    return { ...spec, results };
+  });
   const results = groupedResults.flatMap(group => group.results);
   const rawTotal = results.reduce((sum, value) => sum + value, 0);
   const modifier = Number(pendingRoll.modifier || 0);
@@ -471,6 +480,23 @@ function finishRoll() {
   pendingRoll = null;
   needsResultCheck = false;
   clearTimeout(resultFallbackTimer);
+}
+
+function getTopFaceValue(die) {
+  if (!die.faceLabels?.length) return Math.floor(Math.random() * die.sides) + 1;
+  const up = new THREE.Vector3(0, 1, 0);
+  let bestFace = die.faceLabels[0];
+  let bestScore = -Infinity;
+  die.faceLabels.forEach(face => {
+    const worldNormal = face.normal.clone().applyQuaternion(die.mesh.quaternion).normalize();
+    const score = worldNormal.dot(up);
+    if (score > bestScore) {
+      bestScore = score;
+      bestFace = face;
+    }
+  });
+  if (bestFace.label === "00") return 100;
+  return Number(bestFace.label) || 1;
 }
 
 function animate() {
