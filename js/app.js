@@ -47,7 +47,11 @@ let appearanceState = {
   font: 'default',
   wallpaper: '',
   effect: 'none',
-  effectText: 'RPG'
+  effectText: 'RPG',
+  diceFace: '#7ebaee',
+  diceNumber: '#fffbe8',
+  diceOutline: '#050505',
+  diceOpacity: 100
 };
 let isRestoringCharacter = false;
 let draftTimer = null;
@@ -1133,6 +1137,17 @@ function getCalculatedMaxMana() {
   return distributedMana + classMana + castingBonus + racialMana + getItemBonus('spellBonus');
 }
 
+function usesManaResource() {
+  const classNames = [elements.classe1.value, elements.classe2.value, elements.classe3.value].filter(Boolean);
+  const hasCasterClass = classNames.some(className => spellcastingClasses.includes(className) || casterManaByClass[className]);
+  const hasRacialMagic = (raceGrantedSpells[document.getElementById('subraca')?.value] || []).length > 0;
+  return hasCasterClass || hasRacialMagic || purchasedSpells.length > 0 || customSpells.length > 0;
+}
+
+function getEnergyLabel() {
+  return usesManaResource() ? 'Mana' : 'Estamina';
+}
+
 function clampResources() {
   const hp = document.getElementById('currentHp');
   const mana = document.getElementById('currentMana');
@@ -1142,7 +1157,7 @@ function clampResources() {
 
 function formatPowerEffect(power) {
   const profile = getAutoPowerProfile(power);
-  const labels = { damage: 'dano', heal: 'cura', mana: 'mana', utility: 'utilidade' };
+  const labels = { damage: 'dano', heal: 'cura', mana: getEnergyLabel().toLowerCase(), utility: 'utilidade' };
   const type = power.effectType || featurePowerOverrides[power.name]?.effectType || 'damage';
   const save = profile.save && profile.save !== 'nenhuma' ? ` · teste ${profile.save}` : '';
   const negation = profile.negation ? ` · ${profile.negation}` : '';
@@ -1152,13 +1167,14 @@ function formatPowerEffect(power) {
 
 function formatPowerMeta(power) {
   const profile = getAutoPowerProfile(power);
+  const energy = getEnergyLabel();
   if (profile.actionCost === 'Passivo') return `Passivo · ${profile.duration} · ${formatPowerEffect(power)}`;
-  return `Uso: ${profile.actionCost} · Duração: ${profile.duration} · Mana ${profile.manaCost} · ${formatPowerEffect(power)}`;
+  return `Uso: ${profile.actionCost} · Duração: ${profile.duration} · ${energy} ${profile.manaCost} · ${formatPowerEffect(power)}`;
 }
 
 function formatUseLabel(power) {
   const profile = getAutoPowerProfile(power);
-  return profile.actionCost === 'Passivo' ? 'Passivo' : `Usar · mana ${profile.manaCost}`;
+  return profile.actionCost === 'Passivo' ? 'Passivo' : `Usar · ${getEnergyLabel().toLowerCase()} ${profile.manaCost}`;
 }
 
 function markUseButton(button, power) {
@@ -1190,11 +1206,11 @@ function updateResource(action, amount) {
   }
   if (action === 'spendMana') {
     mana.value = Math.max(0, Number(mana.value || 0) - value);
-    setResourceMessage(`Gastou ${value} de mana.`);
+    setResourceMessage(`Gastou ${value} de ${getEnergyLabel().toLowerCase()}.`);
   }
   if (action === 'restoreMana') {
     mana.value = Math.min(maxMana, Number(mana.value || 0) + value);
-    setResourceMessage(`Recuperou ${value} de mana.`);
+    setResourceMessage(`Recuperou ${value} de ${getEnergyLabel().toLowerCase()}.`);
   }
   synchronize();
 }
@@ -1203,7 +1219,7 @@ function usePower(power, button = null) {
   const profile = getAutoPowerProfile(power);
   const mana = document.getElementById('currentMana');
   if (profile.manaCost > Number(mana.value || 0)) {
-    setResourceMessage(`${power.name} precisa de ${profile.manaCost} mana.`);
+    setResourceMessage(`${power.name} precisa de ${profile.manaCost} ${getEnergyLabel().toLowerCase()}.`);
     return;
   }
   mana.value = Math.max(0, Number(mana.value || 0) - profile.manaCost);
@@ -1211,7 +1227,7 @@ function usePower(power, button = null) {
   const type = power.effectType || 'damage';
   if (type === 'utility') {
     const defense = profile.save && profile.save !== 'nenhuma' ? ` · Resistência ${profile.save}${profile.negation ? ` (${profile.negation})` : ''}` : '';
-    setResourceMessage(`${power.name} usado. ${profile.actionCost}, ${profile.duration}. Mana restante: ${mana.value}.${defense}`);
+    setResourceMessage(`${power.name} usado. ${profile.actionCost}, ${profile.duration}. ${getEnergyLabel()} restante: ${mana.value}.${defense}`);
     elements.rollResult.innerHTML = `<span class="dice-icon">✓</span><span>${power.name}: usado${defense}</span>`;
     if (button) animateRollButton(button);
     saveDraftSoon();
@@ -1228,7 +1244,7 @@ function usePower(power, button = null) {
       const action = type === 'damage' ? 'dano' : type === 'heal' ? 'cura' : 'mana';
       const defense = profile.save && profile.save !== 'nenhuma' ? ` · Resistência ${profile.save}${profile.negation ? ` (${profile.negation})` : ''}` : '';
       elements.rollResult.innerHTML = `<span class="dice-icon">${results.join(', ')}</span><span>${power.name}: ${total} ${action}${defense}</span>`;
-      setResourceMessage(`${power.name}: ${total} ${action}. ${profile.actionCost}. Mana restante: ${mana.value}.${defense}`);
+      setResourceMessage(`${power.name}: ${total} ${action}. ${profile.actionCost}. ${getEnergyLabel()} restante: ${mana.value}.${defense}`);
     }
   });
   if (button) animateRollButton(button);
@@ -1343,10 +1359,13 @@ function getCharacterCombatSnapshot(character) {
   const dexMod = Number(computeModifier(totals[1]));
   const prof = Number(String(character.profBonus || '+2').replace('+', '')) || 2;
   const attack = Math.max(forMod, dexMod) + prof;
+  const maxHp = Number(character.vidaMaxima || 1);
+  const currentHp = Math.min(maxHp, Number(character.currentHp || maxHp || 1));
   return {
     id: `char:${character.id || normalizeCharacterKey(character)}`,
     name: character.nome || 'Personagem sem nome',
-    hp: Number(character.currentHp || character.vidaMaxima || 1),
+    hp: currentHp,
+    maxHp,
     ac: Number(character.armorClass || 10),
     attack,
     damage: character.combatAttackDie || '1d8'
@@ -1354,11 +1373,16 @@ function getCharacterCombatSnapshot(character) {
 }
 
 function getMasterCombatants() {
-  const characters = readSavedCharacters().map(getCharacterCombatSnapshot);
+  const current = getCharacterCombatSnapshot(getCharacterData());
+  const saved = readSavedCharacters()
+    .map(getCharacterCombatSnapshot)
+    .filter(character => character.id !== current.id);
+  const characters = current.name.trim() || activeCharacterId ? [current, ...saved] : saved;
   const enemies = masterState.enemies.map(enemy => ({
     id: `enemy:${enemy.id}`,
     name: enemy.name,
     hp: Number(enemy.hp || 1),
+    maxHp: Number(enemy.maxHp || enemy.hp || 1),
     ac: Number(enemy.ac || 10),
     attack: Number(enemy.attack || 0),
     damage: enemy.damage || '1d6'
@@ -1369,12 +1393,16 @@ function getMasterCombatants() {
 function renderCombatantOptions() {
   const combatants = getMasterCombatants();
   const options = combatants.length
-    ? combatants.map(item => `<option value="${item.id}">${escapeHtml(item.name)} · PV ${item.hp} · CA ${item.ac}</option>`).join('')
+    ? combatants.map(item => `<option value="${item.id}">${escapeHtml(item.name)} · PV ${item.hp}/${item.maxHp || item.hp} · CA ${item.ac}</option>`).join('')
     : '<option value="">Salve uma ficha ou crie um inimigo</option>';
   ['combatAttacker', 'combatTarget'].forEach(id => {
     const select = document.getElementById(id);
     if (select) select.innerHTML = options;
   });
+  const target = document.getElementById('combatTarget');
+  if (target && target.options.length > 1 && target.value === document.getElementById('combatAttacker')?.value) {
+    target.selectedIndex = 1;
+  }
 }
 
 function renderMasterState() {
@@ -1463,6 +1491,7 @@ function addEnemy() {
     id: createMasterId('enemy'),
     name,
     hp: Number(document.getElementById('enemyHp').value || 1),
+    maxHp: Number(document.getElementById('enemyHp').value || 1),
     ac: Number(document.getElementById('enemyAc').value || 10),
     attack: Number(document.getElementById('enemyAttack').value || 0),
     damage: document.getElementById('enemyDamage').value.trim() || '1d6',
@@ -1564,6 +1593,10 @@ function applyAppearance({ persist = true } = {}) {
   const body = document.body;
   applyDynamicTheme(appearanceState.primary, appearanceState.secondary);
   root.style.setProperty('--paper', appearanceState.paper);
+  root.style.setProperty('--dice-face', appearanceState.diceFace);
+  root.style.setProperty('--dice-number', appearanceState.diceNumber);
+  root.style.setProperty('--dice-outline', appearanceState.diceOutline);
+  root.style.setProperty('--dice-opacity', String(Math.max(.45, Math.min(1, Number(appearanceState.diceOpacity || 100) / 100))));
   body.classList.toggle('has-wallpaper', Boolean(appearanceState.wallpaper));
   body.style.setProperty('--app-wallpaper', appearanceState.wallpaper ? `url("${appearanceState.wallpaper}")` : 'none');
   body.dataset.effect = appearanceState.effect || 'none';
@@ -1587,7 +1620,11 @@ function syncAppearanceFormFromState() {
     themeFont: appearanceState.font,
     themeWallpaper: appearanceState.wallpaper,
     themeEffect: appearanceState.effect,
-    themeEffectText: appearanceState.effectText
+    themeEffectText: appearanceState.effectText,
+    diceFaceColor: appearanceState.diceFace,
+    diceNumberColor: appearanceState.diceNumber,
+    diceOutlineColor: appearanceState.diceOutline,
+    diceOpacity: appearanceState.diceOpacity
   };
   Object.entries(fields).forEach(([id, value]) => {
     const input = document.getElementById(id);
@@ -1603,9 +1640,14 @@ function updateAppearanceFromForm() {
     font: document.getElementById('themeFont').value,
     wallpaper: document.getElementById('themeWallpaper').value.trim(),
     effect: document.getElementById('themeEffect').value,
-    effectText: document.getElementById('themeEffectText').value.trim() || 'RPG'
+    effectText: document.getElementById('themeEffectText').value.trim() || 'RPG',
+    diceFace: document.getElementById('diceFaceColor').value,
+    diceNumber: document.getElementById('diceNumberColor').value,
+    diceOutline: document.getElementById('diceOutlineColor').value,
+    diceOpacity: Number(document.getElementById('diceOpacity').value || 100)
   };
   applyAppearance();
+  window.dispatchEvent(new CustomEvent('dice-theme-change'));
 }
 
 function resetAppearanceState() {
@@ -1616,7 +1658,11 @@ function resetAppearanceState() {
     font: 'default',
     wallpaper: '',
     effect: 'none',
-    effectText: 'RPG'
+    effectText: 'RPG',
+    diceFace: '#7ebaee',
+    diceNumber: '#fffbe8',
+    diceOutline: '#050505',
+    diceOpacity: 100
   };
   syncAppearanceFormFromState();
   applyAppearance();
@@ -2154,13 +2200,20 @@ function updateSpellStats() {
   const proficiency = Number(elements.profBonus.value.replace('+', '')) || 0;
   const itemMagicBonus = getItemBonus('spellBonus');
   const labels = { int: 'INT', sab: 'SAB', car: 'CAR' };
+  const energyLabel = getEnergyLabel();
   document.getElementById('spellSaveDc').textContent = 8 + proficiency + modifier + itemMagicBonus;
   document.getElementById('spellAttackBonus').textContent = formatSigned(proficiency + modifier + itemMagicBonus).replace(' ', '');
   document.getElementById('spellCastingStat').textContent = labels[castingStat];
   document.getElementById('maxMana').textContent = getCalculatedMaxMana();
+  document.querySelector('#tab-magia .panel-heading h2').textContent = `${energyLabel} e vida`;
+  document.querySelector('#tab-magia .magic-stats div:nth-child(4) span').textContent = `${energyLabel} atual`;
 }
 
 function synchronize() {
+  const earlyEnergyLabel = getEnergyLabel();
+  document.querySelectorAll('[data-energy-label]').forEach(target => {
+    target.textContent = earlyEnergyLabel;
+  });
   updateProgression();
   elements.profBonus.value = computeProfBonus(elements.nivel.value);
   updateBudgetText(getRemainingPoints(elements.nivel.value, getInputValues()));
@@ -2186,7 +2239,10 @@ function synchronize() {
   const combatInit = document.getElementById('combatInit');
   const combatDefense = document.getElementById('combatDefense');
   const calculatedMaxHp = getCalculatedMaxHp();
+  const calculatedMaxMana = getCalculatedMaxMana();
+  const energyLabel = getEnergyLabel();
   const currentHp = document.getElementById('currentHp');
+  const currentMana = document.getElementById('currentMana');
   if (currentHp && Number(currentHp.value || 0) >= lastCalculatedMaxHp) currentHp.value = calculatedMaxHp;
   lastCalculatedMaxHp = calculatedMaxHp;
   elements.vidaMaxima.value = calculatedMaxHp;
@@ -2197,6 +2253,15 @@ function synchronize() {
   document.getElementById('combatSpeed').textContent = getCalculatedSpeed();
   document.getElementById('combatVision').textContent = document.getElementById('vision').value || '-';
   document.getElementById('combatHitDie').textContent = document.getElementById('hitDie').value;
+  document.getElementById('sideHpCurrent').textContent = currentHp?.value || calculatedMaxHp;
+  document.getElementById('sideHpMax').textContent = calculatedMaxHp;
+  document.getElementById('sideEnergyLabel').textContent = energyLabel;
+  document.getElementById('sideEnergyCurrent').textContent = currentMana?.value || calculatedMaxMana;
+  document.getElementById('sideEnergyMax').textContent = calculatedMaxMana;
+  document.querySelectorAll('[data-energy-label]').forEach(target => {
+    target.textContent = energyLabel;
+  });
+  renderCombatantOptions();
   renderClassCombatStats();
   saveDraftSoon();
 }
@@ -2402,7 +2467,7 @@ function buildPrintableSheetHtml() {
       <h2>Status</h2>
       <section class="pdf-grid">
         <div><b>PV</b>${escapeHtml(document.getElementById('currentHp').value)} / ${getCalculatedMaxHp()}</div>
-        <div><b>Mana</b>${escapeHtml(document.getElementById('currentMana').value)} / ${getCalculatedMaxMana()}</div>
+        <div><b>${getEnergyLabel()}</b>${escapeHtml(document.getElementById('currentMana').value)} / ${getCalculatedMaxMana()}</div>
         <div><b>CA</b>${getCalculatedArmorClass()}</div>
         <div><b>Proficiência</b>${escapeHtml(elements.profBonus.value)}</div>
         <div><b>Deslocamento</b>${escapeHtml(getCalculatedSpeed())}</div>
@@ -2763,6 +2828,7 @@ function init() {
     document.getElementById('speed'),
     document.getElementById('vision'),
     document.getElementById('hitDie'),
+    document.getElementById('currentHp'),
     document.getElementById('currentMana'),
     document.getElementById('castingStat'),
     document.getElementById('spellSlots'),
@@ -2824,7 +2890,7 @@ function init() {
   });
   document.getElementById('saveAppearance').addEventListener('click', updateAppearanceFromForm);
   document.getElementById('resetAppearance').addEventListener('click', resetAppearanceState);
-  ['themePrimary', 'themeSecondary', 'themePaper', 'themeFont', 'themeWallpaper', 'themeEffect', 'themeEffectText'].forEach(id => {
+  ['themePrimary', 'themeSecondary', 'themePaper', 'themeFont', 'themeWallpaper', 'themeEffect', 'themeEffectText', 'diceFaceColor', 'diceNumberColor', 'diceOutlineColor', 'diceOpacity'].forEach(id => {
     document.getElementById(id).addEventListener('input', updateAppearanceFromForm);
     document.getElementById(id).addEventListener('change', updateAppearanceFromForm);
   });

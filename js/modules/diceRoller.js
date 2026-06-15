@@ -64,6 +64,10 @@ export function initDiceRoller() {
   renderer.domElement.addEventListener("pointerdown", onInputStart);
   window.addEventListener("pointermove", onInputMove);
   window.addEventListener("pointerup", onInputEnd);
+  window.addEventListener("dice-theme-change", () => {
+    const specs = groupDiceObjects();
+    createDiceSet(specs.length ? specs : getPoolSpecs().length ? getPoolSpecs() : [{ sides: 20, count: 1 }]);
+  });
 
   document.querySelectorAll("[data-pool-action]").forEach(button => {
     button.addEventListener("click", () => {
@@ -162,14 +166,16 @@ function createDiceSet(specs) {
 
   flatSpecs.forEach((sides, index) => {
     const geometry = createGeometry(sides, radius);
-    const color = index % 2 ? theme.secondary : theme.primary;
+    const color = theme.face || (index % 2 ? theme.secondary : theme.primary);
     const material = new THREE.MeshStandardMaterial({
       color,
       emissive: color,
       emissiveIntensity: .11,
       roughness: .42,
       metalness: .08,
-      flatShading: true
+      flatShading: true,
+      transparent: theme.opacity < 1,
+      opacity: theme.opacity
     });
     const mesh = new THREE.Mesh(geometry, material);
     addLinework(mesh, geometry, theme, radius);
@@ -213,7 +219,11 @@ function getThemeColors() {
   const styles = getComputedStyle(document.documentElement);
   return {
     primary: styles.getPropertyValue("--blue").trim() || fallbackPalette[2],
-    secondary: styles.getPropertyValue("--orange").trim() || fallbackPalette[0]
+    secondary: styles.getPropertyValue("--orange").trim() || fallbackPalette[0],
+    face: styles.getPropertyValue("--dice-face").trim(),
+    number: styles.getPropertyValue("--dice-number").trim() || "#fffbe8",
+    outline: styles.getPropertyValue("--dice-outline").trim() || "#050505",
+    opacity: Number(styles.getPropertyValue("--dice-opacity").trim()) || 1
   };
 }
 
@@ -239,13 +249,14 @@ function addLinework(mesh, geometry, theme, radius) {
 
 function addFaceNumbers(mesh, geometry, sides, radius) {
   const faces = collectFaces(geometry);
+  const theme = getThemeColors();
   const labels = sides === 100
     ? ["00", "10", "20", "30", "40", "50", "60", "70", "80", "90"]
     : Array.from({ length: Math.min(sides, faces.length) }, (_, index) => String(index + 1));
   const faceLabels = [];
   faces.slice(0, labels.length).forEach((face, index) => {
     faceLabels.push({ label: labels[index], normal: face.normal.clone() });
-    mesh.add(createFaceNumber(labels[index], face, radius));
+    mesh.add(createFaceNumber(labels[index], face, radius, theme));
   });
   return faceLabels;
 }
@@ -276,7 +287,7 @@ function collectFaces(geometry) {
   return faces;
 }
 
-function createFaceNumber(text, face, radius) {
+function createFaceNumber(text, face, radius, theme = getThemeColors()) {
   const canvas = document.createElement("canvas");
   canvas.width = 256;
   canvas.height = 256;
@@ -288,15 +299,15 @@ function createFaceNumber(text, face, radius) {
   context.miterLimit = 2;
   context.shadowColor = "rgba(0,0,0,.9)";
   context.shadowBlur = 9;
-  context.strokeStyle = "#050505";
+  context.strokeStyle = theme.outline;
   context.lineWidth = 22;
   context.strokeText(text, 128, 134);
   context.shadowColor = "rgba(255,247,176,.75)";
   context.shadowBlur = 18;
-  context.strokeStyle = "rgba(0,0,0,.92)";
+  context.strokeStyle = theme.outline;
   context.lineWidth = 8;
   context.strokeText(text, 128, 134);
-  context.fillStyle = "#fffbe8";
+  context.fillStyle = theme.number;
   context.fillText(text, 128, 134);
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;

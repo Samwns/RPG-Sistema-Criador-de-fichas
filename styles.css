@@ -289,12 +289,8 @@ body[data-effect="smoky"] .ambient-effect .effect-layer::after {
   color: #dedede;
   font: italic 800 4.25rem/.9 var(--serif);
   text-align: center;
-  text-shadow:
-    -1px -1px 0 rgba(0, 0, 0, .78),
-    1px -1px 0 rgba(0, 0, 0, .78),
-    -1px 1px 0 rgba(0, 0, 0, .78),
-    1px 1px 0 rgba(0, 0, 0, .78),
-    0 5px 12px rgba(0, 0, 0, .28);
+  -webkit-text-stroke: .65px rgba(0, 0, 0, .82);
+  text-shadow: 0 5px 12px rgba(0, 0, 0, .2);
   letter-spacing: 0;
   padding: 0;
   border-right: 2px solid color-mix(in srgb, var(--blue) 55%, transparent);
@@ -340,6 +336,40 @@ body[data-effect="smoky"] .ambient-effect .effect-layer::after {
 .stat-copy p {
   margin: 0;
   overflow-wrap: anywhere;
+}
+
+.side-resource-panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, .12);
+}
+
+.side-resource-panel > div {
+  min-width: 0;
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(33, 33, 33, .42);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .06);
+}
+
+.side-resource-panel span {
+  display: block;
+  color: #d8d8d8;
+  font: 800 .58rem/1 var(--mono);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.side-resource-panel strong {
+  display: block;
+  margin-top: 8px;
+  color: #f1f1f1;
+  font: italic 800 1.35rem/.9 var(--serif);
+  -webkit-text-stroke: .55px rgba(0, 0, 0, .78);
+  white-space: nowrap;
 }
 
 .sheet-main {
@@ -435,10 +465,11 @@ body[data-effect="smoky"] .ambient-effect .effect-layer::after {
 .hero-utility-tabs {
   position: absolute;
   right: 34px;
-  bottom: 50px;
+  bottom: 42px;
   display: flex;
   gap: 8px;
   justify-content: flex-end;
+  z-index: 4;
 }
 
 .utility-tab-button {
@@ -447,10 +478,10 @@ body[data-effect="smoky"] .ambient-effect .effect-layer::after {
   gap: 8px;
   min-height: 42px;
   border: 0;
-  border-radius: 7px;
-  padding: 10px 13px;
-  background: rgba(244, 244, 242, .92);
-  box-shadow: 3px 3px 0 #444, 4px 4px 0 rgba(227, 227, 227, .65);
+  border-radius: 8px 8px 0 0;
+  padding: 11px 15px;
+  background: rgba(238, 238, 236, .96);
+  box-shadow: inset 0 0 0 1px rgba(68, 68, 68, .12);
   color: #444;
   font: 800 .62rem/1 var(--mono);
   letter-spacing: .1em;
@@ -476,7 +507,7 @@ body[data-effect="smoky"] .ambient-effect .effect-layer::after {
 .utility-tab-button.active {
   background: #444;
   color: #eee;
-  box-shadow: 3px 3px 0 var(--orange);
+  box-shadow: inset 0 -3px 0 var(--orange);
 }
 
 .hero-actions button,
@@ -1096,11 +1127,8 @@ input[type="color"]::-webkit-color-swatch {
 .totals-grid strong {
   grid-row: span 2;
   font: italic 800 2.3rem/.9 var(--serif);
-  text-shadow:
-    -1px -1px 0 rgba(0, 0, 0, .62),
-    1px -1px 0 rgba(0, 0, 0, .62),
-    -1px 1px 0 rgba(0, 0, 0, .62),
-    1px 1px 0 rgba(0, 0, 0, .62);
+  -webkit-text-stroke: .45px rgba(0, 0, 0, .6);
+  text-shadow: none;
 }
 
 .totals-grid small {
@@ -1346,7 +1374,7 @@ input[type="color"]::-webkit-color-swatch {
   font: italic 800 clamp(1.35rem, 2.7vw, 2rem)/.95 var(--serif);
   background: var(--gradient);
   background-clip: text;
-  -webkit-text-stroke: .7px rgba(0, 0, 0, .72);
+  -webkit-text-stroke: .35px rgba(0, 0, 0, .58);
   color: transparent;
   overflow-wrap: normal;
   white-space: nowrap;
@@ -1356,7 +1384,7 @@ input[type="color"]::-webkit-color-swatch {
 .combat-vitals strong:has(input),
 .magic-stats strong:has(input) {
   font-size: clamp(1.15rem, 2.1vw, 1.55rem);
-  -webkit-text-stroke-width: .45px;
+  -webkit-text-stroke-width: .25px;
 }
 
 .combat-vitals input,
@@ -2150,7 +2178,7 @@ input[type="color"]::-webkit-color-swatch {
 .result-value {
   color: #444;
   font: italic 800 3rem/.8 var(--serif);
-  -webkit-text-stroke: .7px rgba(0, 0, 0, .72);
+  -webkit-text-stroke: .35px rgba(0, 0, 0, .58);
   text-shadow: 0 5px 10px rgba(0, 0, 0, .16);
 }
 
@@ -2549,6 +2577,11 @@ input[type="color"]::-webkit-color-swatch {
     margin: 0;
   }
 
+  .side-resource-panel {
+    grid-column: 1 / -1;
+    margin-top: 4px;
+  }
+
   .sheet-hero {
     min-height: 0;
     padding: 28px 18px 72px;
@@ -2580,10 +2613,12 @@ input[type="color"]::-webkit-color-swatch {
     position: relative;
     right: auto;
     bottom: auto;
+    transform: none;
     flex-wrap: wrap;
     justify-content: flex-start;
     max-width: none;
     margin-top: 10px;
+    gap: 8px;
   }
 
   .hero-actions button,
@@ -2591,6 +2626,7 @@ input[type="color"]::-webkit-color-swatch {
   .utility-tab-button {
     flex: 1 1 calc(50% - 6px);
     min-height: 42px;
+    border-radius: 8px;
     justify-content: center;
   }
 

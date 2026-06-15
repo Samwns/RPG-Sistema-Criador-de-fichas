@@ -117,6 +117,7 @@ export function updateMagicLifeUI(magic, life, level) {
   const total = Number(magic || 0) + Number(life || 0);
   const required = requiredMagicLife(level);
   const remaining = required - total;
+  const energyLabel = (document.querySelector('[data-energy-label]')?.textContent || 'mana').toLowerCase();
 
   elements.totalMagiaVida.textContent = total;
   elements.requiredMagicLife.textContent = required;
@@ -130,7 +131,7 @@ export function updateMagicLifeUI(magic, life, level) {
   if (remaining === 0) {
     diffLabel.textContent = '0';
     diffLabel.className = 'positive';
-    elements.magicNote.textContent = `Tudo distribuído. Cada ponto vale +2 PV ou +2 mana antes dos bônus extras.`;
+    elements.magicNote.textContent = `Tudo distribuído. Cada ponto vale +2 PV ou +2 ${energyLabel} antes dos bônus extras.`;
   } else if (remaining < 0) {
     diffLabel.textContent = `${remaining}`;
     diffLabel.className = 'negative';
@@ -138,7 +139,7 @@ export function updateMagicLifeUI(magic, life, level) {
   } else {
     diffLabel.textContent = remaining.toString();
     diffLabel.className = 'positive';
-    elements.magicNote.textContent = `Restam ${remaining} ponto(s) para distribuir entre Vida e Mana.`;
+    elements.magicNote.textContent = `Restam ${remaining} ponto(s) para distribuir entre vida e ${energyLabel}.`;
   }
 }
 

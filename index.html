@@ -75,6 +75,17 @@
               <p>Atuação</p>
             </div>
           </article>
+
+          <section class="side-resource-panel" aria-label="Recursos principais">
+            <div>
+              <span>PV</span>
+              <strong><b id="sideHpCurrent">30</b> / <b id="sideHpMax">30</b></strong>
+            </div>
+            <div>
+              <span id="sideEnergyLabel">Mana</span>
+              <strong><b id="sideEnergyCurrent">15</b> / <b id="sideEnergyMax">15</b></strong>
+            </div>
+          </section>
         </aside>
 
         <main class="sheet-main">
@@ -164,7 +175,7 @@
                   <div class="resource-distribution-card inline-resource-card full-width">
                     <div class="section-title">
                       <div>
-                        <p class="panel-kicker">Vida e mana</p>
+                        <p class="panel-kicker">Vida e <span data-energy-label>mana</span></p>
                         <h3 id="resourceBudgetLabel">Restam 30 pontos</h3>
                       </div>
                       <div class="magic-budget">
@@ -174,7 +185,7 @@
                       </div>
                     </div>
                     <div class="form-grid resource-point-grid">
-                      <label><span>Pontos para mana</span><input id="pontosMagia" type="number" min="0" value="15"><small>1 ponto = +2 mana máxima</small></label>
+                      <label><span>Pontos para <span data-energy-label>mana</span></span><input id="pontosMagia" type="number" min="0" value="15"><small>1 ponto = +2 <span data-energy-label>mana</span> máxima</small></label>
                       <label><span>Pontos para vida</span><input id="pontosVida" type="number" min="0" value="15"><small>1 ponto = +2 PV máximo</small></label>
                     </div>
                     <p class="magic-note" id="magicNote">Distribua os pontos entre Vida e Mana. Bônus de classe, raça e itens entram por cima.</p>
@@ -265,11 +276,11 @@
                     <label><span>Nome da habilidade</span><input id="tituloHabilidade" type="text" placeholder="Ex.: Golpe flamejante"></label>
                     <div class="form-grid compact-action-grid">
                       <label><span>Origem</span><select id="skillOrigin"><option value="Classe">Classe</option><option value="Raça">Raça</option><option value="Subclasse">Subclasse</option><option value="Item">Item</option><option value="Personalizada">Personalizada</option></select></label>
-                      <label><span>Tipo</span><select id="skillEffectType"><option value="damage">Dano</option><option value="heal">Cura</option><option value="mana">Recupera mana</option><option value="utility">Utilidade</option></select></label>
+                      <label><span>Tipo</span><select id="skillEffectType"><option value="damage">Dano</option><option value="heal">Cura</option><option value="mana">Recupera recurso</option><option value="utility">Utilidade</option></select></label>
                       <label><span>Dado</span><select id="skillDamageDie"><option value="auto">Auto</option><option value="4">d4</option><option value="6">d6</option><option value="8">d8</option><option value="10">d10</option><option value="12">d12</option><option value="20">d20</option></select></label>
                       <label><span>Qtd dados</span><input id="skillDiceCount" type="number" min="0" value="0"></label>
                       <label><span>Bônus</span><input id="skillFlatBonus" type="number" value="0"></label>
-                      <label><span>Custo mana</span><input id="skillManaCost" type="number" min="1" value="1"></label>
+                      <label><span>Custo <span data-energy-label>mana</span></span><input id="skillManaCost" type="number" min="1" value="1"></label>
                     </div>
                     <label><span>Descrição</span><textarea id="descricaoHabilidade" rows="5" placeholder="Explique efeito, custo e alcance..."></textarea></label>
                     <div class="skill-editor-actions">
@@ -441,16 +452,16 @@
 
               <section class="content-card magic-section active" data-magic-section="magic-sheet">
                 <div class="section-title">
-                  <div><p class="panel-kicker">Recursos em jogo</p><h3>Dano, cura e mana</h3></div>
+                  <div><p class="panel-kicker">Recursos em jogo</p><h3>Dano, cura e <span data-energy-label>mana</span></h3></div>
                 </div>
                 <div class="resource-controls">
                   <label><span>Valor</span><input id="resourceAmount" type="number" min="0" value="1"></label>
                   <button type="button" id="applyDamage">Receber dano</button>
                   <button type="button" id="applyHealing">Receber cura</button>
-                  <button type="button" id="spendMana">Gastar mana</button>
-                  <button type="button" id="restoreMana">Recuperar mana</button>
+                  <button type="button" id="spendMana">Gastar <span data-energy-label>mana</span></button>
+                  <button type="button" id="restoreMana">Recuperar <span data-energy-label>mana</span></button>
                 </div>
-                <p id="resourceMessage" class="magic-note">Curas e recuperação de mana respeitam o máximo calculado.</p>
+                <p id="resourceMessage" class="magic-note">Curas e recuperação de <span data-energy-label>mana</span> respeitam o máximo calculado.</p>
               </section>
 
               <section class="spellbook magic-section active" data-magic-section="magic-sheet">
@@ -497,12 +508,12 @@
                 <div class="form-grid compact-action-grid">
                   <label><span>Nome</span><input id="customSpellName" type="text" placeholder="Ex.: Sopro sombrio"></label>
                   <label><span>Origem</span><select id="customSpellOrigin"><option value="Classe">Classe</option><option value="Raça">Raça</option><option value="Subclasse">Subclasse</option><option value="Inata">Inata</option><option value="Item">Item</option></select></label>
-                  <label><span>Tipo</span><select id="customSpellType"><option value="damage">Dano</option><option value="heal">Cura</option><option value="mana">Recupera mana</option><option value="utility">Utilidade</option></select></label>
+                  <label><span>Tipo</span><select id="customSpellType"><option value="damage">Dano</option><option value="heal">Cura</option><option value="mana">Recupera recurso</option><option value="utility">Utilidade</option></select></label>
                   <label><span>Círculo</span><input id="customSpellLevel" type="number" min="0" max="9" value="0"></label>
                   <label><span>Dado</span><select id="customSpellDie"><option value="auto">Auto</option><option value="4">d4</option><option value="6">d6</option><option value="8">d8</option><option value="10">d10</option><option value="12">d12</option><option value="20">d20</option></select></label>
                   <label><span>Qtd dados</span><input id="customSpellDiceCount" type="number" min="0" value="0"></label>
                   <label><span>Bônus</span><input id="customSpellBonus" type="number" value="0"></label>
-                  <label><span>Custo mana</span><input id="customSpellManaCost" type="number" min="1" value="1"></label>
+                  <label><span>Custo <span data-energy-label>mana</span></span><input id="customSpellManaCost" type="number" min="1" value="1"></label>
                   <label class="full-width"><span>Descrição</span><textarea id="customSpellDescription" rows="3" placeholder="Efeito, alcance, condição e visual da magia..."></textarea></label>
                 </div>
                 <div class="skill-editor-actions">
@@ -676,6 +687,10 @@
                     <label class="full-width"><span>Papel de parede</span><input id="themeWallpaper" type="url" placeholder="https://..."></label>
                     <label><span>Efeito de fundo</span><select id="themeEffect"><option value="none">Nenhum</option><option value="perspective">Texto 3D</option><option value="smoky">Fumaça</option></select></label>
                     <label><span>Texto do efeito</span><input id="themeEffectText" type="text" value="RPG"></label>
+                    <label><span>Cor interna dos dados</span><input id="diceFaceColor" type="color" value="#7ebaee"></label>
+                    <label><span>Números dos dados</span><input id="diceNumberColor" type="color" value="#fffbe8"></label>
+                    <label><span>Contorno dos números</span><input id="diceOutlineColor" type="color" value="#050505"></label>
+                    <label><span>Opacidade dos dados</span><input id="diceOpacity" type="range" min="45" max="100" value="100"></label>
                   </div>
                   <p class="system-rule">As cores afetam botões, detalhes e o papel da ficha. O papel de parede fica atrás da mesa e o efeito é decorativo.</p>
                 </div>
