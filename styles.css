@@ -1748,6 +1748,13 @@ input[type="file"] {
   padding: 20px;
 }
 
+.saved-card.active {
+  border-color: color-mix(in srgb, var(--orange) 70%, #fff);
+  box-shadow:
+    4px 4px 9px rgba(68, 68, 68, .08),
+    0 0 0 3px color-mix(in srgb, var(--blue) 25%, transparent);
+}
+
 .saved-card.has-saved-banner {
   position: relative;
   overflow: hidden;

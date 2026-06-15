@@ -41,6 +41,7 @@ let customSpells = [];
 let themeColors = { primary: '#7EBAEE', secondary: '#F0A06F' };
 let isRestoringCharacter = false;
 let draftTimer = null;
+let activeCharacterId = '';
 
 const casterManaByClass = {
   Bardo: 6,
@@ -289,6 +290,33 @@ function getDieAverage(sides) {
   return (Number(sides) + 1) / 2;
 }
 
+function createCharacterId() {
+  return crypto.randomUUID?.() || `character-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function normalizeCharacterKey(character) {
+  return [
+    character?.nome || '',
+    character?.jogador || '',
+    character?.sistema || 'D&D'
+  ].map(value => String(value).trim().toLowerCase()).join('|');
+}
+
+function readSavedCharacters() {
+  let changed = false;
+  const saved = JSON.parse(localStorage.getItem('savedCharacters') || '[]').map(character => {
+    if (character.id) return character;
+    changed = true;
+    return { ...character, id: createCharacterId() };
+  });
+  if (changed) localStorage.setItem('savedCharacters', JSON.stringify(saved));
+  return saved;
+}
+
+function writeSavedCharacters(saved) {
+  localStorage.setItem('savedCharacters', JSON.stringify(saved));
+}
+
 function getClassHitDieSides(className) {
   return Number(String(classData[className]?.hitDie || 'd8').replace('d', '')) || 8;
 }
@@ -466,6 +494,7 @@ function handleRoll(type) {
 }
 
 function resetFicha() {
+  activeCharacterId = '';
   elements.nome.value = '';
   elements.jogador.value = '';
   elements.sistema.value = 'D&D';
@@ -1080,7 +1109,7 @@ function setResourceMessage(message) {
   const target = document.getElementById('resourceMessage');
   if (target) target.textContent = message;
   const fileTarget = document.getElementById('fileMessage');
-  if (fileTarget && /arquivo|pdf|ficha importada|inválido/i.test(message)) fileTarget.textContent = message;
+  if (fileTarget && /arquivo|pdf|ficha importada|ficha salva|inválido/i.test(message)) fileTarget.textContent = message;
 }
 
 function updateResource(action, amount) {
@@ -1773,11 +1802,12 @@ function synchronize() {
 }
 
 function loadSavedCharacters() {
-  const saved = JSON.parse(localStorage.getItem('savedCharacters') || '[]');
+  const saved = readSavedCharacters();
   elements.savedList.innerHTML = saved.length === 0 ? '<p>Nenhum personagem salvo.</p>' : '';
   saved.forEach((character, index) => {
     const card = document.createElement('div');
     card.className = 'saved-card';
+    if (character.id === activeCharacterId) card.classList.add('active');
     if (character.banner) {
       card.style.setProperty('--saved-banner', `url("${character.banner}")`);
       card.classList.add('has-saved-banner');
@@ -1834,22 +1864,37 @@ function loadSavedCharacters() {
 }
 
 function saveCharacter() {
+  const hadActiveCharacter = Boolean(activeCharacterId);
+  if (!activeCharacterId) activeCharacterId = createCharacterId();
   const current = getCharacterData();
-  const saved = JSON.parse(localStorage.getItem('savedCharacters') || '[]');
-  saved.push(current);
-  localStorage.setItem('savedCharacters', JSON.stringify(saved));
+  const saved = readSavedCharacters();
+  const currentKey = normalizeCharacterKey(current);
+  const existingIndex = saved.findIndex(character => {
+    return character.id === current.id
+      || (!hadActiveCharacter && current.nome && normalizeCharacterKey(character) === currentKey);
+  });
+
+  if (existingIndex >= 0) saved[existingIndex] = current;
+  else saved.push(current);
+
+  writeSavedCharacters(saved);
+  localStorage.setItem('lastCharacterDraft', JSON.stringify(current));
   loadSavedCharacters();
+  setResourceMessage(existingIndex >= 0 ? 'Ficha salva: personagem atualizado no baú.' : 'Ficha salva: personagem criado no baú.');
 }
 
 function deleteCharacter(index) {
-  const saved = JSON.parse(localStorage.getItem('savedCharacters') || '[]');
+  const saved = readSavedCharacters();
+  const deleted = saved[index];
   saved.splice(index, 1);
-  localStorage.setItem('savedCharacters', JSON.stringify(saved));
+  if (deleted?.id === activeCharacterId) activeCharacterId = '';
+  writeSavedCharacters(saved);
   loadSavedCharacters();
 }
 
 function clearAllCharacters() {
   localStorage.removeItem('savedCharacters');
+  activeCharacterId = '';
   loadSavedCharacters();
 }
 
@@ -1899,6 +1944,7 @@ function importCharacterFile(event) {
       const parsed = JSON.parse(String(reader.result || '{}'));
       const character = parsed.character || parsed;
       loadCharacter(character);
+      if (!character.id) activeCharacterId = '';
       localStorage.setItem('lastCharacterDraft', JSON.stringify(getCharacterData()));
       saveCharacter();
       setResourceMessage('Ficha importada e salva no baú.');
@@ -2019,6 +2065,7 @@ function saveDraftSoon() {
 
 function getCharacterData() {
   return {
+    id: activeCharacterId,
     sistema: elements.sistema.value,
     nome: elements.nome.value,
     jogador: elements.jogador.value,
@@ -2087,12 +2134,14 @@ function getCharacterData() {
 }
 
 function loadCharacter(index) {
+  const saved = typeof index === 'object' ? [] : readSavedCharacters();
   const character = typeof index === 'object'
     ? index
-    : JSON.parse(localStorage.getItem('savedCharacters') || '[]')[index];
+    : saved[index];
   if (!character) return;
 
   isRestoringCharacter = true;
+  activeCharacterId = character.id || createCharacterId();
   elements.sistema.value = character.sistema || 'D&D';
   elements.nome.value = character.nome || '';
   elements.jogador.value = character.jogador || '';
