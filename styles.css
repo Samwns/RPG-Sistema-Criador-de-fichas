@@ -1946,6 +1946,22 @@ input[type="color"]::-webkit-color-swatch {
   text-transform: uppercase;
 }
 
+.item-stat-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 8px 0 12px;
+}
+
+.item-stat-tags span {
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--blue) 12%, #f4f4f2);
+  color: #555;
+  font: 800 .58rem/1 var(--mono);
+  text-transform: uppercase;
+}
+
 .weapon-actions {
   display: flex;
   gap: 8px;
@@ -2026,6 +2042,10 @@ input[type="color"]::-webkit-color-swatch {
   flex-wrap: wrap;
 }
 
+.shop-price-row b {
+  width: 100%;
+}
+
 .shop-price-row button {
   min-width: 74px;
 }
@@ -2068,11 +2088,16 @@ input[type="color"]::-webkit-color-swatch {
   background: #e5e5e3;
 }
 
-.inventory-item div {
+.inventory-item > div {
   display: flex;
   min-width: 0;
   flex-direction: column;
   gap: 4px;
+}
+
+.inventory-item .item-stat-tags {
+  flex-direction: row;
+  margin: 8px 0 0;
 }
 
 .inventory-item span {

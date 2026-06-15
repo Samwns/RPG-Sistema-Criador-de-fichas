@@ -120,6 +120,8 @@ const equipmentCatalog = [
   { id: 'leather', name: 'Armadura de couro', category: 'Armadura', cost: 5, armorBase: 11, dexterity: true, description: 'CA 11 + modificador de DEX.' },
   { id: 'chain', name: 'Cota de malha', category: 'Armadura', cost: 9, armorBase: 16, description: 'Define a CA base como 16.' },
   { id: 'healing', name: 'Poção de cura', category: 'Consumível', cost: 3, die: 4, healing: true, description: 'Recupera 2d4 + 2 pontos de vida.' },
+  { id: 'scroll_firebolt', name: 'Pergaminho de Raio de Fogo', category: 'Pergaminho', rarity: 'Comum', cost: 5, die: 10, attribute: 'int', spellBonus: 1, description: 'Pergaminho ofensivo. Role 1d10 + INT para dano arcano simples.' },
+  { id: 'scroll_barrier', name: 'Pergaminho de Barreira', category: 'Pergaminho', rarity: 'Incomum', cost: 8, armorBonus: 1, description: 'Cria uma defesa curta; pode ser consumido narrativamente para +1 CA na cena.' },
   { id: 'rope', name: 'Corda de 15 m', category: 'Aventura', cost: 2, description: 'Ferramenta para exploração.' },
   { id: 'tools', name: 'Kit de ferramentas', category: 'Aventura', cost: 4, description: 'Ferramentas para testes especializados.' },
   { id: 'flame_tongue', name: 'Língua Flamejante', category: 'Arma', rarity: 'Raro', cost: 18, die: 8, attribute: 'for', damageBonus: 2, range: 'corpo a corpo', description: 'Espada mágica inspirada em D&D. +2 no dano e deixa o ataque com chama narrativa.' },
@@ -902,6 +904,52 @@ function getActiveEquipmentIds() {
   return equippedItems.length ? equippedItems : inventory;
 }
 
+function getItemStatusTags(item) {
+  const tags = [
+    item.category || 'Item',
+    item.rarity || 'Comum'
+  ];
+  if (item.die) tags.push(`Dado d${item.die}`);
+  if (item.attribute) tags.push(`Atributo ${formatAttributeLabel(item.attribute)}`);
+  if (item.attackBonus) tags.push(`Ataque ${formatSigned(item.attackBonus).replace(' ', '')}`);
+  if (item.damageBonus) tags.push(`Dano ${formatSigned(item.damageBonus).replace(' ', '')}`);
+  if (item.armorBase) tags.push(`CA base ${item.armorBase}${item.dexterity ? ' + DEX' : ''}`);
+  if (item.armorBonus) tags.push(`CA ${formatSigned(item.armorBonus).replace(' ', '')}`);
+  if (item.spellBonus) tags.push(`Magia ${formatSigned(item.spellBonus).replace(' ', '')}`);
+  if (item.maxHpBonus) tags.push(`PV ${formatSigned(item.maxHpBonus).replace(' ', '')}`);
+  if (item.speedBonus) tags.push(`Desloc. ${formatSigned(item.speedBonus).replace(' ', '')} m`);
+  if (item.healing) tags.push('Uso: cura 2d4+2');
+  return tags;
+}
+
+function renderItemTags(item) {
+  return `<div class="item-stat-tags">${getItemStatusTags(item).map(tag => `<span>${escapeHtml(tag)}</span>`).join('')}</div>`;
+}
+
+function canUseItem(item) {
+  return item.healing || item.category === 'Consumível' || item.category === 'Pergaminho';
+}
+
+function useInventoryItem(itemId) {
+  const item = getEquipmentCatalog().find(entry => entry.id === itemId);
+  if (!item) return;
+  if (item.healing) {
+    const total = Array.from({ length: 2 }, () => Math.floor(Math.random() * 4) + 1).reduce((sum, value) => sum + value, 2);
+    updateResource('heal', total);
+    setResourceMessage(`${item.name} usada: curou ${total} PV.`);
+  } else if (item.die) {
+    openDiceTab();
+    rollDice({
+      sides: item.die,
+      count: 1,
+      modifier: item.attribute ? getAttributeModifier(item.attribute) + Number(item.spellBonus || 0) : Number(item.spellBonus || 0),
+      label: `Usar ${item.name}`
+    });
+  } else {
+    setResourceMessage(`${item.name} marcado como usado na cena.`);
+  }
+}
+
 function buyEquipment(itemId, currency = 'points') {
   const item = getEquipmentCatalog().find(entry => entry.id === itemId);
   if (!item || inventory.includes(itemId)) return;
@@ -959,7 +1007,10 @@ function renderEquipment() {
   const shop = document.getElementById('equipmentShop');
   const inventoryList = document.getElementById('inventoryList');
   const equippedList = document.getElementById('equippedList');
-  if (!shop || !inventoryList || !equippedList) return;
+  const consumableList = document.getElementById('consumableList');
+  const usableItemList = document.getElementById('usableItemList');
+  const craftSuggestions = document.getElementById('craftSuggestions');
+  if (!shop || !inventoryList || !equippedList || !consumableList || !usableItemList || !craftSuggestions) return;
 
   const budget = getEquipmentBudget();
   const spent = getEquipmentSpent();
@@ -968,6 +1019,8 @@ function renderEquipment() {
   document.getElementById('equipmentSpent').textContent = spent;
   document.getElementById('equipmentRemaining').textContent = Math.max(0, budget - spent);
   document.getElementById('equipmentGold').textContent = gold;
+  document.getElementById('inventoryGold').textContent = gold;
+  document.getElementById('inventoryCount').textContent = inventory.length;
 
   shop.innerHTML = '';
   getEquipmentCatalog().forEach(item => {
@@ -979,6 +1032,7 @@ function renderEquipment() {
       <span>${item.category}${item.rarity ? ` · ${item.rarity}` : ''}</span>
       <h4>${item.name}</h4>
       <p>${item.description}</p>
+      ${renderItemTags(item)}
       <div class="shop-price-row"><b>${item.cost} pts · ${goldCost} gold</b></div>
     `;
     const pointButton = document.createElement('button');
@@ -995,28 +1049,48 @@ function renderEquipment() {
     shop.appendChild(card);
   });
 
-  inventoryList.innerHTML = '';
-  if (inventory.length === 0) {
-    inventoryList.innerHTML = '<p class="system-rule">Nenhum item comprado.</p>';
-  }
-  inventory.forEach(itemId => {
-    const item = getEquipmentCatalog().find(entry => entry.id === itemId);
-    if (!item) return;
+  const renderInventoryRow = (item, target, { compact = false, includeEquip = true, includeUse = false } = {}) => {
     const equipped = equippedItems.includes(item.id);
     const row = document.createElement('article');
-    row.className = 'inventory-item';
-    row.innerHTML = `<div><b>${item.name}</b><span>${item.category} · ${item.description}</span></div>`;
-    const equipButton = document.createElement('button');
-    equipButton.type = 'button';
-    equipButton.textContent = equipped ? 'Desequipar' : 'Equipar';
-    equipButton.addEventListener('click', () => toggleEquippedItem(item.id));
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.textContent = 'Vender';
-    button.addEventListener('click', () => sellEquipment(item.id));
-    row.append(equipButton, button);
-    inventoryList.appendChild(row);
-  });
+    row.className = `inventory-item${equipped ? ' equipped-item' : ''}`;
+    row.innerHTML = `
+      <div>
+        <b>${escapeHtml(item.name)}</b>
+        <span>${escapeHtml(item.category)} · ${escapeHtml(item.rarity || 'Comum')} · ${escapeHtml(item.description)}</span>
+        ${compact ? '' : renderItemTags(item)}
+      </div>
+    `;
+    if (includeUse && canUseItem(item)) {
+      const useButton = document.createElement('button');
+      useButton.type = 'button';
+      useButton.textContent = 'Usar';
+      useButton.addEventListener('click', () => useInventoryItem(item.id));
+      row.appendChild(useButton);
+    }
+    if (includeEquip) {
+      const equipButton = document.createElement('button');
+      equipButton.type = 'button';
+      equipButton.textContent = equipped ? 'Desequipar' : 'Equipar';
+      equipButton.addEventListener('click', () => toggleEquippedItem(item.id));
+      row.appendChild(equipButton);
+    }
+    const sellButton = document.createElement('button');
+    sellButton.type = 'button';
+    sellButton.textContent = 'Vender';
+    sellButton.addEventListener('click', () => sellEquipment(item.id));
+    row.appendChild(sellButton);
+    target.appendChild(row);
+  };
+
+  inventoryList.innerHTML = '';
+  consumableList.innerHTML = '';
+  const ownedItems = inventory.map(itemId => getEquipmentCatalog().find(entry => entry.id === itemId)).filter(Boolean);
+  const consumables = ownedItems.filter(item => item.category === 'Consumível' || item.category === 'Pergaminho');
+  const generalItems = ownedItems.filter(item => item.category !== 'Consumível' && item.category !== 'Pergaminho');
+  if (!consumables.length) consumableList.innerHTML = '<p class="system-rule">Nenhum consumível ou pergaminho comprado.</p>';
+  if (!generalItems.length) inventoryList.innerHTML = '<p class="system-rule">Nenhum item geral comprado.</p>';
+  consumables.forEach(item => renderInventoryRow(item, consumableList, { includeUse: true, includeEquip: false }));
+  generalItems.forEach(item => renderInventoryRow(item, inventoryList));
 
   equippedList.innerHTML = '';
   const equipped = equippedItems
@@ -1028,13 +1102,33 @@ function renderEquipment() {
   equipped.forEach(item => {
     const row = document.createElement('article');
     row.className = 'inventory-item equipped-item';
-    row.innerHTML = `<div><b>${item.name}</b><span>${item.category} · ${item.rarity || 'Comum'}</span></div>`;
+    row.innerHTML = `<div><b>${item.name}</b><span>${item.category} · ${item.rarity || 'Comum'}</span>${renderItemTags(item)}</div>`;
     const button = document.createElement('button');
     button.type = 'button';
     button.textContent = 'Desequipar';
     button.addEventListener('click', () => toggleEquippedItem(item.id));
     row.appendChild(button);
     equippedList.appendChild(row);
+  });
+
+  usableItemList.innerHTML = '';
+  const usable = ownedItems.filter(canUseItem);
+  if (!usable.length) usableItemList.innerHTML = '<p class="system-rule">Nenhum item usável no inventário.</p>';
+  usable.forEach(item => renderInventoryRow(item, usableItemList, { compact: true, includeEquip: false, includeUse: true }));
+
+  craftSuggestions.innerHTML = '';
+  const className = elements.classe1.value;
+  const craftPool = getEquipmentCatalog().filter(item => {
+    if (className === 'Mago' || className === 'Feiticeiro' || className === 'Clérigo') return ['Pergaminho', 'Foco', 'Consumível'].includes(item.category);
+    if (className === 'Guerreiro' || className === 'Bárbaro' || className === 'Paladino') return ['Arma', 'Armadura'].includes(item.category);
+    if (className === 'Ladino' || className === 'Patrulheiro') return ['Arma', 'Aventura', 'Consumível'].includes(item.category);
+    return ['Aventura', 'Consumível'].includes(item.category);
+  }).slice(0, 4);
+  craftPool.forEach(item => {
+    const card = document.createElement('article');
+    card.className = 'shop-item';
+    card.innerHTML = `<span>${escapeHtml(className)} · craft sugerido</span><h4>${escapeHtml(item.name)}</h4><p>${escapeHtml(item.description)}</p>${renderItemTags(item)}<div><b>Base ${item.cost} pts</b></div>`;
+    craftSuggestions.appendChild(card);
   });
 
   renderWeaponList();

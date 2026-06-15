@@ -105,6 +105,10 @@
                 <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18h1.5a2 2 0 0 0 0-4H12a2 2 0 0 1 0-4h2a7 7 0 0 0-2-10Z"/><circle cx="7.5" cy="10" r="1"/><circle cx="10" cy="7" r="1"/><circle cx="14" cy="7" r="1"/><circle cx="16.5" cy="10" r="1"/></svg>
                 <span>Aparência</span>
               </button>
+              <button class="utility-tab-button" data-target="tab-livros" type="button">
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 0-3-3V4Z"/><path d="M5 17V6a2 2 0 0 1 2-2m2 5h6m-6 4h6"/></svg>
+                <span>Sistema</span>
+              </button>
             </nav>
             <div class="hero-actions">
               <label class="banner-upload">
@@ -126,10 +130,11 @@
             <button class="tab-button" data-target="tab-habilidades" type="button">Habilidades</button>
             <button class="tab-button" data-target="tab-combate" type="button">Combate</button>
             <button class="tab-button" data-target="tab-magia" type="button">Magias</button>
-            <button class="tab-button" data-target="tab-equipamento" type="button">Equipamento</button>
+            <button class="tab-button" data-target="tab-loja" type="button">Loja</button>
+            <button class="tab-button" data-target="tab-inventario" type="button">Inventário</button>
+            <button class="tab-button" data-target="tab-equipamento" type="button">Equipar</button>
             <button class="tab-button" data-target="tab-dados" type="button">Dados 3D</button>
             <button class="tab-button" data-target="tab-saved" type="button">Meu Baú</button>
-            <button class="tab-button" data-target="tab-livros" type="button">Sistema</button>
           </nav>
 
           <div class="sheet-content">
@@ -526,9 +531,9 @@
               </section>
             </section>
 
-            <section class="tab-panel" id="tab-equipamento">
+            <section class="tab-panel" id="tab-loja">
               <div class="panel-heading">
-                <div><p class="panel-kicker">Compra inicial</p><h2>Equipamento e inventário</h2></div>
+                <div><p class="panel-kicker">Loja e craft</p><h2>Itens, consumíveis e pergaminhos</h2></div>
                 <div class="shop-budget">
                   <span>Pontos <b id="equipmentBudget">20</b></span>
                   <span>Gastos <b id="equipmentSpent">0</b></span>
@@ -553,7 +558,7 @@
                 </div>
                 <div class="form-grid">
                   <label><span>Nome</span><input id="customItemName" type="text" placeholder="Ex.: Lâmina da Aurora"></label>
-                  <label><span>Categoria</span><select id="customItemCategory"><option>Arma</option><option>Armadura</option><option>Acessório</option><option>Foco</option><option>Consumível</option><option>Aventura</option></select></label>
+                  <label><span>Categoria</span><select id="customItemCategory"><option>Arma</option><option>Armadura</option><option>Acessório</option><option>Foco</option><option>Consumível</option><option>Pergaminho</option><option>Aventura</option></select></label>
                   <label><span>Raridade</span><select id="customItemRarity"><option>Comum</option><option>Incomum</option><option>Raro</option><option>Muito raro</option><option>Lendário</option></select></label>
                   <label><span>Custo</span><input id="customItemCost" type="number" min="0" value="8"></label>
                   <label><span>Dado da arma</span><select id="customItemDie"><option value="">Nenhum</option><option value="4">d4</option><option value="6">d6</option><option value="8">d8</option><option value="10">d10</option><option value="12">d12</option></select></label>
@@ -570,12 +575,42 @@
                 <p id="customItemMessage" class="warning"></p>
               </section>
               <section class="content-card equipment-block">
-                <h3>Inventário</h3>
+                <div class="section-title">
+                  <div><p class="panel-kicker">Craft por classe</p><h3>Oficina da ficha</h3></div>
+                </div>
+                <div id="craftSuggestions" class="equipment-shop compact-shop"></div>
+              </section>
+            </section>
+
+            <section class="tab-panel" id="tab-inventario">
+              <div class="panel-heading">
+                <div><p class="panel-kicker">Mochila</p><h2>Inventário</h2></div>
+                <div class="shop-budget">
+                  <span>Gold <b id="inventoryGold">100</b></span>
+                  <span>Itens <b id="inventoryCount">0</b></span>
+                </div>
+              </div>
+              <section class="content-card equipment-block">
+                <h3>Consumíveis e pergaminhos</h3>
+                <div id="consumableList" class="inventory-list"></div>
+              </section>
+              <section class="content-card equipment-block">
+                <h3>Itens gerais</h3>
                 <div id="inventoryList" class="inventory-list"></div>
               </section>
+            </section>
+
+            <section class="tab-panel" id="tab-equipamento">
+              <div class="panel-heading">
+                <div><p class="panel-kicker">Uso em jogo</p><h2>Equipar e usar itens</h2></div>
+              </div>
               <section class="content-card equipment-block">
                 <h3>Equipados e gerenciamento</h3>
                 <div id="equippedList" class="inventory-list"></div>
+              </section>
+              <section class="content-card equipment-block">
+                <h3>Ações rápidas de itens</h3>
+                <div id="usableItemList" class="inventory-list"></div>
               </section>
             </section>
 
