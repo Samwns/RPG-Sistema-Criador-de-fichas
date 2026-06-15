@@ -151,14 +151,14 @@ textarea:focus-visible {
 .stat-block {
   position: relative;
   display: grid;
-  grid-template-columns: 122px minmax(0, 1fr);
+  grid-template-columns: 126px minmax(0, 1fr);
   min-height: 106px;
   margin-top: 8px;
   transform: translateX(18px);
 }
 
 .stat-score {
-  width: 104px;
+  width: 112px;
   height: 100px;
   margin-left: 0;
   overflow: hidden;
@@ -166,10 +166,10 @@ textarea:focus-visible {
   background: #4c4c4c;
   box-shadow: 2px 2px 7px #333;
   color: #dedede;
-  font: italic 800 4.35rem/1.38 var(--serif);
+  font: italic 800 4.1rem/1.38 var(--serif);
   text-align: right;
-  letter-spacing: -7px;
-  padding-right: 3px;
+  letter-spacing: 9px;
+  padding-right: 0;
   border-right: 2px solid color-mix(in srgb, var(--blue) 55%, transparent);
 }
 
@@ -191,7 +191,7 @@ textarea:focus-visible {
   max-width: 100%;
   position: absolute;
   top: -4px;
-  left: -122px;
+  left: -119px;
   margin: 0;
   padding: 5px 8px 5px 10px;
   border-radius: 10px;

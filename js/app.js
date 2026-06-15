@@ -43,6 +43,7 @@ let isRestoringCharacter = false;
 let draftTimer = null;
 let activeCharacterId = '';
 let manualMaxHpFloor = 30;
+let lastCalculatedMaxHp = 30;
 
 const casterManaByClass = {
   Bardo: 6,
@@ -57,13 +58,13 @@ const casterManaByClass = {
 };
 
 const featurePowerOverrides = {
-  "Retomar o Fôlego": { effectType: "heal", die: 10, diceCount: 1, manaCost: 0, actionCost: "Ação bônus", duration: "Instantâneo" },
-  "Surto de Ação": { effectType: "utility", manaCost: 0, actionCost: "Livre no turno", duration: "1 turno" },
+  "Retomar o Fôlego": { effectType: "heal", die: 10, diceCount: 1, manaCost: 1, actionCost: "Ação bônus", duration: "Instantâneo" },
+  "Surto de Ação": { effectType: "utility", manaCost: 1, actionCost: "Livre no turno", duration: "1 turno" },
   "Ataque Extra": { effectType: "utility", manaCost: 0, actionCost: "Passivo", duration: "Sempre ativo" },
   "Estilo de Luta": { effectType: "utility", manaCost: 0, actionCost: "Passivo", duration: "Sempre ativo" },
   "Proteção integrada.": { effectType: "utility", manaCost: 0, actionCost: "Passivo", duration: "Sempre ativo" },
   "Mestre de Manobras": { effectType: "damage", die: 8, diceCount: 1, manaCost: 1, actionCost: "Ao acertar", duration: "Instantâneo" },
-  "Fúria": { effectType: "utility", manaCost: 0, actionCost: "Ação bônus", duration: "1 minuto" },
+  "Fúria": { effectType: "utility", manaCost: 1, actionCost: "Ação bônus", duration: "1 minuto" },
   "Punição Divina": { effectType: "damage", die: 8, diceCount: 2, manaCost: 2, actionCost: "Ao acertar", duration: "Instantâneo" },
   "Imposição das Mãos": { effectType: "heal", die: 6, diceCount: 2, manaCost: 1, actionCost: "Ação", duration: "Instantâneo" },
   "Canalizar Divindade": { effectType: "utility", manaCost: 2, actionCost: "Ação", duration: "Cena" },
@@ -333,7 +334,13 @@ function getAutoPowerProfile(power = {}) {
   const diceCount = Number(merged.diceCount) > 0 ? Number(merged.diceCount) : baseCount;
   const attribute = getBestClassAttackAttribute(classData[className]);
   const bonus = Number(merged.bonus || 0) || getAttributeModifier(attribute);
-  const manaCost = Number(merged.manaCost || 0) || Math.max(0, Number(merged.level || 0));
+  const isPassive = merged.actionCost === 'Passivo' || merged.duration === 'Sempre ativo';
+  const explicitMana = Number(merged.manaCost);
+  const manaCost = isPassive
+    ? 0
+    : Number.isFinite(explicitMana) && explicitMana > 0
+      ? explicitMana
+      : Math.max(1, Number(merged.level || 0) + 1);
   return {
     die,
     diceCount,
@@ -534,6 +541,7 @@ function handleRoll(type) {
 function resetFicha() {
   activeCharacterId = '';
   manualMaxHpFloor = 30;
+  lastCalculatedMaxHp = 30;
   elements.nome.value = '';
   elements.jogador.value = '';
   elements.sistema.value = 'D&D';
@@ -633,7 +641,7 @@ function resetSkillEditor() {
   document.getElementById('skillDamageDie').value = 'auto';
   document.getElementById('skillDiceCount').value = 0;
   document.getElementById('skillFlatBonus').value = 0;
-  document.getElementById('skillManaCost').value = 0;
+  document.getElementById('skillManaCost').value = 1;
   document.getElementById('skillPhotoInput').value = '';
   document.getElementById('skillPhotoUrl').value = '';
   document.getElementById('skillPhotoPreview').textContent = 'Foto da habilidade';
@@ -733,7 +741,7 @@ function editSkill(index) {
   document.getElementById('skillDamageDie').value = skill.die || 'auto';
   document.getElementById('skillDiceCount').value = skill.diceCount || 0;
   document.getElementById('skillFlatBonus').value = skill.bonus || 0;
-  document.getElementById('skillManaCost').value = skill.manaCost || 0;
+  document.getElementById('skillManaCost').value = skill.manaCost || 1;
   const preview = document.getElementById('skillPhotoPreview');
   preview.innerHTML = skillPhoto
     ? `<img src="${skillPhoto}" alt="Imagem da habilidade">`
@@ -773,7 +781,7 @@ function saveSkillFromEditor() {
     die: document.getElementById('skillDamageDie').value,
     diceCount: Number(document.getElementById('skillDiceCount').value || 0),
     bonus: Number(document.getElementById('skillFlatBonus').value || 0),
-    manaCost: Number(document.getElementById('skillManaCost').value || 0)
+    manaCost: Math.max(1, Number(document.getElementById('skillManaCost').value || 1))
   };
 
   if (editingSkillIndex >= 0) purchasedSkills[editingSkillIndex] = skill;
@@ -808,7 +816,7 @@ function buyCatalogAbility(ability) {
     die: ability.die || 'auto',
     diceCount: ability.diceCount || 0,
     bonus: ability.bonus || 0,
-    manaCost: ability.manaCost || 0
+    manaCost: Math.max(1, Number(ability.manaCost || ability.cost || 1))
   });
   renderSkillCollection();
   updateSkillBudget();
@@ -1134,16 +1142,19 @@ function formatPowerEffect(power) {
 
 function formatPowerMeta(power) {
   const profile = getAutoPowerProfile(power);
+  if (profile.actionCost === 'Passivo') return `Passivo · ${profile.duration} · ${formatPowerEffect(power)}`;
   return `Uso: ${profile.actionCost} · Duração: ${profile.duration} · Mana ${profile.manaCost} · ${formatPowerEffect(power)}`;
 }
 
 function formatUseLabel(power) {
-  return `Usar · mana ${getAutoPowerProfile(power).manaCost}`;
+  const profile = getAutoPowerProfile(power);
+  return profile.actionCost === 'Passivo' ? 'Passivo' : `Usar · mana ${profile.manaCost}`;
 }
 
 function markUseButton(button, power) {
   button.classList.add('use-power-button');
   button.textContent = formatUseLabel(power);
+  if (getAutoPowerProfile(power).actionCost === 'Passivo') button.disabled = true;
 }
 
 function setResourceMessage(message) {
@@ -1641,7 +1652,7 @@ function spellToPower(spell) {
     die: spell.die || 'auto',
     diceCount: spell.diceCount || Math.max(1, level ? level + 1 : 1),
     bonus: spell.bonus || 0,
-    manaCost: spell.manaCost ?? Math.max(0, level),
+    manaCost: spell.manaCost ?? Math.max(1, level + 1),
     actionCost: spell.actionCost || (level === 0 ? 'Ação' : 'Ação'),
     duration: spell.duration || (type === 'damage' || type === 'heal' ? 'Instantâneo' : 'Concentração/cena'),
     save,
@@ -1665,7 +1676,7 @@ function addCustomSpell() {
     die: document.getElementById('customSpellDie').value,
     diceCount: Number(document.getElementById('customSpellDiceCount').value || 0),
     bonus: Number(document.getElementById('customSpellBonus').value || 0),
-    manaCost: Number(document.getElementById('customSpellManaCost').value || 0),
+    manaCost: Math.max(1, Number(document.getElementById('customSpellManaCost').value || 1)),
     description: document.getElementById('customSpellDescription').value.trim() || 'Magia personalizada da ficha.'
   });
   message.textContent = `${name} adicionada.`;
@@ -1833,6 +1844,9 @@ function synchronize() {
   const combatInit = document.getElementById('combatInit');
   const combatDefense = document.getElementById('combatDefense');
   const calculatedMaxHp = getCalculatedMaxHp();
+  const currentHp = document.getElementById('currentHp');
+  if (currentHp && Number(currentHp.value || 0) >= lastCalculatedMaxHp) currentHp.value = calculatedMaxHp;
+  lastCalculatedMaxHp = calculatedMaxHp;
   elements.vidaMaxima.value = calculatedMaxHp;
   if (combatHp) combatHp.textContent = calculatedMaxHp;
   if (combatProf) combatProf.textContent = elements.profBonus.value;
@@ -2193,6 +2207,7 @@ function loadCharacter(index) {
   elements.nivel.value = character.nivel || 1;
   elements.xp.value = character.xp || 0;
   manualMaxHpFloor = Number(character.vidaMaximaManual || character.vidaMaxima || 30);
+  lastCalculatedMaxHp = Number(character.vidaMaxima || manualMaxHpFloor);
   elements.vidaMaxima.value = character.vidaMaxima || manualMaxHpFloor;
   document.getElementById('currentHp').value = character.currentHp || character.vidaMaxima || manualMaxHpFloor;
   document.getElementById('armorClass').value = character.armorClass || 10;
