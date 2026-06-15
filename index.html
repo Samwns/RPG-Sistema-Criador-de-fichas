@@ -183,8 +183,10 @@
                   <div>
                     <p class="panel-kicker">Distribuição</p>
                     <h3 id="budgetLabel">Distribua 40 pontos</h3>
+                    <p class="budget-helper">Aumente FOR, DEX, CON, INT, SAB e CAR usando o orçamento disponível.</p>
                   </div>
                   <div class="point-counter">
+                    <span>Disponíveis <b id="availablePoints">40</b></span>
                     <span>Usados <b id="usedPoints">0</b></span>
                     <span>Restantes <b id="remainingPoints">40</b></span>
                   </div>
@@ -347,6 +349,28 @@
 
               <section class="content-card">
                 <h3>Testes e ações</h3>
+                <p class="system-rule">Testes de atributo usam d20 + modificador. Perícias treinadas usam d20 + modificador + proficiência.</p>
+                <div class="roll-list test-grid">
+                  <button type="button" data-action="dados" data-type="attr-for" class="roll-button">Teste de Força</button>
+                  <button type="button" data-action="dados" data-type="attr-dex" class="roll-button">Teste de Destreza</button>
+                  <button type="button" data-action="dados" data-type="attr-con" class="roll-button">Teste de Constituição</button>
+                  <button type="button" data-action="dados" data-type="attr-int" class="roll-button">Teste de Inteligência</button>
+                  <button type="button" data-action="dados" data-type="attr-sab" class="roll-button">Teste de Sabedoria</button>
+                  <button type="button" data-action="dados" data-type="attr-car" class="roll-button">Teste de Carisma</button>
+                  <button type="button" data-action="dados" data-type="skill-atletismo" class="roll-button">Atletismo · FOR</button>
+                  <button type="button" data-action="dados" data-type="skill-acrobacia" class="roll-button">Acrobacia · DEX</button>
+                  <button type="button" data-action="dados" data-type="skill-furtividade" class="roll-button">Furtividade · DEX</button>
+                  <button type="button" data-action="dados" data-type="skill-prestidigitacao" class="roll-button">Prestidigitação · DEX</button>
+                  <button type="button" data-action="dados" data-type="skill-arcanismo" class="roll-button">Arcanismo · INT</button>
+                  <button type="button" data-action="dados" data-type="skill-historia" class="roll-button">História · INT</button>
+                  <button type="button" data-action="dados" data-type="skill-investigacao" class="roll-button">Investigação · INT</button>
+                  <button type="button" data-action="dados" data-type="skill-percepcao" class="roll-button">Percepção · SAB</button>
+                  <button type="button" data-action="dados" data-type="skill-medicina" class="roll-button">Medicina · SAB</button>
+                  <button type="button" data-action="dados" data-type="skill-sobrevivencia" class="roll-button">Sobrevivência · SAB</button>
+                  <button type="button" data-action="dados" data-type="skill-persuasao" class="roll-button">Persuasão · CAR</button>
+                  <button type="button" data-action="dados" data-type="skill-intimidacao" class="roll-button">Intimidação · CAR</button>
+                  <button type="button" data-action="dados" data-type="skill-atuacao" class="roll-button">Atuação · CAR</button>
+                </div>
                 <div class="roll-list">
                   <button type="button" data-action="dados" data-type="for" class="roll-button">Ataque físico · FOR + Prof</button>
                   <button type="button" data-action="dados" data-type="dex" class="roll-button">Ataque à distância · DEX + Prof</button>
@@ -380,17 +404,17 @@
 
               <section class="content-card magic-section active" data-magic-section="magic-sheet">
                 <div class="form-grid">
-                  <label><span>Pontos para magia</span><input id="pontosMagia" type="number" min="0" value="15"></label>
-                  <label><span>Pontos para vida</span><input id="pontosVida" type="number" min="0" value="15"></label>
+                  <label><span>Pontos para mana</span><input id="pontosMagia" type="number" min="0" value="15"><small>1 ponto = +2 mana máxima</small></label>
+                  <label><span>Pontos para vida</span><input id="pontosVida" type="number" min="0" value="15"><small>1 ponto = +2 PV máximo</small></label>
                   <label><span>Atributo de conjuração</span><select id="castingStat"><option value="int">INT</option><option value="sab">SAB</option><option value="car">CAR</option></select></label>
                   <label><span>Espaços totais</span><input id="spellSlots" type="number" min="0" value="0"></label>
                 </div>
                 <div class="magic-budget">
-                  <span>Meta <b id="requiredMagicLife">30</b></span>
-                  <span>Total <b id="totalMagiaVida">30</b></span>
-                  <span>Diferença <b id="magicDifference">OK</b></span>
+                  <span>Disponíveis <b id="requiredMagicLife">30</b></span>
+                  <span>Gastos <b id="totalMagiaVida">30</b></span>
+                  <span>Restantes <b id="magicDifference">0</b></span>
                 </div>
-                <p class="magic-note" id="magicNote">O total deve respeitar o limite do sistema.</p>
+                <p class="magic-note" id="magicNote">Distribua os pontos entre Vida e Mana. Bônus de classe, raça e itens entram por cima.</p>
               </section>
 
               <section class="content-card magic-section active" data-magic-section="magic-sheet">

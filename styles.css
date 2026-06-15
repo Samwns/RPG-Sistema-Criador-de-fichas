@@ -818,6 +818,12 @@ input[type="file"] {
   color: #d4774d;
 }
 
+.budget-helper {
+  margin: 8px 0 0;
+  color: #777;
+  font: 700 .72rem/1.45 var(--mono);
+}
+
 .totals-grid {
   display: grid;
   grid-template-columns: repeat(6, minmax(68px, 1fr));
@@ -1159,6 +1165,10 @@ input[type="file"] {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   margin-top: 16px;
+}
+
+.roll-list.test-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .roll-button {
@@ -2110,6 +2120,7 @@ input[type="file"] {
   .form-grid,
   .narrative-grid,
   .roll-list,
+  .roll-list.test-grid,
   .saved-list {
     grid-template-columns: 1fr;
   }

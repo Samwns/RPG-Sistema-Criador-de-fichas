@@ -423,6 +423,17 @@ function clampAttributeValues(changedId) {
   }
 }
 
+function clampMagicLifeValues(changedId) {
+  const required = requiredMagicLife(elements.nivel.value);
+  const magic = Number(elements.pontosMagia.value || 0);
+  const life = Number(elements.pontosVida.value || 0);
+  const total = magic + life;
+  if (total <= required) return;
+  const input = document.getElementById(changedId);
+  if (!input) return;
+  input.value = Math.max(0, Number(input.value || 0) - (total - required));
+}
+
 function handleRoll(type) {
   const button = document.querySelector(`button[data-type="${type}"]`);
   if (button) animateRollButton(button);
@@ -437,48 +448,74 @@ function handleRoll(type) {
     car: Number(elements.modCar.textContent.replace('+', ''))
   };
 
+  const testMap = {
+    'attr-for': ['Teste de Força', mods.for],
+    'attr-dex': ['Teste de Destreza', mods.dex],
+    'attr-con': ['Teste de Constituição', mods.con],
+    'attr-int': ['Teste de Inteligência', mods.int],
+    'attr-sab': ['Teste de Sabedoria', mods.sab],
+    'attr-car': ['Teste de Carisma', mods.car],
+    'skill-atletismo': ['Atletismo', mods.for + prof],
+    'skill-acrobacia': ['Acrobacia', mods.dex + prof],
+    'skill-furtividade': ['Furtividade', mods.dex + prof],
+    'skill-prestidigitacao': ['Prestidigitação', mods.dex + prof],
+    'skill-arcanismo': ['Arcanismo', mods.int + prof],
+    'skill-historia': ['História', mods.int + prof],
+    'skill-investigacao': ['Investigação', mods.int + prof],
+    'skill-percepcao': ['Percepção', mods.sab + prof],
+    'skill-medicina': ['Medicina', mods.sab + prof],
+    'skill-sobrevivencia': ['Sobrevivência', mods.sab + prof],
+    'skill-persuasao': ['Persuasão', mods.car + prof],
+    'skill-intimidacao': ['Intimidação', mods.car + prof],
+    'skill-atuacao': ['Atuação', mods.car + prof]
+  };
+
   let modifier = 0;
   let label = '';
 
-  switch (type) {
-    case 'for':
-      modifier = mods.for + prof;
-      label = 'Ataque físico';
-      break;
-    case 'dex':
-      modifier = mods.dex + prof;
-      label = 'Ataque à distância';
-      break;
-    case 'dexNoProf':
-      modifier = mods.dex;
-      label = 'Esquiva';
-      break;
-    case 'dodge':
-      modifier = mods.dex + prof;
-      label = 'Esquiva treinada';
-      break;
-    case 'reflex':
-      modifier = mods.dex + prof;
-      label = 'Defesa de reflexos';
-      break;
-    case 'fortitude':
-      modifier = mods.con + prof;
-      label = 'Defesa de fortitude';
-      break;
-    case 'will':
-      modifier = mods.sab + prof;
-      label = 'Defesa de vontade';
-      break;
-    case 'concentration':
-      modifier = mods.con + prof;
-      label = 'Concentração';
-      break;
-    case 'int':
-      modifier = mods.int + prof;
-      label = 'Ataque mágico';
-      break;
-    default:
-      return;
+  if (testMap[type]) {
+    [label, modifier] = testMap[type];
+  } else {
+    switch (type) {
+      case 'for':
+        modifier = mods.for + prof;
+        label = 'Ataque físico';
+        break;
+      case 'dex':
+        modifier = mods.dex + prof;
+        label = 'Ataque à distância';
+        break;
+      case 'dexNoProf':
+        modifier = mods.dex;
+        label = 'Esquiva';
+        break;
+      case 'dodge':
+        modifier = mods.dex + prof;
+        label = 'Esquiva treinada';
+        break;
+      case 'reflex':
+        modifier = mods.dex + prof;
+        label = 'Defesa de reflexos';
+        break;
+      case 'fortitude':
+        modifier = mods.con + prof;
+        label = 'Defesa de fortitude';
+        break;
+      case 'will':
+        modifier = mods.sab + prof;
+        label = 'Defesa de vontade';
+        break;
+      case 'concentration':
+        modifier = mods.con + prof;
+        label = 'Concentração';
+        break;
+      case 'int':
+        modifier = mods.int + prof;
+        label = 'Ataque mágico';
+        break;
+      default:
+        return;
+    }
   }
 
   openDiceTab();
@@ -1060,7 +1097,8 @@ function getCalculatedMaxHp() {
   const raceHp = document.getElementById('subraca').value === 'Anão da Colina'
     ? Number(elements.nivel.value || 1)
     : 0;
-  return Math.max(Number(elements.vidaMaxima.value) || 0, classHp + raceHp) + getItemBonus('maxHpBonus');
+  const distributedHp = Math.max(0, Number(elements.pontosVida.value) || 0) * 2;
+  return Math.max(Number(elements.vidaMaxima.value) || 0, classHp + raceHp + distributedHp) + getItemBonus('maxHpBonus');
 }
 
 function getCalculatedMaxMana() {
@@ -1071,7 +1109,8 @@ function getCalculatedMaxMana() {
     return sum + Math.max(0, Number(entry.level) || 0) * perLevel;
   }, 0);
   const racialMana = (raceGrantedSpells[document.getElementById('subraca').value] || []).length * 2;
-  return Math.max(Number(elements.pontosMagia.value) || 0, classMana + castingBonus + racialMana) + getItemBonus('spellBonus');
+  const distributedMana = Math.max(0, Number(elements.pontosMagia.value) || 0) * 2;
+  return distributedMana + classMana + castingBonus + racialMana + getItemBonus('spellBonus');
 }
 
 function clampResources() {
@@ -1772,6 +1811,7 @@ function synchronize() {
   updateBudgetText(getRemainingPoints(elements.nivel.value, getInputValues()));
   updateDistribuicaoLimits();
   updateTotals(getTotals());
+  clampMagicLifeValues('pontosVida');
   updateMagicLifeUI(elements.pontosMagia.value, elements.pontosVida.value, elements.nivel.value);
   renderSummary();
   updateFeaturedSkillSummary();
@@ -2389,8 +2429,16 @@ function init() {
     });
   });
 
-  elements.pontosMagia.addEventListener('input', synchronize);
-  elements.pontosVida.addEventListener('input', synchronize);
+  elements.pontosMagia.addEventListener('input', () => {
+    if (Number(elements.pontosMagia.value) < 0) elements.pontosMagia.value = 0;
+    clampMagicLifeValues('pontosMagia');
+    synchronize();
+  });
+  elements.pontosVida.addEventListener('input', () => {
+    if (Number(elements.pontosVida.value) < 0) elements.pontosVida.value = 0;
+    clampMagicLifeValues('pontosVida');
+    synchronize();
+  });
 
   document.querySelectorAll('[data-action="dados"]').forEach(button => {
     button.addEventListener('click', () => handleRoll(button.dataset.type));

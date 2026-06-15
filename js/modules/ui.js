@@ -29,6 +29,7 @@ export const elements = {
   nivelC2: document.getElementById('nivelC2'),
   classe3: document.getElementById('classe3'),
   nivelC3: document.getElementById('nivelC3'),
+  availablePoints: document.getElementById('availablePoints'),
   usedPoints: document.getElementById('usedPoints'),
   remainingPoints: document.getElementById('remainingPoints'),
   budgetLabel: document.getElementById('budgetLabel'),
@@ -76,6 +77,7 @@ export function populateSelect(select, options) {
 }
 
 export function updateBudgetText(remainingData) {
+  if (elements.availablePoints) elements.availablePoints.textContent = remainingData.budget;
   elements.usedPoints.textContent = remainingData.used;
   elements.remainingPoints.textContent = Math.max(0, remainingData.remaining);
   elements.budgetLabel.textContent = `Distribua ${remainingData.budget} pontos`;
@@ -109,24 +111,24 @@ export function updateTotals(totals) {
 export function updateMagicLifeUI(magic, life, level) {
   const total = Number(magic || 0) + Number(life || 0);
   const required = requiredMagicLife(level);
-  const diff = total - required;
+  const remaining = required - total;
 
   elements.totalMagiaVida.textContent = total;
   elements.requiredMagicLife.textContent = required;
   const diffLabel = document.getElementById('magicDifference');
 
-  if (diff === 0) {
-    diffLabel.textContent = 'OK';
+  if (remaining === 0) {
+    diffLabel.textContent = '0';
     diffLabel.className = 'positive';
-    elements.magicNote.textContent = `Total correto para nível ${level}.`;
-  } else if (diff > 0) {
-    diffLabel.textContent = `+${diff}`;
+    elements.magicNote.textContent = `Tudo distribuído. Cada ponto vale +2 PV ou +2 mana antes dos bônus extras.`;
+  } else if (remaining < 0) {
+    diffLabel.textContent = `${remaining}`;
     diffLabel.className = 'negative';
-    elements.magicNote.textContent = `Você ultrapassou o limite do sistema por ${diff} ponto(s).`;
+    elements.magicNote.textContent = `Você ultrapassou o limite por ${Math.abs(remaining)} ponto(s).`;
   } else {
-    diffLabel.textContent = diff.toString();
-    diffLabel.className = 'negative';
-    elements.magicNote.textContent = `Faltam ${Math.abs(diff)} ponto(s) para o limite do sistema.`;
+    diffLabel.textContent = remaining.toString();
+    diffLabel.className = 'positive';
+    elements.magicNote.textContent = `Restam ${remaining} ponto(s) para distribuir entre Vida e Mana.`;
   }
 }
 
