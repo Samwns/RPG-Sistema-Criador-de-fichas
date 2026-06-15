@@ -17,6 +17,7 @@ let pendingRoll = null;
 let resultFallbackTimer = null;
 let audioContext = null;
 let lastCollisionSound = 0;
+let lastLiveTotal = null;
 
 const mouse = new THREE.Vector2();
 const raycaster = new THREE.Raycaster();
@@ -27,6 +28,7 @@ const uiResult = document.getElementById("result-board");
 const uiTotal = document.getElementById("total-score");
 const uiDetail = document.getElementById("detail-score");
 const uiBadge = document.getElementById("diceTypeBadge");
+const uiRollText = document.getElementById("rollResult");
 
 export function initDiceRoller() {
   canvasContainer = document.querySelector(".dice-canvas-area");
@@ -106,7 +108,9 @@ function rollSpecs(specs, modifier, label, onComplete) {
   if (!world || !scene) return;
   createDiceSet(specs);
   pendingRoll = { specs, modifier, label, onComplete };
+  lastLiveTotal = null;
   setBadge(specs);
+  updateLiveResult(true);
   throwDice();
 }
 
@@ -255,8 +259,9 @@ function addFaceNumbers(mesh, geometry, sides, radius) {
     : Array.from({ length: Math.min(sides, faces.length) }, (_, index) => String(index + 1));
   const faceLabels = [];
   faces.slice(0, labels.length).forEach((face, index) => {
-    faceLabels.push({ label: labels[index], normal: face.normal.clone() });
-    mesh.add(createFaceNumber(labels[index], face, radius, theme));
+    const faceNumber = createFaceNumber(labels[index], face, radius, theme);
+    faceLabels.push({ label: labels[index], normal: face.normal.clone(), number: faceNumber });
+    mesh.add(faceNumber);
   });
   return faceLabels;
 }
@@ -468,6 +473,45 @@ function playCollisionSound(impact) {
 
 function finishRoll() {
   if (!pendingRoll || isHolding) return;
+  const snapshot = getCurrentRollSnapshot();
+  if (!snapshot) return;
+  const { groupedResults, results, rawTotal, total, modifier, detail, modifierText } = snapshot;
+  writeResult(total, `${pendingRoll.label || detail} · ${detail}${modifierText}`, false);
+  uiResult?.classList.add("show");
+  pendingRoll.onComplete?.({ results, groupedResults, rawTotal, total, modifier });
+  pendingRoll = null;
+  needsResultCheck = false;
+  lastLiveTotal = total;
+  clearTimeout(resultFallbackTimer);
+}
+
+function getTopFaceValue(die) {
+  return getFaceValue(getBestFace(die, new THREE.Vector3(0, 1, 0))?.label, die.sides);
+}
+
+function getFaceValue(label, sides) {
+  if (!label) return Math.floor(Math.random() * sides) + 1;
+  if (label === "00") return 100;
+  return Number(label) || 1;
+}
+
+function getBestFace(die, direction) {
+  if (!die.faceLabels?.length) return null;
+  let bestFace = die.faceLabels[0];
+  let bestScore = -Infinity;
+  die.faceLabels.forEach(face => {
+    const worldNormal = face.normal.clone().applyQuaternion(die.mesh.quaternion).normalize();
+    const score = worldNormal.dot(direction);
+    if (score > bestScore) {
+      bestScore = score;
+      bestFace = face;
+    }
+  });
+  return { ...bestFace, score: bestScore };
+}
+
+function getCurrentRollSnapshot() {
+  if (!pendingRoll) return null;
   const availableDice = [...diceObjects];
   const groupedResults = pendingRoll.specs.map(spec => {
     const results = [];
@@ -484,30 +528,49 @@ function finishRoll() {
   const total = rawTotal + modifier;
   const detail = groupedResults.map(group => `d${group.sides} [${group.results.join(", ")}]`).join(" + ");
   const modifierText = modifier ? ` ${modifier > 0 ? "+" : "-"} ${Math.abs(modifier)}` : "";
-  if (uiTotal) uiTotal.textContent = total;
-  if (uiDetail) uiDetail.textContent = `${pendingRoll.label || detail} · ${detail}${modifierText}`;
-  uiResult?.classList.add("show");
-  pendingRoll.onComplete?.({ results, groupedResults, rawTotal, total, modifier });
-  pendingRoll = null;
-  needsResultCheck = false;
-  clearTimeout(resultFallbackTimer);
+  return { groupedResults, results, rawTotal, total, modifier, detail, modifierText };
 }
 
-function getTopFaceValue(die) {
-  if (!die.faceLabels?.length) return Math.floor(Math.random() * die.sides) + 1;
+function writeResult(total, detail, live = false) {
+  if (uiTotal && uiTotal.textContent !== String(total)) {
+    uiTotal.textContent = total;
+    uiTotal.classList.remove("tick");
+    void uiTotal.offsetWidth;
+    uiTotal.classList.add("tick");
+  }
+  if (uiDetail) uiDetail.textContent = detail;
+  if (uiRollText) uiRollText.textContent = live ? `Rolando... ${detail}` : `Resultado final: ${detail}`;
+  uiResult?.classList.toggle("rolling", live);
+}
+
+function updateLiveResult(force = false) {
+  if (!pendingRoll) return;
+  const snapshot = getCurrentRollSnapshot();
+  if (!snapshot) return;
+  if (!force && snapshot.total === lastLiveTotal) return;
+  lastLiveTotal = snapshot.total;
+  writeResult(snapshot.total, `${pendingRoll.label || snapshot.detail} · ${snapshot.detail}${snapshot.modifierText}`, true);
+}
+
+function updateFaceHighlights() {
   const up = new THREE.Vector3(0, 1, 0);
-  let bestFace = die.faceLabels[0];
-  let bestScore = -Infinity;
-  die.faceLabels.forEach(face => {
-    const worldNormal = face.normal.clone().applyQuaternion(die.mesh.quaternion).normalize();
-    const score = worldNormal.dot(up);
-    if (score > bestScore) {
-      bestScore = score;
-      bestFace = face;
-    }
+  diceObjects.forEach(die => {
+    const towardCamera = camera.position.clone().sub(die.mesh.position).normalize();
+    const topFace = getBestFace(die, up);
+    const frontFace = getBestFace(die, towardCamera);
+    die.faceLabels?.forEach(face => {
+      const isTop = face.label === topFace?.label;
+      const isFront = face.label === frontFace?.label;
+      if (face.number?.material) {
+        const targetOpacity = isTop || isFront ? 1 : .72;
+        face.number.material.opacity += (targetOpacity - face.number.material.opacity) * .28;
+      }
+      if (face.number) {
+        const targetScale = isTop ? 1.16 : isFront ? 1.08 : 1;
+        face.number.scale.lerp(new THREE.Vector3(targetScale, targetScale, 1), .25);
+      }
+    });
   });
-  if (bestFace.label === "00") return 100;
-  return Number(bestFace.label) || 1;
 }
 
 function animate() {
@@ -538,6 +601,8 @@ function animate() {
     shadow.scale.setScalar(Math.max(.45, 1 - height * .04));
     shadow.material.opacity = Math.max(.04, .22 - height * .012);
   });
+  updateFaceHighlights();
+  if (pendingRoll && !isHolding) updateLiveResult();
   if (needsResultCheck && diceObjects.every(({ body }) => body.sleepState === CANNON.Body.SLEEPING)) finishRoll();
   renderer.render(scene, camera);
 }

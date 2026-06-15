@@ -2180,6 +2180,18 @@ input[type="color"]::-webkit-color-swatch {
   font: italic 800 3rem/.8 var(--serif);
   -webkit-text-stroke: .35px rgba(0, 0, 0, .58);
   text-shadow: 0 5px 10px rgba(0, 0, 0, .16);
+  transition: color .18s ease, transform .18s ease, text-shadow .18s ease;
+}
+
+.result-value.tick {
+  color: color-mix(in srgb, var(--orange) 70%, #444);
+  transform: translateY(-1px) scale(1.04);
+  text-shadow: 0 8px 14px rgba(0, 0, 0, .2);
+}
+
+.dice-result-container.rolling .result-label::after {
+  content: " rolando";
+  color: var(--orange);
 }
 
 .sub-text {

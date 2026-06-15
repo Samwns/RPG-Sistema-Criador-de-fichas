@@ -58,6 +58,7 @@ let draftTimer = null;
 let activeCharacterId = '';
 let manualMaxHpFloor = 30;
 let lastCalculatedMaxHp = 30;
+let resourceTouched = { hp: false, energy: false };
 
 const casterManaByClass = {
   Bardo: 6,
@@ -556,6 +557,7 @@ function resetFicha() {
   activeCharacterId = '';
   manualMaxHpFloor = 30;
   lastCalculatedMaxHp = 30;
+  resourceTouched = { hp: false, energy: false };
   elements.nome.value = '';
   elements.jogador.value = '';
   elements.sistema.value = 'D&D';
@@ -1155,6 +1157,11 @@ function clampResources() {
   if (mana) mana.value = Math.min(Math.max(0, Number(mana.value || 0)), getCalculatedMaxMana());
 }
 
+function touchResource(type) {
+  if (type === 'hp') resourceTouched.hp = true;
+  if (type === 'energy') resourceTouched.energy = true;
+}
+
 function formatPowerEffect(power) {
   const profile = getAutoPowerProfile(power);
   const labels = { damage: 'dano', heal: 'cura', mana: getEnergyLabel().toLowerCase(), utility: 'utilidade' };
@@ -1197,18 +1204,22 @@ function updateResource(action, amount) {
   const maxHp = getCalculatedMaxHp();
   const maxMana = getCalculatedMaxMana();
   if (action === 'damage') {
+    touchResource('hp');
     hp.value = Math.max(0, Number(hp.value || 0) - value);
     setResourceMessage(`Recebeu ${value} de dano.`);
   }
   if (action === 'heal') {
+    touchResource('hp');
     hp.value = Math.min(maxHp, Number(hp.value || 0) + value);
     setResourceMessage(`Curou ${value} PV.`);
   }
   if (action === 'spendMana') {
+    touchResource('energy');
     mana.value = Math.max(0, Number(mana.value || 0) - value);
     setResourceMessage(`Gastou ${value} de ${getEnergyLabel().toLowerCase()}.`);
   }
   if (action === 'restoreMana') {
+    touchResource('energy');
     mana.value = Math.min(maxMana, Number(mana.value || 0) + value);
     setResourceMessage(`Recuperou ${value} de ${getEnergyLabel().toLowerCase()}.`);
   }
@@ -1223,6 +1234,7 @@ function usePower(power, button = null) {
     return;
   }
   mana.value = Math.max(0, Number(mana.value || 0) - profile.manaCost);
+  touchResource('energy');
   saveDraftSoon();
   const type = power.effectType || 'damage';
   if (type === 'utility') {
@@ -1241,7 +1253,7 @@ function usePower(power, button = null) {
     onComplete: ({ results, total }) => {
       if (type === 'heal') updateResource('heal', total);
       if (type === 'mana') updateResource('restoreMana', total);
-      const action = type === 'damage' ? 'dano' : type === 'heal' ? 'cura' : 'mana';
+      const action = type === 'damage' ? 'dano' : type === 'heal' ? 'cura' : getEnergyLabel().toLowerCase();
       const defense = profile.save && profile.save !== 'nenhuma' ? ` · Resistência ${profile.save}${profile.negation ? ` (${profile.negation})` : ''}` : '';
       elements.rollResult.innerHTML = `<span class="dice-icon">${results.join(', ')}</span><span>${power.name}: ${total} ${action}${defense}</span>`;
       setResourceMessage(`${power.name}: ${total} ${action}. ${profile.actionCost}. ${getEnergyLabel()} restante: ${mana.value}.${defense}`);
@@ -2243,7 +2255,8 @@ function synchronize() {
   const energyLabel = getEnergyLabel();
   const currentHp = document.getElementById('currentHp');
   const currentMana = document.getElementById('currentMana');
-  if (currentHp && Number(currentHp.value || 0) >= lastCalculatedMaxHp) currentHp.value = calculatedMaxHp;
+  if (currentHp && (!resourceTouched.hp || Number(currentHp.value || 0) >= lastCalculatedMaxHp)) currentHp.value = calculatedMaxHp;
+  if (currentMana && (!resourceTouched.energy || Number(currentMana.value || 0) > calculatedMaxMana)) currentMana.value = calculatedMaxMana;
   lastCalculatedMaxHp = calculatedMaxHp;
   elements.vidaMaxima.value = calculatedMaxHp;
   if (combatHp) combatHp.textContent = calculatedMaxHp;
@@ -2541,6 +2554,7 @@ function getCharacterData() {
     vidaMaxima: getCalculatedMaxHp(),
     vidaMaximaManual: manualMaxHpFloor,
     currentHp: document.getElementById('currentHp').value,
+    resourceTouched: { ...resourceTouched },
     armorClass: document.getElementById('armorClass').value,
     speed: document.getElementById('speed').value,
     vision: document.getElementById('vision').value,
@@ -2616,6 +2630,10 @@ function loadCharacter(index) {
   elements.xp.value = character.xp || 0;
   manualMaxHpFloor = Number(character.vidaMaximaManual || character.vidaMaxima || 30);
   lastCalculatedMaxHp = Number(character.vidaMaxima || manualMaxHpFloor);
+  resourceTouched = {
+    hp: Boolean(character.resourceTouched?.hp),
+    energy: Boolean(character.resourceTouched?.energy)
+  };
   elements.vidaMaxima.value = character.vidaMaxima || manualMaxHpFloor;
   document.getElementById('currentHp').value = character.currentHp || character.vidaMaxima || manualMaxHpFloor;
   document.getElementById('armorClass').value = character.armorClass || 10;
@@ -2828,8 +2846,6 @@ function init() {
     document.getElementById('speed'),
     document.getElementById('vision'),
     document.getElementById('hitDie'),
-    document.getElementById('currentHp'),
-    document.getElementById('currentMana'),
     document.getElementById('castingStat'),
     document.getElementById('spellSlots'),
     elements.tituloHabilidade,
@@ -2838,6 +2854,24 @@ function init() {
   ].forEach(input => {
     input.addEventListener('input', synchronize);
     input.addEventListener('change', synchronize);
+  });
+  const currentHpInput = document.getElementById('currentHp');
+  const currentManaInput = document.getElementById('currentMana');
+  currentHpInput.addEventListener('input', () => {
+    touchResource('hp');
+    synchronize();
+  });
+  currentHpInput.addEventListener('change', () => {
+    touchResource('hp');
+    synchronize();
+  });
+  currentManaInput.addEventListener('input', () => {
+    touchResource('energy');
+    synchronize();
+  });
+  currentManaInput.addEventListener('change', () => {
+    touchResource('energy');
+    synchronize();
   });
 
   distInputs.forEach(item => {
