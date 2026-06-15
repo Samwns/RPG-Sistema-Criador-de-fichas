@@ -11,6 +11,7 @@
 <body>
   <div class="riche-app">
     <div class="page-texture" aria-hidden="true"></div>
+    <div id="ambientEffect" class="ambient-effect" aria-hidden="true"></div>
 
     <div class="sheet-frame">
       <div class="character-sheet">
@@ -106,6 +107,8 @@
             <button class="tab-button" data-target="tab-magia" type="button">Magias</button>
             <button class="tab-button" data-target="tab-equipamento" type="button">Equipamento</button>
             <button class="tab-button" data-target="tab-dados" type="button">Dados 3D</button>
+            <button class="tab-button" data-target="tab-mestre" type="button">Mestre</button>
+            <button class="tab-button" data-target="tab-aparencia" type="button">Aparência</button>
             <button class="tab-button" data-target="tab-saved" type="button">Meu Baú</button>
             <button class="tab-button" data-target="tab-livros" type="button">Sistema</button>
           </nav>
@@ -579,6 +582,99 @@
                   <span class="result-label">Total</span>
                   <strong id="total-score" class="result-value">0</strong>
                   <span id="detail-score" class="sub-text"></span>
+                </div>
+              </section>
+            </section>
+
+            <section class="tab-panel" id="tab-mestre">
+              <div class="panel-heading">
+                <div><p class="panel-kicker">Controle da mesa</p><h2>Área do mestre</h2></div>
+                <div class="action-buttons">
+                  <button id="saveMasterState" type="button">Salvar mesa</button>
+                  <button id="clearMasterState" type="button" class="button-muted">Limpar mesa</button>
+                </div>
+              </div>
+
+              <section class="master-board">
+                <article class="content-card master-tool">
+                  <div class="section-title">
+                    <div><p class="panel-kicker">Bestiário</p><h3>Criar inimigo</h3></div>
+                  </div>
+                  <div class="form-grid compact-action-grid">
+                    <label><span>Nome</span><input id="enemyName" type="text" placeholder="Goblin chefe"></label>
+                    <label><span>PV</span><input id="enemyHp" type="number" min="1" value="12"></label>
+                    <label><span>CA</span><input id="enemyAc" type="number" min="1" value="13"></label>
+                    <label><span>Ataque</span><input id="enemyAttack" type="number" value="4"></label>
+                    <label><span>Dano</span><input id="enemyDamage" type="text" value="1d6+2"></label>
+                    <label><span>Tipo</span><input id="enemyType" type="text" placeholder="Humanoide"></label>
+                    <label class="full-width"><span>Notas</span><textarea id="enemyNotes" rows="3" placeholder="Táticas, resistências, tesouro..."></textarea></label>
+                  </div>
+                  <button id="addEnemy" type="button">Adicionar inimigo</button>
+                  <div id="enemyList" class="master-list"></div>
+                </article>
+
+                <article class="content-card master-tool">
+                  <div class="section-title">
+                    <div><p class="panel-kicker">Mapa</p><h3>Cenas e terreno</h3></div>
+                  </div>
+                  <div class="form-grid">
+                    <label><span>Nome do mapa</span><input id="mapName" type="text" placeholder="Ruínas da ponte"></label>
+                    <label><span>URL / imagem</span><input id="mapImage" type="url" placeholder="https://..."></label>
+                    <label class="full-width"><span>Descrição</span><textarea id="mapNotes" rows="4" placeholder="Cobertura, altura, armadilhas, pontos de interesse..."></textarea></label>
+                  </div>
+                  <button id="addMap" type="button">Adicionar mapa</button>
+                  <div id="mapList" class="master-list"></div>
+                </article>
+
+                <article class="content-card master-tool master-wide">
+                  <div class="section-title">
+                    <div><p class="panel-kicker">Combate</p><h3>Encontro entre fichas e inimigos</h3></div>
+                  </div>
+                  <div class="form-grid compact-action-grid">
+                    <label><span>Nome do encontro</span><input id="encounterName" type="text" placeholder="Emboscada na estrada"></label>
+                    <label><span>Atacante</span><select id="combatAttacker"></select></label>
+                    <label><span>Alvo</span><select id="combatTarget"></select></label>
+                    <label><span>Bônus ataque</span><input id="combatBonus" type="number" value="0"></label>
+                    <label><span>Dano</span><input id="combatDamage" type="text" value="1d8"></label>
+                    <label><span>Iniciativa</span><input id="encounterInitiative" type="text" placeholder="Magmo 17, Goblin 12"></label>
+                    <label class="full-width"><span>Notas do combate</span><textarea id="encounterNotes" rows="3" placeholder="Condições, rodada atual, objetivos..."></textarea></label>
+                  </div>
+                  <div class="skill-editor-actions">
+                    <button id="rollMasterAttack" type="button">Rolar ataque</button>
+                    <button id="addEncounter" type="button">Salvar encontro</button>
+                  </div>
+                  <p id="masterCombatLog" class="magic-note">Escolha atacante e alvo para resolver uma rolagem rápida.</p>
+                  <div id="encounterList" class="master-list"></div>
+                </article>
+              </section>
+            </section>
+
+            <section class="tab-panel" id="tab-aparencia">
+              <div class="panel-heading">
+                <div><p class="panel-kicker">Visual da ficha</p><h2>Personalização</h2></div>
+                <div class="action-buttons">
+                  <button id="saveAppearance" type="button">Salvar aparência</button>
+                  <button id="resetAppearance" type="button" class="button-muted">Resetar visual</button>
+                </div>
+              </div>
+
+              <section class="content-card appearance-grid">
+                <div class="appearance-controls">
+                  <div class="form-grid">
+                    <label><span>Cor primária</span><input id="themePrimary" type="color" value="#7ebaee"></label>
+                    <label><span>Cor secundária</span><input id="themeSecondary" type="color" value="#f0a06f"></label>
+                    <label><span>Papel da ficha</span><input id="themePaper" type="color" value="#e8e8e8"></label>
+                    <label><span>Fonte</span><select id="themeFont"><option value="default">Padrão da ficha</option><option value="serif">Serif fantasia</option><option value="mono">Monoespaçada</option><option value="clean">Limpa</option></select></label>
+                    <label class="full-width"><span>Papel de parede</span><input id="themeWallpaper" type="url" placeholder="https://..."></label>
+                    <label><span>Efeito de fundo</span><select id="themeEffect"><option value="none">Nenhum</option><option value="perspective">Texto 3D</option><option value="smoky">Fumaça</option></select></label>
+                    <label><span>Texto do efeito</span><input id="themeEffectText" type="text" value="RPG"></label>
+                  </div>
+                  <p class="system-rule">As cores afetam botões, detalhes e o papel da ficha. O papel de parede fica atrás da mesa e o efeito é decorativo.</p>
+                </div>
+                <div class="appearance-preview">
+                  <div id="appearancePreviewScene" class="preview-scene">
+                    <span>RPG</span>
+                  </div>
                 </div>
               </section>
             </section>

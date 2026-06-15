@@ -15,6 +15,8 @@ let isHolding = false;
 let needsResultCheck = false;
 let pendingRoll = null;
 let resultFallbackTimer = null;
+let audioContext = null;
+let lastCollisionSound = 0;
 
 const mouse = new THREE.Vector2();
 const raycaster = new THREE.Raycaster();
@@ -198,6 +200,10 @@ function createDiceSet(specs) {
       sleepTimeLimit: .8
     });
     body.quaternion.setFromEuler(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+    body.addEventListener("collide", event => {
+      const impact = event.contact?.getImpactVelocityAlongNormal?.() || body.velocity.length();
+      playCollisionSound(impact);
+    });
     world.addBody(body);
     diceObjects.push({ mesh, shadow, body, radius, sides, spinOffset: Math.random() * 100 });
   });
@@ -277,15 +283,15 @@ function createFaceNumber(text, face, radius) {
   context.font = `900 ${text.length > 1 ? 96 : 116}px Inter, Arial, sans-serif`;
   context.lineJoin = "round";
   context.miterLimit = 2;
-  context.shadowColor = "rgba(0,0,0,.75)";
-  context.shadowBlur = 5;
-  context.strokeStyle = "#30242c";
-  context.lineWidth = 18;
+  context.shadowColor = "rgba(0,0,0,.9)";
+  context.shadowBlur = 9;
+  context.strokeStyle = "#050505";
+  context.lineWidth = 22;
   context.strokeText(text, 128, 134);
-  context.shadowColor = "#fff7b0";
-  context.shadowBlur = 26;
-  context.strokeStyle = "rgba(255,248,210,.9)";
-  context.lineWidth = 7;
+  context.shadowColor = "rgba(255,247,176,.75)";
+  context.shadowBlur = 18;
+  context.strokeStyle = "rgba(0,0,0,.92)";
+  context.lineWidth = 8;
   context.strokeText(text, 128, 134);
   context.fillStyle = "#fffbe8";
   context.fillText(text, 128, 134);
@@ -391,6 +397,7 @@ function onInputEnd() {
 }
 
 function throwDice() {
+  playThrowSound();
   needsResultCheck = false;
   diceObjects.forEach(({ body }) => {
     body.wakeUp();
@@ -400,6 +407,49 @@ function throwDice() {
   window.setTimeout(() => { needsResultCheck = true; }, 650);
   clearTimeout(resultFallbackTimer);
   resultFallbackTimer = window.setTimeout(finishRoll, 4200);
+}
+
+function getAudioContext() {
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtx) return null;
+  if (!audioContext) audioContext = new AudioCtx();
+  if (audioContext.state === "suspended") audioContext.resume();
+  return audioContext;
+}
+
+function playImpact({ frequency = 120, duration = .055, gain = .08, type = "triangle" } = {}) {
+  const context = getAudioContext();
+  if (!context) return;
+  const oscillator = context.createOscillator();
+  const filter = context.createBiquadFilter();
+  const envelope = context.createGain();
+  oscillator.type = type;
+  oscillator.frequency.setValueAtTime(frequency, context.currentTime);
+  oscillator.frequency.exponentialRampToValueAtTime(Math.max(40, frequency * .45), context.currentTime + duration);
+  filter.type = "lowpass";
+  filter.frequency.value = 900;
+  envelope.gain.setValueAtTime(gain, context.currentTime);
+  envelope.gain.exponentialRampToValueAtTime(.001, context.currentTime + duration);
+  oscillator.connect(filter).connect(envelope).connect(context.destination);
+  oscillator.start();
+  oscillator.stop(context.currentTime + duration);
+}
+
+function playThrowSound() {
+  playImpact({ frequency: 170 + Math.random() * 60, duration: .09, gain: .06, type: "sawtooth" });
+}
+
+function playCollisionSound(impact) {
+  const now = performance.now();
+  if (impact < 1.7 || now - lastCollisionSound < 38) return;
+  lastCollisionSound = now;
+  const clamped = Math.min(14, impact);
+  playImpact({
+    frequency: 90 + clamped * 18 + Math.random() * 25,
+    duration: .035 + clamped * .003,
+    gain: Math.min(.12, .025 + clamped * .006),
+    type: "triangle"
+  });
 }
 
 function finishRoll() {

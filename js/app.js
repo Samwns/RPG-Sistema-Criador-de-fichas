@@ -39,6 +39,16 @@ let customItems = [];
 let purchasedSpells = [];
 let customSpells = [];
 let themeColors = { primary: '#7EBAEE', secondary: '#F0A06F' };
+let masterState = { enemies: [], maps: [], encounters: [] };
+let appearanceState = {
+  primary: '#7ebaee',
+  secondary: '#f0a06f',
+  paper: '#e8e8e8',
+  font: 'default',
+  wallpaper: '',
+  effect: 'none',
+  effectText: 'RPG'
+};
 let isRestoringCharacter = false;
 let draftTimer = null;
 let activeCharacterId = '';
@@ -1280,6 +1290,338 @@ function applyDynamicTheme(primary, secondary) {
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', primary);
 }
 
+function getStoredJson(key, fallback) {
+  try {
+    return JSON.parse(localStorage.getItem(key) || 'null') || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function saveMasterState() {
+  localStorage.setItem('masterState', JSON.stringify(masterState));
+  const log = document.getElementById('masterCombatLog');
+  if (log) log.textContent = 'Mesa salva no navegador.';
+}
+
+function readMasterState() {
+  const stored = getStoredJson('masterState', masterState);
+  masterState = {
+    enemies: Array.isArray(stored.enemies) ? stored.enemies : [],
+    maps: Array.isArray(stored.maps) ? stored.maps : [],
+    encounters: Array.isArray(stored.encounters) ? stored.encounters : []
+  };
+}
+
+function createMasterId(prefix) {
+  return `${prefix}-${crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`}`;
+}
+
+function rollFormula(formula = '1d6') {
+  const normalized = String(formula || '1d6').toLowerCase().replace(/\s/g, '');
+  const match = normalized.match(/^(\d*)d(\d+)([+-]\d+)?$/);
+  if (!match) {
+    const flat = Number(normalized);
+    return { total: Number.isFinite(flat) ? flat : 0, detail: Number.isFinite(flat) ? String(flat) : '0' };
+  }
+  const count = Math.max(1, Number(match[1] || 1));
+  const sides = Math.max(1, Number(match[2] || 6));
+  const bonus = Number(match[3] || 0);
+  const rolls = Array.from({ length: count }, () => Math.floor(Math.random() * sides) + 1);
+  const total = rolls.reduce((sum, value) => sum + value, bonus);
+  const bonusLabel = bonus ? ` ${formatSigned(bonus)}` : '';
+  return { total, detail: `${count}d${sides}: ${rolls.join(', ')}${bonusLabel}` };
+}
+
+function getCharacterCombatSnapshot(character) {
+  const totals = ['For', 'Dex', 'Con', 'Int', 'Sab', 'Car'].map(key => {
+    const dist = Number(character[`dist${key}`] || 0);
+    const race = Number(character[`race${key}`] || 0);
+    return 10 + dist + race;
+  });
+  const forMod = Number(computeModifier(totals[0]));
+  const dexMod = Number(computeModifier(totals[1]));
+  const prof = Number(String(character.profBonus || '+2').replace('+', '')) || 2;
+  const attack = Math.max(forMod, dexMod) + prof;
+  return {
+    id: `char:${character.id || normalizeCharacterKey(character)}`,
+    name: character.nome || 'Personagem sem nome',
+    hp: Number(character.currentHp || character.vidaMaxima || 1),
+    ac: Number(character.armorClass || 10),
+    attack,
+    damage: character.combatAttackDie || '1d8'
+  };
+}
+
+function getMasterCombatants() {
+  const characters = readSavedCharacters().map(getCharacterCombatSnapshot);
+  const enemies = masterState.enemies.map(enemy => ({
+    id: `enemy:${enemy.id}`,
+    name: enemy.name,
+    hp: Number(enemy.hp || 1),
+    ac: Number(enemy.ac || 10),
+    attack: Number(enemy.attack || 0),
+    damage: enemy.damage || '1d6'
+  }));
+  return [...characters, ...enemies];
+}
+
+function renderCombatantOptions() {
+  const combatants = getMasterCombatants();
+  const options = combatants.length
+    ? combatants.map(item => `<option value="${item.id}">${escapeHtml(item.name)} · PV ${item.hp} · CA ${item.ac}</option>`).join('')
+    : '<option value="">Salve uma ficha ou crie um inimigo</option>';
+  ['combatAttacker', 'combatTarget'].forEach(id => {
+    const select = document.getElementById(id);
+    if (select) select.innerHTML = options;
+  });
+}
+
+function renderMasterState() {
+  const enemyList = document.getElementById('enemyList');
+  if (enemyList) {
+    enemyList.innerHTML = masterState.enemies.length ? '' : '<p class="system-rule">Nenhum inimigo criado ainda.</p>';
+    masterState.enemies.forEach(enemy => {
+      const card = document.createElement('article');
+      card.className = 'master-card';
+      card.innerHTML = `
+        <h4>${escapeHtml(enemy.name)}</h4>
+        <div class="master-tags">
+          <span>PV ${enemy.hp}</span><span>CA ${enemy.ac}</span><span>ATK ${formatSigned(Number(enemy.attack || 0)).replace(' ', '')}</span><span>${escapeHtml(enemy.damage)}</span>
+        </div>
+        <p>${escapeHtml(enemy.type || 'Inimigo')} · ${escapeHtml(enemy.notes || 'Sem notas.')}</p>
+        <div class="master-card-actions">
+          <button type="button" data-master-action="enemy-damage" data-id="${enemy.id}">- dano</button>
+          <button type="button" data-master-action="enemy-heal" data-id="${enemy.id}">+ cura</button>
+          <button type="button" data-master-action="enemy-delete" data-id="${enemy.id}">Excluir</button>
+        </div>
+      `;
+      enemyList.appendChild(card);
+    });
+  }
+
+  const mapList = document.getElementById('mapList');
+  if (mapList) {
+    mapList.innerHTML = masterState.maps.length ? '' : '<p class="system-rule">Nenhum mapa salvo ainda.</p>';
+    masterState.maps.forEach(map => {
+      const card = document.createElement('article');
+      card.className = `master-card ${map.image ? 'has-map' : ''}`;
+      card.innerHTML = `
+        ${map.image ? `<div class="master-map-preview" style="background-image: url('${escapeHtml(map.image)}')"></div>` : ''}
+        <div>
+          <h4>${escapeHtml(map.name)}</h4>
+          <p>${escapeHtml(map.notes || 'Sem descrição.')}</p>
+          <div class="master-card-actions"><button type="button" data-master-action="map-delete" data-id="${map.id}">Excluir</button></div>
+        </div>
+      `;
+      mapList.appendChild(card);
+    });
+  }
+
+  const encounterList = document.getElementById('encounterList');
+  if (encounterList) {
+    encounterList.innerHTML = masterState.encounters.length ? '' : '<p class="system-rule">Nenhum encontro salvo ainda.</p>';
+    masterState.encounters.forEach(encounter => {
+      const card = document.createElement('article');
+      card.className = 'master-card';
+      card.innerHTML = `
+        <h4>${escapeHtml(encounter.name)}</h4>
+        <p><b>Iniciativa:</b> ${escapeHtml(encounter.initiative || '-')}</p>
+        <p>${escapeHtml(encounter.notes || 'Sem notas.')}</p>
+        <div class="master-card-actions"><button type="button" data-master-action="encounter-delete" data-id="${encounter.id}">Excluir</button></div>
+      `;
+      encounterList.appendChild(card);
+    });
+  }
+
+  document.querySelectorAll('[data-master-action]').forEach(button => {
+    button.addEventListener('click', () => handleMasterCardAction(button.dataset.masterAction, button.dataset.id));
+  });
+  renderCombatantOptions();
+}
+
+function handleMasterCardAction(action, id) {
+  if (action === 'enemy-delete') masterState.enemies = masterState.enemies.filter(enemy => enemy.id !== id);
+  if (action === 'map-delete') masterState.maps = masterState.maps.filter(map => map.id !== id);
+  if (action === 'encounter-delete') masterState.encounters = masterState.encounters.filter(encounter => encounter.id !== id);
+  if (action === 'enemy-damage' || action === 'enemy-heal') {
+    const amount = Math.max(0, Number(prompt(action === 'enemy-damage' ? 'Quanto dano?' : 'Quanto cura?', '1')) || 0);
+    masterState.enemies = masterState.enemies.map(enemy => {
+      if (enemy.id !== id) return enemy;
+      const hp = action === 'enemy-damage' ? Number(enemy.hp) - amount : Number(enemy.hp) + amount;
+      return { ...enemy, hp: Math.max(0, hp) };
+    });
+  }
+  saveMasterState();
+  renderMasterState();
+}
+
+function addEnemy() {
+  const name = document.getElementById('enemyName').value.trim();
+  if (!name) return;
+  masterState.enemies.push({
+    id: createMasterId('enemy'),
+    name,
+    hp: Number(document.getElementById('enemyHp').value || 1),
+    ac: Number(document.getElementById('enemyAc').value || 10),
+    attack: Number(document.getElementById('enemyAttack').value || 0),
+    damage: document.getElementById('enemyDamage').value.trim() || '1d6',
+    type: document.getElementById('enemyType').value.trim(),
+    notes: document.getElementById('enemyNotes').value.trim()
+  });
+  document.getElementById('enemyName').value = '';
+  document.getElementById('enemyNotes').value = '';
+  saveMasterState();
+  renderMasterState();
+}
+
+function addMap() {
+  const name = document.getElementById('mapName').value.trim();
+  if (!name) return;
+  masterState.maps.push({
+    id: createMasterId('map'),
+    name,
+    image: document.getElementById('mapImage').value.trim(),
+    notes: document.getElementById('mapNotes').value.trim()
+  });
+  document.getElementById('mapName').value = '';
+  document.getElementById('mapNotes').value = '';
+  saveMasterState();
+  renderMasterState();
+}
+
+function addEncounter() {
+  const name = document.getElementById('encounterName').value.trim();
+  if (!name) return;
+  masterState.encounters.push({
+    id: createMasterId('encounter'),
+    name,
+    initiative: document.getElementById('encounterInitiative').value.trim(),
+    notes: document.getElementById('encounterNotes').value.trim()
+  });
+  document.getElementById('encounterName').value = '';
+  document.getElementById('encounterNotes').value = '';
+  saveMasterState();
+  renderMasterState();
+}
+
+function rollMasterAttack() {
+  const combatants = getMasterCombatants();
+  const attacker = combatants.find(item => item.id === document.getElementById('combatAttacker').value);
+  const target = combatants.find(item => item.id === document.getElementById('combatTarget').value);
+  const log = document.getElementById('masterCombatLog');
+  if (!attacker || !target) {
+    if (log) log.textContent = 'Crie inimigos ou salve fichas para rolar combate.';
+    return;
+  }
+  const bonus = Number(document.getElementById('combatBonus').value || 0) + Number(attacker.attack || 0);
+  const attackRoll = rollFormula('1d20');
+  const attackTotal = attackRoll.total + bonus;
+  const damage = rollFormula(document.getElementById('combatDamage').value || attacker.damage || '1d8');
+  const hit = attackTotal >= Number(target.ac || 10);
+  if (target.id.startsWith('enemy:') && hit) {
+    const enemyId = target.id.replace('enemy:', '');
+    masterState.enemies = masterState.enemies.map(enemy => (
+      enemy.id === enemyId ? { ...enemy, hp: Math.max(0, Number(enemy.hp || 0) - damage.total) } : enemy
+    ));
+    saveMasterState();
+  }
+  if (log) {
+    log.textContent = `${attacker.name} atacou ${target.name}: d20 ${attackRoll.total} ${formatSigned(bonus)} = ${attackTotal} contra CA ${target.ac}. ${hit ? `Acertou e causou ${damage.total} (${damage.detail}).` : 'Errou.'}`;
+  }
+  renderMasterState();
+}
+
+function saveAppearanceState() {
+  localStorage.setItem('appearanceState', JSON.stringify(appearanceState));
+}
+
+function readAppearanceState() {
+  appearanceState = {
+    ...appearanceState,
+    ...getStoredJson('appearanceState', {})
+  };
+}
+
+function renderAmbientEffect(effect, text) {
+  const target = document.getElementById('ambientEffect');
+  if (!target) return;
+  target.innerHTML = '';
+  if (effect === 'none') return;
+  const layers = effect === 'perspective' ? 9 : Math.max(8, text.length || 8);
+  for (let index = 0; index < layers; index += 1) {
+    const layer = document.createElement('div');
+    layer.className = 'effect-layer';
+    layer.dataset.text = text || 'RPG';
+    layer.style.setProperty('--layer-index', index);
+    layer.style.animationDelay = `${index * .12}s`;
+    target.appendChild(layer);
+  }
+}
+
+function applyAppearance({ persist = true } = {}) {
+  const root = document.documentElement;
+  const body = document.body;
+  applyDynamicTheme(appearanceState.primary, appearanceState.secondary);
+  root.style.setProperty('--paper', appearanceState.paper);
+  body.classList.toggle('has-wallpaper', Boolean(appearanceState.wallpaper));
+  body.style.setProperty('--app-wallpaper', appearanceState.wallpaper ? `url("${appearanceState.wallpaper}")` : 'none');
+  body.dataset.effect = appearanceState.effect || 'none';
+  ['theme-font-serif', 'theme-font-mono', 'theme-font-clean'].forEach(className => body.classList.remove(className));
+  if (appearanceState.font !== 'default') body.classList.add(`theme-font-${appearanceState.font}`);
+  renderAmbientEffect(appearanceState.effect, appearanceState.effectText);
+
+  const preview = document.getElementById('appearancePreviewScene');
+  if (preview) {
+    preview.classList.toggle('smoky', appearanceState.effect === 'smoky');
+    preview.querySelector('span').textContent = appearanceState.effectText || 'RPG';
+  }
+  if (persist) saveAppearanceState();
+}
+
+function syncAppearanceFormFromState() {
+  const fields = {
+    themePrimary: appearanceState.primary,
+    themeSecondary: appearanceState.secondary,
+    themePaper: appearanceState.paper,
+    themeFont: appearanceState.font,
+    themeWallpaper: appearanceState.wallpaper,
+    themeEffect: appearanceState.effect,
+    themeEffectText: appearanceState.effectText
+  };
+  Object.entries(fields).forEach(([id, value]) => {
+    const input = document.getElementById(id);
+    if (input) input.value = value;
+  });
+}
+
+function updateAppearanceFromForm() {
+  appearanceState = {
+    primary: document.getElementById('themePrimary').value,
+    secondary: document.getElementById('themeSecondary').value,
+    paper: document.getElementById('themePaper').value,
+    font: document.getElementById('themeFont').value,
+    wallpaper: document.getElementById('themeWallpaper').value.trim(),
+    effect: document.getElementById('themeEffect').value,
+    effectText: document.getElementById('themeEffectText').value.trim() || 'RPG'
+  };
+  applyAppearance();
+}
+
+function resetAppearanceState() {
+  appearanceState = {
+    primary: '#7ebaee',
+    secondary: '#f0a06f',
+    paper: '#e8e8e8',
+    font: 'default',
+    wallpaper: '',
+    effect: 'none',
+    effectText: 'RPG'
+  };
+  syncAppearanceFormFromState();
+  applyAppearance();
+}
+
 function updateProgression() {
   const progress = getXpProgress(elements.xp.value);
   elements.nivel.value = progress.level;
@@ -1919,6 +2261,7 @@ function loadSavedCharacters() {
       deleteCharacter(index);
     });
   });
+  renderCombatantOptions();
 }
 
 function saveCharacter() {
@@ -2469,6 +2812,22 @@ function init() {
   document.getElementById('skillPhotoInput').addEventListener('change', handleSkillPhotoUpload);
   document.getElementById('addCustomItem').addEventListener('click', addCustomItem);
   document.getElementById('addCustomSpell').addEventListener('click', addCustomSpell);
+  document.getElementById('addEnemy').addEventListener('click', addEnemy);
+  document.getElementById('addMap').addEventListener('click', addMap);
+  document.getElementById('addEncounter').addEventListener('click', addEncounter);
+  document.getElementById('rollMasterAttack').addEventListener('click', rollMasterAttack);
+  document.getElementById('saveMasterState').addEventListener('click', saveMasterState);
+  document.getElementById('clearMasterState').addEventListener('click', () => {
+    masterState = { enemies: [], maps: [], encounters: [] };
+    saveMasterState();
+    renderMasterState();
+  });
+  document.getElementById('saveAppearance').addEventListener('click', updateAppearanceFromForm);
+  document.getElementById('resetAppearance').addEventListener('click', resetAppearanceState);
+  ['themePrimary', 'themeSecondary', 'themePaper', 'themeFont', 'themeWallpaper', 'themeEffect', 'themeEffectText'].forEach(id => {
+    document.getElementById(id).addEventListener('input', updateAppearanceFromForm);
+    document.getElementById(id).addEventListener('change', updateAppearanceFromForm);
+  });
   document.getElementById('exportPdf').addEventListener('click', exportCharacterPdf);
   document.getElementById('exportCharacterFile').addEventListener('click', exportCharacterFile);
   document.getElementById('importCharacterFile').addEventListener('change', importCharacterFile);
@@ -2514,6 +2873,10 @@ function init() {
   setupTabs();
   setupInnerTabs();
   document.getElementById('skillBuilderMount').appendChild(document.querySelector('.skill-builder'));
+  readMasterState();
+  readAppearanceState();
+  syncAppearanceFormFromState();
+  applyAppearance({ persist: false });
   renderRaceReference();
   renderClassReference();
   initDiceRoller();
@@ -2527,10 +2890,12 @@ function init() {
   const draft = JSON.parse(localStorage.getItem('lastCharacterDraft') || 'null');
   if (draft) {
     loadCharacter(draft);
+    applyAppearance({ persist: false });
   } else {
     isRestoringCharacter = false;
     synchronize();
   }
+  renderMasterState();
 }
 
 init();
