@@ -47,11 +47,16 @@ let appearanceState = {
   primary: '#7ebaee',
   secondary: '#f0a06f',
   paper: '#e8e8e8',
+  card: '#f6f6f4',
+  cardOpacity: 88,
+  sidebar: '#444444',
   font: 'default',
   wallpaper: '',
+  wallpaperOverlay: 22,
   effect: 'none',
   effectText: 'RPG',
   diceFace: '#7ebaee',
+  diceEdge: '#f0a06f',
   diceNumber: '#fffbe8',
   diceOutline: '#050505',
   diceOpacity: 100
@@ -1848,10 +1853,16 @@ function applyAppearance({ persist = true } = {}) {
   const body = document.body;
   applyDynamicTheme(appearanceState.primary, appearanceState.secondary);
   root.style.setProperty('--paper', appearanceState.paper);
+  root.style.setProperty('--card-bg', hexToRgba(appearanceState.card, Number(appearanceState.cardOpacity || 88) / 100));
+  root.style.setProperty('--sidebar-base', appearanceState.sidebar);
   root.style.setProperty('--dice-face', appearanceState.diceFace);
+  root.style.setProperty('--dice-edge', appearanceState.diceEdge);
   root.style.setProperty('--dice-number', appearanceState.diceNumber);
   root.style.setProperty('--dice-outline', appearanceState.diceOutline);
   root.style.setProperty('--dice-opacity', String(Math.max(.45, Math.min(1, Number(appearanceState.diceOpacity || 100) / 100))));
+  const wallpaperOverlay = Math.max(0, Math.min(70, Number(appearanceState.wallpaperOverlay || 0))) / 100;
+  root.style.setProperty('--wallpaper-overlay-start', hexToRgba('#222222', wallpaperOverlay));
+  root.style.setProperty('--wallpaper-overlay-end', hexToRgba('#222222', Math.max(0, wallpaperOverlay - .04)));
   body.classList.toggle('has-wallpaper', Boolean(appearanceState.wallpaper));
   body.style.setProperty('--app-wallpaper', appearanceState.wallpaper ? `url("${appearanceState.wallpaper}")` : 'none');
   body.dataset.effect = appearanceState.effect || 'none';
@@ -1872,11 +1883,16 @@ function syncAppearanceFormFromState() {
     themePrimary: appearanceState.primary,
     themeSecondary: appearanceState.secondary,
     themePaper: appearanceState.paper,
+    themeCard: appearanceState.card,
+    themeCardOpacity: appearanceState.cardOpacity,
+    themeSidebar: appearanceState.sidebar,
     themeFont: appearanceState.font,
     themeWallpaper: appearanceState.wallpaper,
+    wallpaperOverlay: appearanceState.wallpaperOverlay,
     themeEffect: appearanceState.effect,
     themeEffectText: appearanceState.effectText,
     diceFaceColor: appearanceState.diceFace,
+    diceEdgeColor: appearanceState.diceEdge,
     diceNumberColor: appearanceState.diceNumber,
     diceOutlineColor: appearanceState.diceOutline,
     diceOpacity: appearanceState.diceOpacity
@@ -1885,6 +1901,9 @@ function syncAppearanceFormFromState() {
     const input = document.getElementById(id);
     if (input) input.value = value;
   });
+  document.getElementById('themeCardOpacityValue').textContent = `${appearanceState.cardOpacity}%`;
+  document.getElementById('wallpaperOverlayValue').textContent = `${appearanceState.wallpaperOverlay}%`;
+  document.getElementById('diceOpacityValue').textContent = `${appearanceState.diceOpacity}%`;
 }
 
 function updateAppearanceFromForm() {
@@ -1892,15 +1911,23 @@ function updateAppearanceFromForm() {
     primary: document.getElementById('themePrimary').value,
     secondary: document.getElementById('themeSecondary').value,
     paper: document.getElementById('themePaper').value,
+    card: document.getElementById('themeCard').value,
+    cardOpacity: Number(document.getElementById('themeCardOpacity').value || 88),
+    sidebar: document.getElementById('themeSidebar').value,
     font: document.getElementById('themeFont').value,
     wallpaper: document.getElementById('themeWallpaper').value.trim(),
+    wallpaperOverlay: Number(document.getElementById('wallpaperOverlay').value || 22),
     effect: document.getElementById('themeEffect').value,
     effectText: document.getElementById('themeEffectText').value.trim() || 'RPG',
     diceFace: document.getElementById('diceFaceColor').value,
+    diceEdge: document.getElementById('diceEdgeColor').value,
     diceNumber: document.getElementById('diceNumberColor').value,
     diceOutline: document.getElementById('diceOutlineColor').value,
     diceOpacity: Number(document.getElementById('diceOpacity').value || 100)
   };
+  document.getElementById('themeCardOpacityValue').textContent = `${appearanceState.cardOpacity}%`;
+  document.getElementById('wallpaperOverlayValue').textContent = `${appearanceState.wallpaperOverlay}%`;
+  document.getElementById('diceOpacityValue').textContent = `${appearanceState.diceOpacity}%`;
   applyAppearance();
   window.dispatchEvent(new CustomEvent('dice-theme-change'));
 }
@@ -1910,11 +1937,16 @@ function resetAppearanceState() {
     primary: '#7ebaee',
     secondary: '#f0a06f',
     paper: '#e8e8e8',
+    card: '#f6f6f4',
+    cardOpacity: 88,
+    sidebar: '#444444',
     font: 'default',
     wallpaper: '',
+    wallpaperOverlay: 22,
     effect: 'none',
     effectText: 'RPG',
     diceFace: '#7ebaee',
+    diceEdge: '#f0a06f',
     diceNumber: '#fffbe8',
     diceOutline: '#050505',
     diceOpacity: 100
@@ -2447,6 +2479,18 @@ function rgbToHex({ r, g, b }) {
   return `#${[r, g, b].map(value => {
     return Math.min(255, Math.round(value * scale)).toString(16).padStart(2, '0');
   }).join('')}`;
+}
+
+function hexToRgba(hex, alpha = 1) {
+  const clean = String(hex || '#000000').replace('#', '');
+  const normalized = clean.length === 3
+    ? clean.split('').map(char => char + char).join('')
+    : clean.padEnd(6, '0').slice(0, 6);
+  const value = Number.parseInt(normalized, 16);
+  const r = (value >> 16) & 255;
+  const g = (value >> 8) & 255;
+  const b = value & 255;
+  return `rgba(${r}, ${g}, ${b}, ${Math.max(0, Math.min(1, alpha))})`;
 }
 
 function updateSpellStats() {
@@ -3178,7 +3222,24 @@ function init() {
   });
   document.getElementById('saveAppearance').addEventListener('click', updateAppearanceFromForm);
   document.getElementById('resetAppearance').addEventListener('click', resetAppearanceState);
-  ['themePrimary', 'themeSecondary', 'themePaper', 'themeFont', 'themeWallpaper', 'themeEffect', 'themeEffectText', 'diceFaceColor', 'diceNumberColor', 'diceOutlineColor', 'diceOpacity'].forEach(id => {
+  [
+    'themePrimary',
+    'themeSecondary',
+    'themePaper',
+    'themeCard',
+    'themeCardOpacity',
+    'themeSidebar',
+    'themeFont',
+    'themeWallpaper',
+    'wallpaperOverlay',
+    'themeEffect',
+    'themeEffectText',
+    'diceFaceColor',
+    'diceEdgeColor',
+    'diceNumberColor',
+    'diceOutlineColor',
+    'diceOpacity'
+  ].forEach(id => {
     document.getElementById(id).addEventListener('input', updateAppearanceFromForm);
     document.getElementById(id).addEventListener('change', updateAppearanceFromForm);
   });

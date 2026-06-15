@@ -274,6 +274,7 @@ function getThemeColors() {
     primary: styles.getPropertyValue("--blue").trim() || fallbackPalette[2],
     secondary: styles.getPropertyValue("--orange").trim() || fallbackPalette[0],
     face: styles.getPropertyValue("--dice-face").trim(),
+    edge: styles.getPropertyValue("--dice-edge").trim() || styles.getPropertyValue("--orange").trim() || fallbackPalette[0],
     number: styles.getPropertyValue("--dice-number").trim() || "#fffbe8",
     outline: styles.getPropertyValue("--dice-outline").trim() || "#050505",
     opacity: Math.max(.45, Math.min(1, opacity))
@@ -283,18 +284,19 @@ function getThemeColors() {
 function addLinework(mesh, geometry, theme, radius) {
   const edgeGeometry = new THREE.EdgesGeometry(geometry, 10);
   const glow = new THREE.LineSegments(edgeGeometry, new THREE.LineBasicMaterial({
-    color: theme.secondary, transparent: true, opacity: .32
+    color: theme.edge, transparent: true, opacity: theme.opacity >= .99 ? .46 : .32
   }));
   glow.scale.setScalar(1.045);
   const core = new THREE.LineSegments(edgeGeometry.clone(), new THREE.LineBasicMaterial({
-    color: 0x382f36, transparent: true, opacity: .88
+    color: theme.outline, transparent: theme.opacity < .99, opacity: theme.opacity >= .99 ? 1 : .88,
+    depthWrite: theme.opacity >= .99
   }));
   core.scale.setScalar(1.012);
   mesh.add(glow, core);
 
   const ring = new THREE.Mesh(
     new THREE.TorusGeometry(radius * .58, radius * .018, 8, 48),
-    new THREE.MeshBasicMaterial({ color: theme.secondary, transparent: true, opacity: .7 })
+    new THREE.MeshBasicMaterial({ color: theme.edge, transparent: theme.opacity < .99, opacity: theme.opacity >= .99 ? 1 : .7 })
   );
   ring.rotation.x = Math.PI / 2;
   mesh.add(ring);
@@ -647,7 +649,7 @@ function updateFaceHighlights() {
       const isTop = face.label === topFace?.label;
       const isFront = face.label === frontFace?.label;
       if (face.number?.material) {
-        const targetOpacity = isTop || isFront ? 1 : .72;
+        const targetOpacity = 1;
         face.number.material.opacity += (targetOpacity - face.number.material.opacity) * .28;
       }
       if (face.number) {
@@ -665,7 +667,13 @@ if (typeof window !== "undefined") {
       sides: die.sides,
       displayed: getDisplayedFaceValue(die),
       displayedLabel: getDisplayedFace(die)?.label || "",
-      top: getFaceValue(getBestFace(die, new THREE.Vector3(0, 1, 0))?.label, die.sides)
+      top: getFaceValue(getBestFace(die, new THREE.Vector3(0, 1, 0))?.label, die.sides),
+      material: {
+        transparent: die.mesh.material.transparent,
+        opacity: die.mesh.material.opacity,
+        depthWrite: die.mesh.material.depthWrite
+      },
+      numberOpacities: die.faceLabels.map(face => face.number.material.opacity)
     }))
   };
 }
