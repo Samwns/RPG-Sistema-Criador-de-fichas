@@ -2396,17 +2396,25 @@ input[type="color"]::-webkit-color-swatch {
   justify-content: center;
   gap: 8px;
   border: 1px solid transparent;
-  border-radius: 7px;
-  padding: 10px 14px;
-  font: 800 .66rem/1 var(--mono);
-  letter-spacing: .08em;
+  border-radius: 6px;
+  padding: 11px 15px;
+  font: 800 .68rem/1 var(--mono);
+  letter-spacing: .07em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: transform .18s ease, box-shadow .18s ease, background-color .18s ease, border-color .18s ease;
 }
 
 .saved-action span {
-  font: 800 1.15rem/1 sans-serif;
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .2);
+  font: 800 1rem/1 sans-serif;
 }
 
 .saved-action:hover {
@@ -2419,27 +2427,36 @@ input[type="color"]::-webkit-color-swatch {
 }
 
 .recover-action {
-  border-color: color-mix(in srgb, var(--blue) 48%, #aaa);
-  background: color-mix(in srgb, var(--blue) 12%, #f5f5f3);
-  box-shadow: 0 3px 0 color-mix(in srgb, var(--blue) 42%, #555);
-  color: #3e4850;
+  border-color: color-mix(in srgb, var(--blue) 58%, #aaa);
+  background: color-mix(in srgb, var(--blue) 18%, #f5f5f3);
+  box-shadow:
+    0 3px 0 color-mix(in srgb, var(--blue) 45%, #555),
+    0 7px 14px rgba(68, 68, 68, .1);
+  color: #303940;
 }
 
 .recover-action:hover {
-  background: color-mix(in srgb, var(--blue) 20%, #f5f5f3);
-  box-shadow: 0 5px 0 color-mix(in srgb, var(--blue) 48%, #555);
+  border-color: color-mix(in srgb, var(--blue) 75%, #777);
+  background: color-mix(in srgb, var(--blue) 28%, #f5f5f3);
+  box-shadow:
+    0 5px 0 color-mix(in srgb, var(--blue) 48%, #555),
+    0 10px 18px rgba(68, 68, 68, .13);
 }
 
 .clear-action {
-  border-color: #863832;
+  border-color: #7d302b;
   background: #963f39;
-  box-shadow: 0 3px 0 #642824;
+  box-shadow:
+    0 3px 0 #642824,
+    0 7px 14px rgba(100, 40, 36, .16);
   color: #fff;
 }
 
 .clear-action:hover {
   background: #a94a43;
-  box-shadow: 0 5px 0 #642824;
+  box-shadow:
+    0 5px 0 #642824,
+    0 10px 18px rgba(100, 40, 36, .2);
 }
 
 .saved-action:active {
