@@ -168,6 +168,7 @@
                   <label><span>Sistema</span><select id="sistema"><option value="D&D">D&amp;D</option><option value="Outro">Outro</option></select></label>
                   <label><span>Nível total</span><input id="nivel" type="number" min="1" max="20" value="1"></label>
                   <label><span>Experiência</span><input id="xp" type="number" min="0" value="0"></label>
+                  <label><span>Gold</span><input id="goldAmount" type="number" min="0" value="100"></label>
                   <div class="xp-progress full-width">
                     <div><span id="xpLevelLabel">Nível 1</span><b id="xpNextLabel">300 XP para o nível 2</b></div>
                     <progress id="xpProgress" max="300" value="0"></progress>
@@ -532,11 +533,18 @@
                   <span>Pontos <b id="equipmentBudget">20</b></span>
                   <span>Gastos <b id="equipmentSpent">0</b></span>
                   <span>Restantes <b id="equipmentRemaining">20</b></span>
+                  <span>Gold <b id="equipmentGold">100</b></span>
                 </div>
               </div>
               <p class="system-rule">Os pontos de equipamento aumentam com o nível. Compre armas, armaduras, ferramentas e consumíveis antes de começar a aventura.</p>
-              <section>
-                <h3 class="subsection-title">Loja inicial</h3>
+              <section class="equipment-block">
+                <div class="section-title">
+                  <div><p class="panel-kicker">Loja de itens</p><h3>Comprar com pontos ou gold</h3></div>
+                  <div class="action-buttons compact-actions">
+                    <button id="rollPointShop" type="button">Roleta pontos</button>
+                    <button id="rollGoldShop" type="button">Roleta gold</button>
+                  </div>
+                </div>
                 <div id="equipmentShop" class="equipment-shop"></div>
               </section>
               <section class="content-card custom-item-card">
@@ -561,9 +569,13 @@
                 <button id="addCustomItem" type="button">Adicionar item à loja</button>
                 <p id="customItemMessage" class="warning"></p>
               </section>
-              <section class="content-card">
-                <h3>Itens comprados</h3>
+              <section class="content-card equipment-block">
+                <h3>Inventário</h3>
                 <div id="inventoryList" class="inventory-list"></div>
+              </section>
+              <section class="content-card equipment-block">
+                <h3>Equipados e gerenciamento</h3>
+                <div id="equippedList" class="inventory-list"></div>
               </section>
             </section>
 
@@ -588,6 +600,17 @@
                   <div class="pool-die" data-pool-die="8"><b>d8</b><button type="button" data-pool-action="remove">−</button><span>0</span><button type="button" data-pool-action="add">+</button></div>
                   <div class="pool-die" data-pool-die="6"><b>d6</b><button type="button" data-pool-action="remove">−</button><span>0</span><button type="button" data-pool-action="add">+</button></div>
                   <div class="pool-die" data-pool-die="4"><b>d4</b><button type="button" data-pool-action="remove">−</button><span>0</span><button type="button" data-pool-action="add">+</button></div>
+                </div>
+                <div class="dice-modifier-panel" aria-label="Modificadores dinâmicos">
+                  <span>Modificadores dinâmicos</span>
+                  <button type="button" data-dice-mod="for">+ FOR</button>
+                  <button type="button" data-dice-mod="dex">+ DEX</button>
+                  <button type="button" data-dice-mod="con">+ CON</button>
+                  <button type="button" data-dice-mod="int">+ INT</button>
+                  <button type="button" data-dice-mod="sab">+ SAB</button>
+                  <button type="button" data-dice-mod="car">+ CAR</button>
+                  <button type="button" data-dice-mod="prof">+ Proficiência</button>
+                  <label><span>Extra</span><input id="diceExtraModifier" type="number" value="0"></label>
                 </div>
                 <div class="pool-actions"><span id="poolSummary">1d20</span><button id="rollPoolButton" type="button">Rolar combinação</button><button id="clearPoolButton" type="button" class="button-muted">Limpar</button></div>
 

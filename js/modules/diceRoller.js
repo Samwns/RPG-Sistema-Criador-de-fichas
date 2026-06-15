@@ -4,6 +4,7 @@ import * as CANNON from "https://esm.sh/cannon-es";
 const fallbackPalette = ["#EAA14D", "#E05A47", "#4D9BEA", "#5FB376", "#D869A8", "#F2C94C", "#9B51E0"];
 const allowedSides = [4, 6, 8, 10, 12, 20, 100];
 const pool = new Map(allowedSides.map(sides => [sides, sides === 20 ? 1 : 0]));
+const selectedModifiers = new Set();
 
 let scene;
 let camera;
@@ -82,6 +83,17 @@ export function initDiceRoller() {
       refreshPool();
     });
   });
+  document.querySelectorAll("[data-dice-mod]").forEach(button => {
+    button.addEventListener("click", () => {
+      const key = button.dataset.diceMod;
+      if (selectedModifiers.has(key)) selectedModifiers.delete(key);
+      else selectedModifiers.add(key);
+      refreshModifierButtons();
+      refreshPool();
+    });
+  });
+  document.getElementById("diceExtraModifier")?.addEventListener("input", refreshPool);
+  document.getElementById("diceExtraModifier")?.addEventListener("change", refreshPool);
   document.getElementById("rollPoolButton")?.addEventListener("click", () => rollDicePool());
   document.getElementById("clearPoolButton")?.addEventListener("click", () => {
     allowedSides.forEach(sides => pool.set(sides, 0));
@@ -101,13 +113,14 @@ export function rollDice({ sides = 20, count = 1, modifier = 0, label = "", onCo
 export function rollDicePool() {
   const specs = getPoolSpecs();
   if (!specs.length) return;
-  rollSpecs(specs, 0, specs.map(formatSpec).join(" + "), null);
+  const dynamic = getDynamicModifier();
+  rollSpecs(specs, dynamic.total, specs.map(formatSpec).join(" + "), null, dynamic.label);
 }
 
-function rollSpecs(specs, modifier, label, onComplete) {
+function rollSpecs(specs, modifier, label, onComplete, modifierLabel = "") {
   if (!world || !scene) return;
   createDiceSet(specs);
-  pendingRoll = { specs, modifier, label, onComplete, startedAt: performance.now() };
+  pendingRoll = { specs, modifier, label, onComplete, modifierLabel, startedAt: performance.now() };
   lastLiveTotal = null;
   setBadge(specs);
   updateLiveResult(true);
@@ -132,6 +145,38 @@ function setBadge(specs) {
   if (uiBadge) uiBadge.textContent = specs.length === 1 ? formatSpec(specs[0]).toUpperCase() : "POOL";
 }
 
+function readSignedNumber(selector) {
+  const element = document.querySelector(selector);
+  const raw = element && "value" in element ? element.value : element?.textContent;
+  return Number(String(raw || "0").replace("+", "")) || 0;
+}
+
+function getDynamicModifier() {
+  const values = {
+    for: readSignedNumber("#modFor"),
+    dex: readSignedNumber("#modDex"),
+    con: readSignedNumber("#modCon"),
+    int: readSignedNumber("#modInt"),
+    sab: readSignedNumber("#modSab"),
+    car: readSignedNumber("#modCar"),
+    prof: readSignedNumber("#profBonus")
+  };
+  const labels = { for: "FOR", dex: "DEX", con: "CON", int: "INT", sab: "SAB", car: "CAR", prof: "Proficiência" };
+  const parts = [...selectedModifiers].map(key => ({ key, label: labels[key], value: values[key] || 0 }));
+  const extra = Number(document.getElementById("diceExtraModifier")?.value || 0);
+  if (extra) parts.push({ key: "extra", label: "Extra", value: extra });
+  return {
+    total: parts.reduce((sum, item) => sum + item.value, 0),
+    label: parts.map(item => `${item.label} ${item.value >= 0 ? "+" : "-"} ${Math.abs(item.value)}`).join(" + ")
+  };
+}
+
+function refreshModifierButtons() {
+  document.querySelectorAll("[data-dice-mod]").forEach(button => {
+    button.classList.toggle("active", selectedModifiers.has(button.dataset.diceMod));
+  });
+}
+
 function refreshPool() {
   document.querySelectorAll("[data-pool-die]").forEach(row => {
     const count = pool.get(Number(row.dataset.poolDie)) || 0;
@@ -139,7 +184,9 @@ function refreshPool() {
     row.classList.toggle("active", count > 0);
   });
   const specs = getPoolSpecs();
-  const summary = specs.length ? specs.map(formatSpec).join(" + ") : "Escolha pelo menos um dado";
+  const dynamic = getDynamicModifier();
+  const modifierText = dynamic.total ? ` ${dynamic.total > 0 ? "+" : "-"} ${Math.abs(dynamic.total)}` : "";
+  const summary = specs.length ? `${specs.map(formatSpec).join(" + ")}${modifierText}` : "Escolha pelo menos um dado";
   document.getElementById("poolSummary").textContent = summary;
   document.getElementById("rollPoolButton").disabled = specs.length === 0;
   setBadge(specs.length ? specs : [{ sides: 20, count: 1 }]);
@@ -178,8 +225,9 @@ function createDiceSet(specs) {
       roughness: .42,
       metalness: .08,
       flatShading: true,
-      transparent: theme.opacity < 1,
-      opacity: theme.opacity
+      transparent: theme.opacity < .99,
+      opacity: theme.opacity,
+      depthWrite: theme.opacity >= .99
     });
     const mesh = new THREE.Mesh(geometry, material);
     addLinework(mesh, geometry, theme, radius);
@@ -221,13 +269,14 @@ function createDiceSet(specs) {
 
 function getThemeColors() {
   const styles = getComputedStyle(document.documentElement);
+  const opacity = Number(styles.getPropertyValue("--dice-opacity").trim()) || 1;
   return {
     primary: styles.getPropertyValue("--blue").trim() || fallbackPalette[2],
     secondary: styles.getPropertyValue("--orange").trim() || fallbackPalette[0],
     face: styles.getPropertyValue("--dice-face").trim(),
     number: styles.getPropertyValue("--dice-number").trim() || "#fffbe8",
     outline: styles.getPropertyValue("--dice-outline").trim() || "#050505",
-    opacity: Number(styles.getPropertyValue("--dice-opacity").trim()) || 1
+    opacity: Math.max(.45, Math.min(1, opacity))
   };
 }
 
@@ -392,7 +441,8 @@ function onInputStart(event) {
   isHolding = true;
   needsResultCheck = false;
   const specs = groupDiceObjects();
-  pendingRoll = { specs, modifier: 0, label: specs.map(formatSpec).join(" + "), onComplete: null, startedAt: performance.now() };
+  const dynamic = getDynamicModifier();
+  pendingRoll = { specs, modifier: dynamic.total, label: specs.map(formatSpec).join(" + "), onComplete: null, modifierLabel: dynamic.label, startedAt: performance.now() };
   diceObjects.forEach(({ body }) => body.wakeUp());
 }
 
@@ -563,7 +613,7 @@ function getCurrentRollSnapshot() {
   const modifier = Number(pendingRoll.modifier || 0);
   const total = rawTotal + modifier;
   const detail = groupedResults.map(group => `d${group.sides} [${group.results.join(", ")}]`).join(" + ");
-  const modifierText = modifier ? ` ${modifier > 0 ? "+" : "-"} ${Math.abs(modifier)}` : "";
+  const modifierText = modifier ? ` ${modifier > 0 ? "+" : "-"} ${Math.abs(modifier)}${pendingRoll.modifierLabel ? ` (${pendingRoll.modifierLabel})` : ""}` : "";
   return { groupedResults, results, rawTotal, total, modifier, detail, modifierText };
 }
 

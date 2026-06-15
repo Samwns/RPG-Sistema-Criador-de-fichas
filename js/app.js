@@ -35,6 +35,9 @@ let skillPhoto = '';
 let editingSkillIndex = -1;
 let bannerPhoto = '';
 let inventory = [];
+let equippedItems = [];
+let equipmentPurchases = {};
+let goldAmount = 100;
 let customItems = [];
 let purchasedSpells = [];
 let customSpells = [];
@@ -565,6 +568,7 @@ function resetFicha() {
   elements.xp.value = 0;
   elements.vidaMaxima.value = 30;
   document.getElementById('currentHp').value = 30;
+  setCurrentGold(100);
   document.getElementById('armorClass').value = 10;
   document.getElementById('speed').value = '9 m';
   document.getElementById('vision').value = 'normal';
@@ -583,6 +587,9 @@ function resetFicha() {
   elements.descricaoClasse.value = '';
   purchasedSkills = [];
   inventory = [];
+  equippedItems = [];
+  equipmentPurchases = {};
+  goldAmount = 100;
   customItems = [];
   purchasedSpells = [];
   customSpells = [];
@@ -870,53 +877,121 @@ function getEquipmentBudget() {
 
 function getEquipmentSpent() {
   return inventory.reduce((sum, itemId) => {
+    if (equipmentPurchases[itemId] === 'gold') return sum;
     return sum + (getEquipmentCatalog().find(item => item.id === itemId)?.cost || 0);
   }, 0);
 }
 
-function buyEquipment(itemId) {
+function getGoldCost(item) {
+  return Number(item.goldCost || Math.max(1, Number(item.cost || 1) * 10));
+}
+
+function getCurrentGold() {
+  const input = document.getElementById('goldAmount');
+  goldAmount = Math.max(0, Number(input?.value ?? goldAmount) || 0);
+  return goldAmount;
+}
+
+function setCurrentGold(value) {
+  goldAmount = Math.max(0, Number(value) || 0);
+  const input = document.getElementById('goldAmount');
+  if (input) input.value = goldAmount;
+}
+
+function getActiveEquipmentIds() {
+  return equippedItems.length ? equippedItems : inventory;
+}
+
+function buyEquipment(itemId, currency = 'points') {
   const item = getEquipmentCatalog().find(entry => entry.id === itemId);
   if (!item || inventory.includes(itemId)) return;
-  if (getEquipmentSpent() + item.cost > getEquipmentBudget()) return;
+  if (currency === 'gold') {
+    const gold = getCurrentGold();
+    const price = getGoldCost(item);
+    if (gold < price) return;
+    setCurrentGold(gold - price);
+  } else if (getEquipmentSpent() + item.cost > getEquipmentBudget()) {
+    return;
+  }
   inventory.push(itemId);
+  equipmentPurchases[itemId] = currency;
   renderEquipment();
   synchronize();
 }
 
 function sellEquipment(itemId) {
   inventory = inventory.filter(id => id !== itemId);
+  equippedItems = equippedItems.filter(id => id !== itemId);
+  delete equipmentPurchases[itemId];
   renderEquipment();
   synchronize();
+}
+
+function toggleEquippedItem(itemId) {
+  if (!inventory.includes(itemId)) return;
+  equippedItems = equippedItems.includes(itemId)
+    ? equippedItems.filter(id => id !== itemId)
+    : [...equippedItems, itemId];
+  renderEquipment();
+  synchronize();
+}
+
+function rollShopPurchase(currency = 'points') {
+  const budget = getEquipmentBudget();
+  const spent = getEquipmentSpent();
+  const gold = getCurrentGold();
+  const candidates = getEquipmentCatalog().filter(item => {
+    if (inventory.includes(item.id)) return false;
+    return currency === 'gold'
+      ? getGoldCost(item) <= gold
+      : spent + item.cost <= budget;
+  });
+  if (!candidates.length) {
+    setResourceMessage(currency === 'gold' ? 'Sem gold suficiente para a roleta.' : 'Sem pontos suficientes para a roleta.');
+    return;
+  }
+  const picked = candidates[Math.floor(Math.random() * candidates.length)];
+  buyEquipment(picked.id, currency);
+  setResourceMessage(`Roleta comprou ${picked.name} com ${currency === 'gold' ? 'gold' : 'pontos'}.`);
 }
 
 function renderEquipment() {
   const shop = document.getElementById('equipmentShop');
   const inventoryList = document.getElementById('inventoryList');
-  if (!shop || !inventoryList) return;
+  const equippedList = document.getElementById('equippedList');
+  if (!shop || !inventoryList || !equippedList) return;
 
   const budget = getEquipmentBudget();
   const spent = getEquipmentSpent();
+  const gold = getCurrentGold();
   document.getElementById('equipmentBudget').textContent = budget;
   document.getElementById('equipmentSpent').textContent = spent;
   document.getElementById('equipmentRemaining').textContent = Math.max(0, budget - spent);
+  document.getElementById('equipmentGold').textContent = gold;
 
   shop.innerHTML = '';
   getEquipmentCatalog().forEach(item => {
     const owned = inventory.includes(item.id);
+    const goldCost = getGoldCost(item);
     const card = document.createElement('article');
     card.className = 'shop-item';
     card.innerHTML = `
       <span>${item.category}${item.rarity ? ` · ${item.rarity}` : ''}</span>
       <h4>${item.name}</h4>
       <p>${item.description}</p>
-      <div><b>${item.cost} pts</b></div>
+      <div class="shop-price-row"><b>${item.cost} pts · ${goldCost} gold</b></div>
     `;
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.textContent = owned ? 'Comprado' : 'Comprar';
-    button.disabled = owned || spent + item.cost > budget;
-    button.addEventListener('click', () => buyEquipment(item.id));
-    card.querySelector('div').appendChild(button);
+    const pointButton = document.createElement('button');
+    pointButton.type = 'button';
+    pointButton.textContent = owned ? 'Comprado' : 'Pontos';
+    pointButton.disabled = owned || spent + item.cost > budget;
+    pointButton.addEventListener('click', () => buyEquipment(item.id, 'points'));
+    const goldButton = document.createElement('button');
+    goldButton.type = 'button';
+    goldButton.textContent = owned ? 'Comprado' : 'Gold';
+    goldButton.disabled = owned || goldCost > gold;
+    goldButton.addEventListener('click', () => buyEquipment(item.id, 'gold'));
+    card.querySelector('div').append(pointButton, goldButton);
     shop.appendChild(card);
   });
 
@@ -927,15 +1002,39 @@ function renderEquipment() {
   inventory.forEach(itemId => {
     const item = getEquipmentCatalog().find(entry => entry.id === itemId);
     if (!item) return;
+    const equipped = equippedItems.includes(item.id);
     const row = document.createElement('article');
     row.className = 'inventory-item';
     row.innerHTML = `<div><b>${item.name}</b><span>${item.category} · ${item.description}</span></div>`;
+    const equipButton = document.createElement('button');
+    equipButton.type = 'button';
+    equipButton.textContent = equipped ? 'Desequipar' : 'Equipar';
+    equipButton.addEventListener('click', () => toggleEquippedItem(item.id));
     const button = document.createElement('button');
     button.type = 'button';
     button.textContent = 'Vender';
     button.addEventListener('click', () => sellEquipment(item.id));
-    row.appendChild(button);
+    row.append(equipButton, button);
     inventoryList.appendChild(row);
+  });
+
+  equippedList.innerHTML = '';
+  const equipped = equippedItems
+    .map(itemId => getEquipmentCatalog().find(entry => entry.id === itemId))
+    .filter(Boolean);
+  if (!equipped.length) {
+    equippedList.innerHTML = '<p class="system-rule">Nenhum item equipado.</p>';
+  }
+  equipped.forEach(item => {
+    const row = document.createElement('article');
+    row.className = 'inventory-item equipped-item';
+    row.innerHTML = `<div><b>${item.name}</b><span>${item.category} · ${item.rarity || 'Comum'}</span></div>`;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = 'Desequipar';
+    button.addEventListener('click', () => toggleEquippedItem(item.id));
+    row.appendChild(button);
+    equippedList.appendChild(row);
   });
 
   renderWeaponList();
@@ -944,13 +1043,13 @@ function renderEquipment() {
 function renderWeaponList() {
   const weaponList = document.getElementById('weaponList');
   if (!weaponList) return;
-  const weapons = inventory
+  const weapons = getActiveEquipmentIds()
     .map(itemId => getEquipmentCatalog().find(item => item.id === itemId))
     .filter(item => item?.category === 'Arma' && item.die);
 
   weaponList.innerHTML = '';
   if (weapons.length === 0) {
-    weaponList.innerHTML = '<p class="system-rule">Compre armas na aba Equipamento para usá-las aqui.</p>';
+    weaponList.innerHTML = '<p class="system-rule">Compre e equipe armas na aba Equipamento para usá-las aqui.</p>';
     return;
   }
 
@@ -1077,7 +1176,7 @@ function getAttributeModifier(attribute) {
 }
 
 function getItemBonus(key) {
-  return inventory.reduce((sum, itemId) => {
+  return getActiveEquipmentIds().reduce((sum, itemId) => {
     const item = getEquipmentCatalog().find(entry => entry.id === itemId);
     return sum + Number(item?.[key] || 0);
   }, 0);
@@ -1102,7 +1201,7 @@ function getCalculatedArmorClass() {
   const manual = Number(document.getElementById('armorClass').value) || 10;
   const dexterity = getAttributeModifier('dex');
   let calculated = manual + getPassiveArmorBonus();
-  inventory.forEach(itemId => {
+  getActiveEquipmentIds().forEach(itemId => {
     const item = getEquipmentCatalog().find(entry => entry.id === itemId);
     if (!item) return;
     if (item.armorBase) calculated = Math.max(calculated, item.armorBase + (item.dexterity ? dexterity : 0));
@@ -2551,6 +2650,7 @@ function getCharacterData() {
     nivel: elements.nivel.value,
     xp: elements.xp.value,
     profBonus: elements.profBonus.value,
+    goldAmount: getCurrentGold(),
     vidaMaxima: getCalculatedMaxHp(),
     vidaMaximaManual: manualMaxHpFloor,
     currentHp: document.getElementById('currentHp').value,
@@ -2596,6 +2696,8 @@ function getCharacterData() {
     descricaoClasse: elements.descricaoClasse.value,
     purchasedSkills,
     inventory,
+    equippedItems,
+    equipmentPurchases,
     customItems,
     purchasedSpells,
     customSpells,
@@ -2628,6 +2730,7 @@ function loadCharacter(index) {
   elements.jogador.value = character.jogador || '';
   elements.nivel.value = character.nivel || 1;
   elements.xp.value = character.xp || 0;
+  setCurrentGold(character.goldAmount ?? 100);
   manualMaxHpFloor = Number(character.vidaMaximaManual || character.vidaMaxima || 30);
   lastCalculatedMaxHp = Number(character.vidaMaxima || manualMaxHpFloor);
   resourceTouched = {
@@ -2682,6 +2785,8 @@ function loadCharacter(index) {
   elements.descricaoClasse.value = character.descricaoClasse || '';
   purchasedSkills = Array.isArray(character.purchasedSkills) ? character.purchasedSkills : [];
   inventory = Array.isArray(character.inventory) ? character.inventory : [];
+  equippedItems = Array.isArray(character.equippedItems) ? character.equippedItems : [];
+  equipmentPurchases = character.equipmentPurchases && typeof character.equipmentPurchases === 'object' ? character.equipmentPurchases : {};
   customItems = Array.isArray(character.customItems) ? character.customItems : [];
   purchasedSpells = Array.isArray(character.purchasedSpells) ? character.purchasedSpells : [];
   customSpells = Array.isArray(character.customSpells) ? character.customSpells : [];
@@ -2796,6 +2901,11 @@ function init() {
 
   elements.xp.addEventListener('input', () => {
     if (Number(elements.xp.value) < 0) elements.xp.value = 0;
+    synchronize();
+  });
+  document.getElementById('goldAmount').addEventListener('input', () => {
+    if (Number(document.getElementById('goldAmount').value) < 0) document.getElementById('goldAmount').value = 0;
+    renderEquipment();
     synchronize();
   });
 
@@ -2916,6 +3026,8 @@ function init() {
   document.getElementById('addMap').addEventListener('click', addMap);
   document.getElementById('addEncounter').addEventListener('click', addEncounter);
   document.getElementById('rollMasterAttack').addEventListener('click', rollMasterAttack);
+  document.getElementById('rollPointShop').addEventListener('click', () => rollShopPurchase('points'));
+  document.getElementById('rollGoldShop').addEventListener('click', () => rollShopPurchase('gold'));
   document.getElementById('saveMasterState').addEventListener('click', saveMasterState);
   document.getElementById('clearMasterState').addEventListener('click', () => {
     masterState = { enemies: [], maps: [], encounters: [] };
