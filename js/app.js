@@ -926,6 +926,17 @@ function renderItemTags(item) {
   return `<div class="item-stat-tags">${getItemStatusTags(item).map(tag => `<span>${escapeHtml(tag)}</span>`).join('')}</div>`;
 }
 
+function getRarityClass(item) {
+  const rarity = String(item?.rarity || 'Comum')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+  if (rarity.includes('lend')) return 'rarity-legendary';
+  if (rarity.includes('raro')) return 'rarity-rare';
+  if (rarity.includes('incomum')) return 'rarity-uncommon';
+  return 'rarity-common';
+}
+
 function canUseItem(item) {
   return item.healing || item.category === 'Consumível' || item.category === 'Pergaminho';
 }
@@ -1027,7 +1038,7 @@ function renderEquipment() {
     const owned = inventory.includes(item.id);
     const goldCost = getGoldCost(item);
     const card = document.createElement('article');
-    card.className = 'shop-item';
+    card.className = `shop-item ${getRarityClass(item)}`;
     card.innerHTML = `
       <span>${item.category}${item.rarity ? ` · ${item.rarity}` : ''}</span>
       <h4>${item.name}</h4>
@@ -1052,7 +1063,7 @@ function renderEquipment() {
   const renderInventoryRow = (item, target, { compact = false, includeEquip = true, includeUse = false } = {}) => {
     const equipped = equippedItems.includes(item.id);
     const row = document.createElement('article');
-    row.className = `inventory-item${equipped ? ' equipped-item' : ''}`;
+    row.className = `inventory-item ${getRarityClass(item)}${equipped ? ' equipped-item' : ''}`;
     row.innerHTML = `
       <div>
         <b>${escapeHtml(item.name)}</b>
@@ -1101,7 +1112,7 @@ function renderEquipment() {
   }
   equipped.forEach(item => {
     const row = document.createElement('article');
-    row.className = 'inventory-item equipped-item';
+    row.className = `inventory-item equipped-item ${getRarityClass(item)}`;
     row.innerHTML = `<div><b>${item.name}</b><span>${item.category} · ${item.rarity || 'Comum'}</span>${renderItemTags(item)}</div>`;
     const button = document.createElement('button');
     button.type = 'button';
