@@ -313,6 +313,20 @@ function getClassAttackDie(data) {
   return Number(String(data?.attackDie || '1d6').match(/d(\d+)/)?.[1] || 6);
 }
 
+function getMaxSpellLevel(className, classLevel) {
+  const level = Math.max(0, Number(classLevel) || 0);
+  if (!spellcastingClasses.includes(className)) return 0;
+  if (className === 'Paladino' || className === 'Patrulheiro') {
+    if (level < 2) return 0;
+    return Math.min(5, Math.ceil(level / 4));
+  }
+  return level < 1 ? 0 : Math.min(9, Math.ceil(level / 2));
+}
+
+function getClassLevel(className) {
+  return getClassBuild().find(entry => entry.className === className)?.level || 0;
+}
+
 function getDieAverage(sides) {
   return (Number(sides) + 1) / 2;
 }
@@ -467,6 +481,28 @@ function clampMagicLifeValues(changedId) {
   input.value = Math.max(0, Number(input.value || 0) - (total - required));
 }
 
+function getTrainedSkills() {
+  return [...document.querySelectorAll('[data-skill-proficiency]:checked')]
+    .map(input => input.dataset.skillProficiency);
+}
+
+function isSkillProficient(skill) {
+  return getTrainedSkills().includes(skill);
+}
+
+function getSavingThrowProficiencies() {
+  return classData[elements.classe1.value]?.saves || [];
+}
+
+function updateProficiencyUI() {
+  document.querySelectorAll('[data-type^="skill-"]').forEach(button => {
+    button.classList.toggle('trained', isSkillProficient(button.dataset.type.replace('skill-', '')));
+  });
+  document.querySelectorAll('[data-type^="save-"]').forEach(button => {
+    button.classList.toggle('trained', getSavingThrowProficiencies().includes(button.dataset.type.replace('save-', '')));
+  });
+}
+
 function handleRoll(type) {
   const button = document.querySelector(`button[data-type="${type}"]`);
   if (button) animateRollButton(button);
@@ -481,27 +517,47 @@ function handleRoll(type) {
     car: Number(elements.modCar.textContent.replace('+', ''))
   };
 
+  const skillTests = {
+    atletismo: ['Atletismo', 'for'],
+    acrobacia: ['Acrobacia', 'dex'],
+    furtividade: ['Furtividade', 'dex'],
+    prestidigitacao: ['Prestidigitação', 'dex'],
+    arcanismo: ['Arcanismo', 'int'],
+    historia: ['História', 'int'],
+    investigacao: ['Investigação', 'int'],
+    natureza: ['Natureza', 'int'],
+    religiao: ['Religião', 'int'],
+    adestramento: ['Adestramento', 'sab'],
+    intuicao: ['Intuição', 'sab'],
+    percepcao: ['Percepção', 'sab'],
+    medicina: ['Medicina', 'sab'],
+    sobrevivencia: ['Sobrevivência', 'sab'],
+    atuacao: ['Atuação', 'car'],
+    enganacao: ['Enganação', 'car'],
+    intimidacao: ['Intimidação', 'car'],
+    persuasao: ['Persuasão', 'car']
+  };
   const testMap = {
     'attr-for': ['Teste de Força', mods.for],
     'attr-dex': ['Teste de Destreza', mods.dex],
     'attr-con': ['Teste de Constituição', mods.con],
     'attr-int': ['Teste de Inteligência', mods.int],
     'attr-sab': ['Teste de Sabedoria', mods.sab],
-    'attr-car': ['Teste de Carisma', mods.car],
-    'skill-atletismo': ['Atletismo', mods.for + prof],
-    'skill-acrobacia': ['Acrobacia', mods.dex + prof],
-    'skill-furtividade': ['Furtividade', mods.dex + prof],
-    'skill-prestidigitacao': ['Prestidigitação', mods.dex + prof],
-    'skill-arcanismo': ['Arcanismo', mods.int + prof],
-    'skill-historia': ['História', mods.int + prof],
-    'skill-investigacao': ['Investigação', mods.int + prof],
-    'skill-percepcao': ['Percepção', mods.sab + prof],
-    'skill-medicina': ['Medicina', mods.sab + prof],
-    'skill-sobrevivencia': ['Sobrevivência', mods.sab + prof],
-    'skill-persuasao': ['Persuasão', mods.car + prof],
-    'skill-intimidacao': ['Intimidação', mods.car + prof],
-    'skill-atuacao': ['Atuação', mods.car + prof]
+    'attr-car': ['Teste de Carisma', mods.car]
   };
+  Object.entries(skillTests).forEach(([key, [skillLabel, attribute]]) => {
+    testMap[`skill-${key}`] = [
+      `${skillLabel}${isSkillProficient(key) ? ' (treinada)' : ''}`,
+      mods[attribute] + (isSkillProficient(key) ? prof : 0)
+    ];
+  });
+  ['for', 'dex', 'con', 'int', 'sab', 'car'].forEach(attribute => {
+    const trained = getSavingThrowProficiencies().includes(attribute);
+    testMap[`save-${attribute}`] = [
+      `Salvaguarda de ${attribute.toUpperCase()}${trained ? ' (proficiente)' : ''}`,
+      mods[attribute] + (trained ? prof : 0)
+    ];
+  });
 
   let modifier = 0;
   let label = '';
@@ -520,32 +576,22 @@ function handleRoll(type) {
         break;
       case 'dexNoProf':
         modifier = mods.dex;
-        label = 'Esquiva';
+        label = 'Defesa ativa opcional';
         break;
       case 'dodge':
         modifier = mods.dex + prof;
-        label = 'Esquiva treinada';
-        break;
-      case 'reflex':
-        modifier = mods.dex + prof;
-        label = 'Defesa de reflexos';
-        break;
-      case 'fortitude':
-        modifier = mods.con + prof;
-        label = 'Defesa de fortitude';
-        break;
-      case 'will':
-        modifier = mods.sab + prof;
-        label = 'Defesa de vontade';
+        label = 'Defesa ativa treinada';
         break;
       case 'concentration':
-        modifier = mods.con + prof;
-        label = 'Concentração';
+        modifier = mods.con + (getSavingThrowProficiencies().includes('con') ? prof : 0);
+        label = 'Concentração (salvaguarda de CON)';
         break;
-      case 'int':
-        modifier = mods.int + prof;
+      case 'spellAttack': {
+        const castingStat = document.getElementById('castingStat').value;
+        modifier = mods[castingStat] + prof + getItemBonus('spellBonus');
         label = 'Ataque mágico';
         break;
+      }
       default:
         return;
     }
@@ -603,12 +649,9 @@ function resetFicha() {
   bannerPhoto = '';
   applyDynamicTheme('#7EBAEE', '#F0A06F');
   resetSkillEditor();
-  document.getElementById('skillRaca').value = '';
-  document.getElementById('skillClasse1').value = '';
-  document.getElementById('skillClasse2').value = '';
-  document.getElementById('skillClasse3').value = '';
-  document.getElementById('pericia1').value = '';
-  document.getElementById('pericia2').value = '';
+  document.querySelectorAll('[data-skill-proficiency]').forEach(input => {
+    input.checked = false;
+  });
   elements.pontosMagia.value = 15;
   elements.pontosVida.value = 15;
   elements.historia.value = '';
@@ -1233,6 +1276,7 @@ function renderClassCombatStats() {
     <span><b>${data.attackDie}</b><small>Dado de ataque</small></span>
     <span><b>${formatSigned(attackBonus).replace(' ', '')}</b><small>Bônus base</small></span>
     <span><b>${data.hitDie}</b><small>Dado de vida</small></span>
+    <span><b>${data.saves.map(formatAttributeLabel).join(' / ')}</b><small>Salvaguardas proficientes</small></span>
     <p>${data.weaponStyle}</p>
   `;
   const actions = document.createElement('div');
@@ -1243,7 +1287,7 @@ function renderClassCombatStats() {
   attackButton.addEventListener('click', () => {
     rollDice({
       sides: 20,
-      quantity: 1,
+      count: 1,
       modifier: attackBonus,
       label: `Ataque base de ${elements.classe1.value}`,
       onComplete: ({ results, total }) => {
@@ -1259,7 +1303,7 @@ function renderClassCombatStats() {
   damageButton.addEventListener('click', () => {
     rollDice({
       sides: damageDie,
-      quantity: 1,
+      count: 1,
       modifier: damageBonus,
       label: `Dano base de ${elements.classe1.value}`,
       onComplete: ({ results, total }) => {
@@ -1598,7 +1642,7 @@ function rollFormula(formula = '1d6') {
   const match = normalized.match(/^(\d*)d(\d+)([+-]\d+)?$/);
   if (!match) {
     const flat = Number(normalized);
-    return { total: Number.isFinite(flat) ? flat : 0, detail: Number.isFinite(flat) ? String(flat) : '0' };
+    return { total: Number.isFinite(flat) ? flat : 0, detail: Number.isFinite(flat) ? String(flat) : '0', rolls: [], count: 0, sides: 0, bonus: 0 };
   }
   const count = Math.max(1, Number(match[1] || 1));
   const sides = Math.max(1, Number(match[2] || 6));
@@ -1606,7 +1650,11 @@ function rollFormula(formula = '1d6') {
   const rolls = Array.from({ length: count }, () => Math.floor(Math.random() * sides) + 1);
   const total = rolls.reduce((sum, value) => sum + value, bonus);
   const bonusLabel = bonus ? ` ${formatSigned(bonus)}` : '';
-  return { total, detail: `${count}d${sides}: ${rolls.join(', ')}${bonusLabel}` };
+  return { total, detail: `${count}d${sides}: ${rolls.join(', ')}${bonusLabel}`, rolls, count, sides, bonus };
+}
+
+function doubleFormulaDice(formula) {
+  return String(formula || '1d6').replace(/^(\d*)d/i, (_, count) => `${Math.max(1, Number(count || 1)) * 2}d`);
 }
 
 function getCharacterCombatSnapshot(character) {
@@ -1805,9 +1853,12 @@ function rollMasterAttack() {
   }
   const bonus = Number(document.getElementById('combatBonus').value || 0) + Number(attacker.attack || 0);
   const attackRoll = rollFormula('1d20');
+  const naturalRoll = attackRoll.rolls[0] || attackRoll.total;
   const attackTotal = attackRoll.total + bonus;
-  const damage = rollFormula(document.getElementById('combatDamage').value || attacker.damage || '1d8');
-  const hit = attackTotal >= Number(target.ac || 10);
+  const damageFormula = document.getElementById('combatDamage').value || attacker.damage || '1d8';
+  const critical = naturalRoll === 20;
+  const hit = naturalRoll !== 1 && (critical || attackTotal >= Number(target.ac || 10));
+  const damage = rollFormula(critical ? doubleFormulaDice(damageFormula) : damageFormula);
   if (target.id.startsWith('enemy:') && hit) {
     const enemyId = target.id.replace('enemy:', '');
     masterState.enemies = masterState.enemies.map(enemy => (
@@ -1816,7 +1867,8 @@ function rollMasterAttack() {
     saveMasterState();
   }
   if (log) {
-    log.textContent = `${attacker.name} atacou ${target.name}: d20 ${attackRoll.total} ${formatSigned(bonus)} = ${attackTotal} contra CA ${target.ac}. ${hit ? `Acertou e causou ${damage.total} (${damage.detail}).` : 'Errou.'}`;
+    const naturalText = naturalRoll === 1 ? ' Falha crítica.' : critical ? ' Acerto crítico.' : '';
+    log.textContent = `${attacker.name} atacou ${target.name}: d20 ${naturalRoll} ${formatSigned(bonus)} = ${attackTotal} contra CA ${target.ac}.${naturalText} ${hit ? `Acertou e causou ${damage.total} (${damage.detail}).` : 'Errou.'}`;
   }
   renderMasterState();
 }
@@ -2061,6 +2113,7 @@ function renderClassProgression() {
   overview.innerHTML = `
     <div><p class="panel-kicker">Dado de vida ${data.hitDie}</p><h3>${className}</h3></div>
     <div><b>Status de ataque</b><p>${formatAttributeLabel(data.attackStat)} · ${data.attackDie} · ${data.weaponStyle}</p></div>
+    <div><b>Salvaguardas</b><p>Proficiência em ${data.saves.map(formatAttributeLabel).join(' e ')}</p></div>
     <div><b>Conjuração</b><p>${data.castingStat ? formatAttributeLabel(data.castingStat) : 'Não conjurador base'}</p></div>
     <div><b>Clique numa subclasse</b><p>${data.subclasses.map(name => `<button type="button" class="inline-pill" data-subclass-name="${name}">${name}</button>`).join('')}</p></div>
     <div><b>Recursos centrais</b><p>${data.core.join(' · ')}</p></div>
@@ -2073,11 +2126,28 @@ function renderClassProgression() {
   });
   overview.insertAdjacentHTML('beforeend', '<p id="classSubclassDetail" class="system-rule full-width">Selecione uma subclasse acima para ver como ela entra na evolução.</p>');
   progression.innerHTML = '';
+  const coreUnlockLevels = [1, 2, 3, 5, 9];
   for (let level = 1; level <= 20; level += 1) {
     const card = document.createElement('article');
     card.className = 'progression-level';
-    const classFeature = data.core[Math.min(data.core.length - 1, Math.floor((level - 1) / 4))];
-    card.innerHTML = `<span>${String(level).padStart(2, '0')}</span><div><b>Nível ${level}</b><p>${universalLevelFeatures[level]} · ${classFeature}</p><small>${describeFeature(classFeature)}</small></div>`;
+    const classFeatures = data.core
+      .filter((feature, index) => coreUnlockLevels[index] === level);
+    if ([3, 6, 10, 14].includes(level)) {
+      classFeatures.push(level === 3 ? 'Escolha de subclasse' : `Recurso de subclasse (${level})`);
+    }
+    const proficiency = computeProfBonus(level);
+    const spellLevel = getMaxSpellLevel(className, level);
+    const spellText = data.castingStat
+      ? spellLevel > 0
+        ? ` · Magias até ${spellLevel}º círculo`
+        : ' · Conjuração ainda não liberada'
+      : '';
+    const featureText = classFeatures.length ? ` · ${classFeatures.join(' · ')}` : '';
+    const description = classFeatures
+      .filter(feature => data.core.includes(feature))
+      .map(describeFeature)
+      .join(' ');
+    card.innerHTML = `<span>${String(level).padStart(2, '0')}</span><div><b>Nível ${level} · Prof. ${proficiency}</b><p>${universalLevelFeatures[level]}${featureText}${spellText}</p>${description ? `<small>${description}</small>` : ''}</div>`;
     progression.appendChild(card);
   }
 }
@@ -2232,11 +2302,16 @@ function renderSpellCatalog() {
   document.getElementById('spellBudget').textContent = budget;
   document.getElementById('spellSpent').textContent = spent;
   document.getElementById('spellRemaining').textContent = Math.max(0, budget - spent);
+  const maxSpellLevel = getMaxSpellLevel(className, getClassLevel(className));
   const spells = spellCatalog.filter(spell => {
-    return spell.classes.includes(className) && (levelFilter === 'all' || spell.level === Number(levelFilter));
+    return spell.classes.includes(className)
+      && spell.level <= maxSpellLevel
+      && (levelFilter === 'all' || spell.level === Number(levelFilter));
   });
   catalog.innerHTML = '';
-  if (!spells.length) catalog.innerHTML = '<p class="system-rule">Nenhuma magia disponível para esse filtro.</p>';
+  if (!spells.length) {
+    catalog.innerHTML = `<p class="system-rule">Nenhuma magia disponível. ${className} nível ${getClassLevel(className)} libera até o ${maxSpellLevel}º círculo.</p>`;
+  }
   else {
     spells.forEach(spell => {
       const card = document.createElement('article');
@@ -2448,7 +2523,7 @@ function renderClassReference() {
   grid.innerHTML = '';
   Object.entries(classData).forEach(([name, data]) => {
     const article = document.createElement('article');
-    article.innerHTML = `<h3>${name}</h3><b>${data.hitDie} · ATK ${formatAttributeLabel(data.attackStat)} · ${data.attackDie}</b><p>${data.weaponStyle}. ${data.core.map(feature => `${feature}: ${describeFeature(feature)}`).join(' ')}</p><small>Conjuração: ${data.castingStat ? formatAttributeLabel(data.castingStat) : 'não conjurador base'} · Subclasses: ${data.subclasses.map(subclass => `${subclass} (${describeSubclass(subclass)})`).join(' · ')}</small>`;
+    article.innerHTML = `<h3>${name}</h3><b>${data.hitDie} · ATK ${formatAttributeLabel(data.attackStat)} · ${data.attackDie}</b><p>${data.weaponStyle}. ${data.core.map(feature => `${feature}: ${describeFeature(feature)}`).join(' ')}</p><small>Salvaguardas: ${data.saves.map(formatAttributeLabel).join(' e ')} · Conjuração: ${data.castingStat ? formatAttributeLabel(data.castingStat) : 'não conjurador base'} · Subclasses: ${data.subclasses.map(subclass => `${subclass} (${describeSubclass(subclass)})`).join(' · ')}</small>`;
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'inline-pill';
@@ -2532,6 +2607,7 @@ function synchronize() {
   renderAutomaticAbilities();
   renderFreeSpells();
   renderAbilityCatalog();
+  updateProficiencyUI();
 
   const combatHp = document.getElementById('combatHp');
   const combatProf = document.getElementById('combatProf');
@@ -2891,12 +2967,7 @@ function getCharacterData() {
     storedFields: Object.fromEntries(
       [...document.querySelectorAll('[data-store]')].map(input => [input.dataset.store, input.value])
     ),
-    skillRaca: document.getElementById('skillRaca').value,
-    skillClasse1: document.getElementById('skillClasse1').value,
-    skillClasse2: document.getElementById('skillClasse2').value,
-    skillClasse3: document.getElementById('skillClasse3').value,
-    pericia1: document.getElementById('pericia1').value,
-    pericia2: document.getElementById('pericia2').value,
+    trainedSkills: getTrainedSkills(),
     photo: elements.photoPreview.dataset.photo || '',
     banner: bannerPhoto
   };
@@ -2979,12 +3050,10 @@ function loadCharacter(index) {
   themeColors = character.themeColors || { primary: '#7EBAEE', secondary: '#F0A06F' };
   resetSkillEditor();
   renderSkillCollection();
-  document.getElementById('skillRaca').value = character.skillRaca || '';
-  document.getElementById('skillClasse1').value = character.skillClasse1 || '';
-  document.getElementById('skillClasse2').value = character.skillClasse2 || '';
-  document.getElementById('skillClasse3').value = character.skillClasse3 || '';
-  document.getElementById('pericia1').value = character.pericia1 || '';
-  document.getElementById('pericia2').value = character.pericia2 || '';
+  const trainedSkills = Array.isArray(character.trainedSkills) ? character.trainedSkills : [];
+  document.querySelectorAll('[data-skill-proficiency]').forEach(input => {
+    input.checked = trainedSkills.includes(input.dataset.skillProficiency);
+  });
   Object.entries(character.storedFields || {}).forEach(([key, value]) => {
     const input = document.querySelector(`[data-store="${key}"]`);
     if (input) input.value = value;
@@ -3121,6 +3190,7 @@ function init() {
     select.addEventListener('change', () => {
       if (select === elements.classe1 && spellcastingClasses.includes(select.value)) {
         document.getElementById('spellClassFilter').value = select.value;
+        document.getElementById('castingStat').value = classData[select.value]?.castingStat || 'int';
         renderSpellCatalog();
       }
       if (select === elements.classe1) {
@@ -3201,6 +3271,12 @@ function init() {
 
   document.querySelectorAll('[data-action="dados"]').forEach(button => {
     button.addEventListener('click', () => handleRoll(button.dataset.type));
+  });
+  document.querySelectorAll('[data-skill-proficiency]').forEach(input => {
+    input.addEventListener('change', () => {
+      updateProficiencyUI();
+      saveDraftSoon();
+    });
   });
 
   elements.photoInput.addEventListener('change', handlePhotoUpload);

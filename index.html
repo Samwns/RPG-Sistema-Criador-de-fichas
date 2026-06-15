@@ -382,20 +382,33 @@
               </section>
 
               <section class="content-card">
-                <h3>Perícias de classe</h3>
-                <div class="form-grid">
-                  <label><span>Raça / perícia</span><input id="skillRaca" type="text"></label>
-                  <label><span>Classe 1 / perícia</span><input id="skillClasse1" type="text"></label>
-                  <label><span>Classe 2 / perícia</span><input id="skillClasse2" type="text"></label>
-                  <label><span>Classe 3 / perícia</span><input id="skillClasse3" type="text"></label>
-                  <label><span>Perícia 1</span><input id="pericia1" type="text"></label>
-                  <label><span>Perícia 2</span><input id="pericia2" type="text"></label>
+                <h3>Proficiências e perícias treinadas</h3>
+                <p class="system-rule">Marque apenas as perícias em que o personagem é treinado. A proficiência será somada automaticamente nesses testes.</p>
+                <div class="proficiency-grid">
+                  <label><input type="checkbox" data-skill-proficiency="atletismo"><span>Atletismo · FOR</span></label>
+                  <label><input type="checkbox" data-skill-proficiency="acrobacia"><span>Acrobacia · DEX</span></label>
+                  <label><input type="checkbox" data-skill-proficiency="furtividade"><span>Furtividade · DEX</span></label>
+                  <label><input type="checkbox" data-skill-proficiency="prestidigitacao"><span>Prestidigitação · DEX</span></label>
+                  <label><input type="checkbox" data-skill-proficiency="arcanismo"><span>Arcanismo · INT</span></label>
+                  <label><input type="checkbox" data-skill-proficiency="historia"><span>História · INT</span></label>
+                  <label><input type="checkbox" data-skill-proficiency="investigacao"><span>Investigação · INT</span></label>
+                  <label><input type="checkbox" data-skill-proficiency="natureza"><span>Natureza · INT</span></label>
+                  <label><input type="checkbox" data-skill-proficiency="religiao"><span>Religião · INT</span></label>
+                  <label><input type="checkbox" data-skill-proficiency="adestramento"><span>Adestramento · SAB</span></label>
+                  <label><input type="checkbox" data-skill-proficiency="intuicao"><span>Intuição · SAB</span></label>
+                  <label><input type="checkbox" data-skill-proficiency="percepcao"><span>Percepção · SAB</span></label>
+                  <label><input type="checkbox" data-skill-proficiency="medicina"><span>Medicina · SAB</span></label>
+                  <label><input type="checkbox" data-skill-proficiency="sobrevivencia"><span>Sobrevivência · SAB</span></label>
+                  <label><input type="checkbox" data-skill-proficiency="atuacao"><span>Atuação · CAR</span></label>
+                  <label><input type="checkbox" data-skill-proficiency="enganacao"><span>Enganação · CAR</span></label>
+                  <label><input type="checkbox" data-skill-proficiency="intimidacao"><span>Intimidação · CAR</span></label>
+                  <label><input type="checkbox" data-skill-proficiency="persuasao"><span>Persuasão · CAR</span></label>
                 </div>
               </section>
 
               <section class="content-card">
                 <h3>Testes e ações</h3>
-                <p class="system-rule">Testes de atributo usam d20 + modificador. Perícias treinadas usam d20 + modificador + proficiência.</p>
+                <p class="system-rule">Testes de atributo usam d20 + modificador. Perícias marcadas como treinadas somam proficiência. Salvaguardas somam proficiência apenas nas duas resistências concedidas pela classe principal.</p>
                 <div class="roll-list test-grid">
                   <button type="button" data-action="dados" data-type="attr-for" class="roll-button">Teste de Força</button>
                   <button type="button" data-action="dados" data-type="attr-dex" class="roll-button">Teste de Destreza</button>
@@ -410,23 +423,36 @@
                   <button type="button" data-action="dados" data-type="skill-arcanismo" class="roll-button">Arcanismo · INT</button>
                   <button type="button" data-action="dados" data-type="skill-historia" class="roll-button">História · INT</button>
                   <button type="button" data-action="dados" data-type="skill-investigacao" class="roll-button">Investigação · INT</button>
+                  <button type="button" data-action="dados" data-type="skill-natureza" class="roll-button">Natureza · INT</button>
+                  <button type="button" data-action="dados" data-type="skill-religiao" class="roll-button">Religião · INT</button>
+                  <button type="button" data-action="dados" data-type="skill-adestramento" class="roll-button">Adestramento · SAB</button>
+                  <button type="button" data-action="dados" data-type="skill-intuicao" class="roll-button">Intuição · SAB</button>
                   <button type="button" data-action="dados" data-type="skill-percepcao" class="roll-button">Percepção · SAB</button>
                   <button type="button" data-action="dados" data-type="skill-medicina" class="roll-button">Medicina · SAB</button>
                   <button type="button" data-action="dados" data-type="skill-sobrevivencia" class="roll-button">Sobrevivência · SAB</button>
                   <button type="button" data-action="dados" data-type="skill-persuasao" class="roll-button">Persuasão · CAR</button>
+                  <button type="button" data-action="dados" data-type="skill-enganacao" class="roll-button">Enganação · CAR</button>
                   <button type="button" data-action="dados" data-type="skill-intimidacao" class="roll-button">Intimidação · CAR</button>
                   <button type="button" data-action="dados" data-type="skill-atuacao" class="roll-button">Atuação · CAR</button>
                 </div>
+                <h3 class="subsection-title">Salvaguardas</h3>
+                <div class="roll-list test-grid">
+                  <button type="button" data-action="dados" data-type="save-for" class="roll-button">Salvaguarda de FOR</button>
+                  <button type="button" data-action="dados" data-type="save-dex" class="roll-button">Salvaguarda de DEX</button>
+                  <button type="button" data-action="dados" data-type="save-con" class="roll-button">Salvaguarda de CON</button>
+                  <button type="button" data-action="dados" data-type="save-int" class="roll-button">Salvaguarda de INT</button>
+                  <button type="button" data-action="dados" data-type="save-sab" class="roll-button">Salvaguarda de SAB</button>
+                  <button type="button" data-action="dados" data-type="save-car" class="roll-button">Salvaguarda de CAR</button>
+                </div>
+                <h3 class="subsection-title">Ataques e defesa</h3>
+                <p class="system-rule">No D&amp;D padrão, o atacante rola contra a CA do alvo. A ação Esquivar não exige rolagem: ela impõe desvantagem aos ataques percebidos e concede vantagem em salvaguardas de DEX. Os botões de defesa ativa abaixo são uma regra opcional da mesa.</p>
                 <div class="roll-list">
                   <button type="button" data-action="dados" data-type="for" class="roll-button">Ataque físico · FOR + Prof</button>
                   <button type="button" data-action="dados" data-type="dex" class="roll-button">Ataque à distância · DEX + Prof</button>
-                  <button type="button" data-action="dados" data-type="dexNoProf" class="roll-button">Esquiva · somente DEX</button>
-                  <button type="button" data-action="dados" data-type="dodge" class="roll-button">Esquiva treinada · DEX + Prof</button>
-                  <button type="button" data-action="dados" data-type="reflex" class="roll-button">Defesa reflexos · DEX + Prof</button>
-                  <button type="button" data-action="dados" data-type="fortitude" class="roll-button">Defesa fortitude · CON + Prof</button>
-                  <button type="button" data-action="dados" data-type="will" class="roll-button">Defesa vontade · SAB + Prof</button>
-                  <button type="button" data-action="dados" data-type="concentration" class="roll-button">Concentração · CON + Prof</button>
-                  <button type="button" data-action="dados" data-type="int" class="roll-button">Feitiço · INT + Prof</button>
+                  <button type="button" data-action="dados" data-type="dexNoProf" class="roll-button">Defesa ativa opcional · DEX</button>
+                  <button type="button" data-action="dados" data-type="dodge" class="roll-button">Defesa ativa treinada · DEX + Prof</button>
+                  <button type="button" data-action="dados" data-type="concentration" class="roll-button">Concentração · salvaguarda de CON</button>
+                  <button type="button" data-action="dados" data-type="spellAttack" class="roll-button">Ataque mágico · atributo de conjuração</button>
                 </div>
               </section>
 
@@ -784,6 +810,8 @@
                 <button type="button" class="system-tab" data-system-target="system-skills">Perícias</button>
                 <button type="button" class="system-tab" data-system-target="system-spells">Feitiços</button>
                 <button type="button" class="system-tab" data-system-target="system-abilities">Habilidades</button>
+                <button type="button" class="system-tab" data-system-target="system-combat">Combate</button>
+                <button type="button" class="system-tab" data-system-target="system-master">Guia do mestre</button>
                 <button type="button" class="system-tab" data-system-target="system-equipment">Equipamentos</button>
               </nav>
 
@@ -827,7 +855,7 @@
               </div>
 
               <div class="system-panel" id="system-classes">
-                <article class="rule-example"><span>XP, subclasse e multiclasse</span><p>A XP define o nível total, que controla proficiência, pontos de atributos, habilidades e loja. A subclasse abre no nível 3 daquela classe. Em multiclasse, a soma dos níveis de classe deve ser igual ao nível total e cada classe exige atributo 13: Paladino usa FOR e CAR; Patrulheiro e Monge usam DEX e SAB; Guerreiro aceita FOR ou DEX.</p></article>
+                <article class="rule-example"><span>XP, proficiência, subclasse e multiclasse</span><p>A XP define o nível total. A proficiência é +2 nos níveis 1–4, +3 nos 5–8, +4 nos 9–12, +5 nos 13–16 e +6 nos 17–20. A subclasse abre no nível 3 daquela classe. Em multiclasse, a soma dos níveis de classe deve ser igual ao nível total e cada classe exige atributo 13: Paladino usa FOR e CAR; Patrulheiro e Monge usam DEX e SAB; Guerreiro aceita FOR ou DEX.</p></article>
                 <div class="reference-grid">
                   <article><h3>Bárbaro</h3><b>d12 · FOR</b><p>Fúria, resistência e grande dano corpo a corpo.</p></article>
                   <article><h3>Guerreiro</h3><b>d10 · FOR/DEX</b><p>Versátil, resistente e especialista em múltiplos ataques.</p></article>
@@ -845,7 +873,7 @@
               </div>
 
               <div class="system-panel" id="system-skills">
-                <article class="rule-example"><span>Como testar</span><p>Role d20 + modificador do atributo. Se o personagem for treinado, some também a proficiência. Exemplo: Furtividade usa DEX; com DEX +3 e proficiência +2, o teste recebe +5.</p></article>
+                <article class="rule-example"><span>Como testar</span><p>Marque as perícias treinadas na aba Combate. Role d20 + modificador do atributo e some proficiência somente quando a perícia estiver marcada. Exemplo: Furtividade usa DEX; com DEX +3 e proficiência +2, um personagem treinado recebe +5, enquanto um não treinado recebe apenas +3.</p></article>
                 <div class="reference-grid compact">
                   <article><h3>FOR</h3><p>Atletismo e Escalada.</p></article>
                   <article><h3>DEX</h3><p>Acrobacia, Furtividade, Esconderijo e Prestidigitação.</p></article>
@@ -860,7 +888,8 @@
                 <div class="book-grid">
                   <article class="book-card"><span>CD</span><h3>Resistência</h3><p>CD = 8 + proficiência + modificador do atributo de conjuração. O alvo precisa igualar ou superar esse valor.</p></article>
                   <article class="book-card"><span>Ataque</span><h3>Bônus mágico</h3><p>Proficiência + modificador de INT, SAB ou CAR. Role d20 e some esse bônus.</p></article>
-                  <article class="book-card"><span>Espaços</span><h3>Uso diário</h3><p>Cada feitiço consome um espaço do círculo correspondente ou superior. Registre usados e total na aba Magias.</p></article>
+                  <article class="book-card"><span>Círculos</span><h3>Limite pelo nível</h3><p>Conjuradores completos liberam novos círculos nos níveis ímpares. Paladino e Patrulheiro começam no nível 2 e chegam até o 5º círculo. O catálogo bloqueia círculos ainda não liberados.</p></article>
+                  <article class="book-card"><span>Espaços</span><h3>Uso diário</h3><p>Cada feitiço consome um espaço do círculo correspondente ou superior. Truques não gastam espaço. Registre usados e total na aba Magias.</p></article>
                   <article class="book-card"><span>Preparação</span><h3>Lista conhecida</h3><p>Filtre o catálogo por classe e círculo e clique em Preparar. A magia entra automaticamente na lista correspondente; truques ficam na lista de uso livre.</p></article>
                 </div>
               </div>
@@ -871,6 +900,42 @@
                   <article class="book-card"><span>1</span><h3>Distribua pontos</h3><p>Ex.: 9 pontos distribuídos liberam 3 espaços.</p></article>
                   <article class="book-card"><span>2</span><h3>Adicione a habilidade</h3><p>Informe foto, nome e descrição clara com efeito, alcance, custo e recarga.</p></article>
                   <article class="book-card"><span>3</span><h3>Edite quando precisar</h3><p>Use Editar no cartão. A alteração substitui a habilidade existente e não consome outro espaço.</p></article>
+                </div>
+              </div>
+
+              <div class="system-panel" id="system-combat">
+                <article class="rule-example">
+                  <span>Regra principal do D&amp;D</span>
+                  <p>O atacante rola 1d20 + modificador do atributo + proficiência, quando for proficiente com a arma ou magia. Se o total igualar ou superar a Classe de Armadura do alvo, o ataque acerta. Depois role o dano; a proficiência não entra no dano.</p>
+                </article>
+                <div class="book-grid">
+                  <article class="book-card"><span>1</span><h3>Escolha a ação</h3><p>Atacar, conjurar, correr, desengajar, esquivar, ajudar, esconder ou preparar. Normalmente há uma ação, movimento e possível ação bônus por turno.</p></article>
+                  <article class="book-card"><span>2</span><h3>Role o ataque</h3><p>Corpo a corpo costuma usar FOR; armas à distância usam DEX; armas finesse podem usar FOR ou DEX. Ataques mágicos usam o atributo de conjuração.</p></article>
+                  <article class="book-card"><span>3</span><h3>Compare com a CA</h3><p>Total igual ou maior que a CA acerta. Um 1 natural sempre erra; um 20 natural sempre acerta e dobra os dados de dano, não os bônus fixos.</p></article>
+                  <article class="book-card"><span>4</span><h3>Role o dano</h3><p>Role o dado da arma ou magia e some o modificador indicado. Resistência reduz o dano pela metade; vulnerabilidade normalmente dobra.</p></article>
+                  <article class="book-card"><span>CA</span><h3>Defender</h3><p>No padrão, o defensor não rola: sua CA é a dificuldade. Cobertura pode dar +2 ou +5 CA. A defesa ativa da ficha é opcional e só deve ser usada se o mestre trocar a regra padrão.</p></article>
+                  <article class="book-card"><span>Esquiva</span><h3>Ação Esquivar</h3><p>Você gasta sua ação. Até o próximo turno, ataques de criaturas que você percebe têm desvantagem contra você e suas salvaguardas de DEX têm vantagem. Não é uma rolagem separada.</p></article>
+                  <article class="book-card"><span>Vantagem</span><h3>Dois d20</h3><p>Com vantagem, role 2d20 e use o maior. Com desvantagem, use o menor. Vantagens múltiplas não acumulam; vantagem e desvantagem se cancelam.</p></article>
+                  <article class="book-card"><span>Salvaguarda</span><h3>Resistir a efeitos</h3><p>Role d20 + atributo e some proficiência somente se sua classe principal conceder essa salvaguarda. Igualar ou superar a CD é sucesso.</p></article>
+                  <article class="book-card"><span>Concentração</span><h3>Manter magia</h3><p>Ao sofrer dano, faça salvaguarda de CON com CD 10 ou metade do dano, o que for maior. Falhar encerra a concentração.</p></article>
+                  <article class="book-card"><span>0 PV</span><h3>Queda e morte</h3><p>A 0 PV, o personagem normalmente fica inconsciente e faz salvaguardas contra a morte: 10 ou mais é sucesso; três sucessos estabilizam, três falhas matam.</p></article>
+                </div>
+              </div>
+
+              <div class="system-panel" id="system-master">
+                <article class="rule-example">
+                  <span>Antes da sessão</span>
+                  <p>Defina o objetivo da cena, inimigos, terreno, consequências e uma saída além de “vencer tudo”. Use a Área do Mestre para registrar PV, CA, ataque, dano, iniciativa, mapas e encontros.</p>
+                </article>
+                <div class="book-grid">
+                  <article class="book-card"><span>CD</span><h3>Dificuldade de testes</h3><p>Use 10 para fácil, 12 para comum, 15 para moderado, 18 para difícil e 20 ou mais para feitos excepcionais. Só peça rolagem quando houver risco ou consequência.</p></article>
+                  <article class="book-card"><span>CA</span><h3>Defesa de inimigos</h3><p>CA 10–12 é fraca, 13–15 é comum, 16–18 é forte e 19+ deve ser rara. Evite aumentar apenas a CA; use terreno, reação, cobertura e objetivos.</p></article>
+                  <article class="book-card"><span>Ataque</span><h3>Resolver inimigos</h3><p>Role d20 + bônus de ataque contra a CA. Ao acertar, role o dano. Informe ao jogador o total do ataque quando isso ajudar a decidir reações como Escudo.</p></article>
+                  <article class="book-card"><span>Salvaguarda</span><h3>Efeitos e magias</h3><p>Diga qual atributo resiste e a consequência de sucesso/falha. Para efeitos em área, DEX é comum; veneno usa CON; medo e controle mental costumam usar SAB.</p></article>
+                  <article class="book-card"><span>Encontro</span><h3>Rodadas claras</h3><p>Ordene pela iniciativa, anuncie quem está agindo e quem será o próximo, registre condições e encerre efeitos no momento correto.</p></article>
+                  <article class="book-card"><span>Falha</span><h3>Faça a história avançar</h3><p>Uma falha pode custar tempo, recurso, posição ou informação incompleta. Evite bloquear toda a aventura por uma única rolagem ruim.</p></article>
+                  <article class="book-card"><span>Descanso</span><h3>Recursos</h3><p>Decida quando PV, dados de vida, mana/estamina, habilidades e espaços retornam. Informe essa regra antes do combate para os jogadores planejarem.</p></article>
+                  <article class="book-card"><span>Regra opcional</span><h3>Defesa ativa</h3><p>Se usar defesa ativa, combine antes: atacante e defensor rolam, empate favorece quem, quais bônus entram e se isso substitui totalmente a CA.</p></article>
                 </div>
               </div>
 

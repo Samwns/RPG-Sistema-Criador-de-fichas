@@ -19,6 +19,8 @@ let resultFallbackTimer = null;
 let audioContext = null;
 let lastCollisionSound = 0;
 let lastLiveTotal = null;
+let animationFrameId = null;
+let renderedFrames = 0;
 
 const mouse = new THREE.Vector2();
 const raycaster = new THREE.Raycaster();
@@ -71,6 +73,8 @@ export function initDiceRoller() {
     const specs = groupDiceObjects();
     createDiceSet(specs.length ? specs : getPoolSpecs().length ? getPoolSpecs() : [{ sides: 20, count: 1 }]);
   });
+  window.addEventListener("dice-tab-visibility", syncAnimationLoop);
+  document.addEventListener("visibilitychange", syncAnimationLoop);
 
   document.querySelectorAll("[data-pool-action]").forEach(button => {
     button.addEventListener("click", () => {
@@ -102,7 +106,20 @@ export function initDiceRoller() {
 
   refreshPool();
   onResize();
-  animate();
+  syncAnimationLoop();
+}
+
+function shouldRunAnimation() {
+  return !document.hidden && document.getElementById("tab-dados")?.classList.contains("active");
+}
+
+function syncAnimationLoop() {
+  if (shouldRunAnimation()) {
+    if (animationFrameId === null) animationFrameId = requestAnimationFrame(animate);
+    return;
+  }
+  if (animationFrameId !== null) cancelAnimationFrame(animationFrameId);
+  animationFrameId = null;
 }
 
 export function rollDice({ sides = 20, count = 1, modifier = 0, label = "", onComplete = null } = {}) {
@@ -663,6 +680,7 @@ function updateFaceHighlights() {
 if (typeof window !== "undefined") {
   window.__diceRollerDebug = {
     getSnapshot: getCurrentRollSnapshot,
+    getLoopState: () => ({ running: animationFrameId !== null, renderedFrames }),
     getDice: () => diceObjects.map(die => ({
       sides: die.sides,
       displayed: getDisplayedFaceValue(die),
@@ -679,7 +697,12 @@ if (typeof window !== "undefined") {
 }
 
 function animate() {
-  requestAnimationFrame(animate);
+  if (!shouldRunAnimation()) {
+    animationFrameId = null;
+    return;
+  }
+  animationFrameId = requestAnimationFrame(animate);
+  renderedFrames += 1;
   if (isHolding) {
     raycaster.setFromCamera(mouse, camera);
     const target = new THREE.Vector3();

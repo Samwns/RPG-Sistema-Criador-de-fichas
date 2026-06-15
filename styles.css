@@ -1932,6 +1932,35 @@ input[type="color"]::-webkit-color-swatch {
   flex-wrap: wrap;
 }
 
+.proficiency-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.proficiency-grid label {
+  min-height: 42px;
+  flex-direction: row;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 10px;
+  border: 1px solid color-mix(in srgb, var(--blue) 22%, transparent);
+  border-radius: 7px;
+  background: var(--card-bg);
+}
+
+.proficiency-grid input {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+}
+
+.roll-button.trained {
+  background: color-mix(in srgb, var(--blue) 24%, #444);
+  box-shadow: 2px 2px 0 var(--orange);
+}
+
 .weapon-card {
   padding: 18px;
   border-radius: 12px;
@@ -3036,7 +3065,8 @@ input[type="color"]::-webkit-color-swatch {
   .magic-stats,
   .class-combat-stats,
   .compact-action-grid,
-  .resource-controls {
+  .resource-controls,
+  .proficiency-grid {
     grid-template-columns: 1fr;
   }
 

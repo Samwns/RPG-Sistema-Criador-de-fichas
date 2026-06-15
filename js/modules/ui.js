@@ -183,6 +183,9 @@ export function setupTabs() {
       if (target) {
         target.classList.add('active');
         window.dispatchEvent(new Event('resize'));
+        window.dispatchEvent(new CustomEvent('dice-tab-visibility', {
+          detail: { active: target.id === 'tab-dados' }
+        }));
       }
     });
   });
