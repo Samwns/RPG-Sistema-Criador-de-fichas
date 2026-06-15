@@ -2382,6 +2382,13 @@ input[type="color"]::-webkit-color-swatch {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.saved-heading-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .saved-card {
   display: flex;
   min-width: 0;
@@ -2908,6 +2915,15 @@ input[type="color"]::-webkit-color-swatch {
   .roll-list.test-grid,
   .saved-list {
     grid-template-columns: 1fr;
+  }
+
+  .saved-heading-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .saved-heading-actions button {
+    flex: 1 1 140px;
   }
 
   .combat-vitals {

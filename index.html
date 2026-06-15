@@ -794,8 +794,12 @@
             <section class="tab-panel" id="tab-saved">
               <div class="panel-heading">
                 <div><p class="panel-kicker">Arquivo</p><h2>Personagens salvos</h2></div>
-                <button id="clearAll" type="button" class="button-danger">Limpar tudo</button>
+                <div class="saved-heading-actions">
+                  <button id="recoverCharacters" type="button" class="button-muted">Recuperar fichas</button>
+                  <button id="clearAll" type="button" class="button-danger">Limpar tudo</button>
+                </div>
               </div>
+              <p id="savedRecoveryMessage" class="system-rule">As fichas ficam salvas neste navegador e endereço. Use Recuperar fichas para restaurar backups locais ou o último rascunho.</p>
               <div id="savedList" class="saved-list"></div>
             </section>
 

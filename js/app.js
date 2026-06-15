@@ -343,19 +343,80 @@ function normalizeCharacterKey(character) {
   ].map(value => String(value).trim().toLowerCase()).join('|');
 }
 
+function parseCharacterCollection(raw) {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    const collection = Array.isArray(parsed) ? parsed : parsed?.characters;
+    return Array.isArray(collection) ? collection.filter(character => character && typeof character === 'object') : [];
+  } catch {
+    return [];
+  }
+}
+
+function storeCharacterBackup(key, characters) {
+  if (!Array.isArray(characters) || characters.length === 0) return;
+  localStorage.setItem(key, JSON.stringify({
+    savedAt: new Date().toISOString(),
+    characters
+  }));
+}
+
 function readSavedCharacters() {
   let changed = false;
-  const saved = JSON.parse(localStorage.getItem('savedCharacters') || '[]').map(character => {
+  let recoveredFromFallback = false;
+  const raw = localStorage.getItem('savedCharacters');
+  let saved = parseCharacterCollection(raw);
+  if (raw && saved.length === 0 && raw.trim() !== '[]') {
+    localStorage.setItem('savedCharactersCorrupted', raw);
+    saved = parseCharacterCollection(localStorage.getItem('savedCharactersBackup'));
+    recoveredFromFallback = saved.length > 0;
+  }
+  saved = saved.map(character => {
     if (character.id) return character;
     changed = true;
     return { ...character, id: createCharacterId() };
   });
-  if (changed) localStorage.setItem('savedCharacters', JSON.stringify(saved));
+  if (changed || recoveredFromFallback) localStorage.setItem('savedCharacters', JSON.stringify(saved));
   return saved;
 }
 
-function writeSavedCharacters(saved) {
+function writeSavedCharacters(saved, { backup = true } = {}) {
+  if (backup) storeCharacterBackup('savedCharactersBackup', parseCharacterCollection(localStorage.getItem('savedCharacters')));
   localStorage.setItem('savedCharacters', JSON.stringify(saved));
+}
+
+function recoverSavedCharacters() {
+  const current = readSavedCharacters();
+  const candidates = [
+    ...current,
+    ...parseCharacterCollection(localStorage.getItem('savedCharactersBackup')),
+    ...parseCharacterCollection(localStorage.getItem('deletedCharactersBackup')),
+    ...parseCharacterCollection(localStorage.getItem('savedCharactersCorrupted'))
+  ];
+  const draft = getStoredJson('lastCharacterDraft', null);
+  const draftBackup = getStoredJson('lastCharacterDraftBackup', null);
+  [draft, draftBackup].forEach(character => {
+    if (character && typeof character === 'object' && (character.nome || character.id)) candidates.push(character);
+  });
+
+  const recovered = [];
+  const seen = new Set();
+  candidates.forEach(character => {
+    const key = character.id || normalizeCharacterKey(character);
+    if (!key || seen.has(key)) return;
+    seen.add(key);
+    recovered.push({ ...character, id: character.id || createCharacterId() });
+  });
+
+  const message = document.getElementById('savedRecoveryMessage');
+  if (recovered.length === 0) {
+    if (message) message.textContent = 'Nenhum backup foi encontrado neste endereço do navegador.';
+    return;
+  }
+  writeSavedCharacters(recovered, { backup: false });
+  loadSavedCharacters();
+  if (message) message.textContent = `${recovered.length} ficha(s) recuperada(s). Confira os personagens abaixo.`;
 }
 
 function getClassHitDieSides(className) {
@@ -2726,6 +2787,7 @@ function saveCharacter() {
 function deleteCharacter(index) {
   const saved = readSavedCharacters();
   const deleted = saved[index];
+  storeCharacterBackup('deletedCharactersBackup', saved);
   saved.splice(index, 1);
   if (deleted?.id === activeCharacterId) activeCharacterId = '';
   writeSavedCharacters(saved);
@@ -2733,9 +2795,15 @@ function deleteCharacter(index) {
 }
 
 function clearAllCharacters() {
+  const saved = readSavedCharacters();
+  if (saved.length === 0) return;
+  if (!window.confirm(`Apagar as ${saved.length} ficha(s) salvas? Um backup local será mantido para recuperação.`)) return;
+  storeCharacterBackup('deletedCharactersBackup', saved);
   localStorage.removeItem('savedCharacters');
   activeCharacterId = '';
   loadSavedCharacters();
+  const message = document.getElementById('savedRecoveryMessage');
+  if (message) message.textContent = 'Fichas removidas. O backup ainda pode ser restaurado em Recuperar fichas.';
 }
 
 function downloadTextFile(filename, content, type = 'application/json') {
@@ -2894,6 +2962,10 @@ function exportCharacterPdf() {
 
 function saveDraftNow() {
   if (isRestoringCharacter) return;
+  const previousDraft = getStoredJson('lastCharacterDraft', null);
+  if (previousDraft && (previousDraft.nome || previousDraft.id)) {
+    localStorage.setItem('lastCharacterDraftBackup', JSON.stringify(previousDraft));
+  }
   localStorage.setItem('lastCharacterDraft', JSON.stringify(getCharacterData()));
 }
 
@@ -3344,6 +3416,7 @@ function init() {
   document.getElementById('cancelSkillEdit').addEventListener('click', resetSkillEditor);
   elements.saveButton.addEventListener('click', saveCharacter);
   elements.newButton.addEventListener('click', resetFicha);
+  document.getElementById('recoverCharacters').addEventListener('click', recoverSavedCharacters);
   elements.clearAll.addEventListener('click', clearAllCharacters);
   elements.resetButton.addEventListener('click', resetFicha);
   elements.createSheetButton.addEventListener('click', () => {
