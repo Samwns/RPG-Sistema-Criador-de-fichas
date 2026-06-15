@@ -176,6 +176,9 @@ export function setupTabs() {
       document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
 
       button.classList.add('active');
+      if (button.classList.contains('tab-button')) {
+        button.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
       const target = document.getElementById(button.dataset.target);
       if (target) {
         target.classList.add('active');

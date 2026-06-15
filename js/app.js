@@ -1343,11 +1343,20 @@ function getEnergyLabel() {
   return usesManaResource() ? 'Mana' : 'Estamina';
 }
 
+function readResourceNumber(input, fallback = 0) {
+  const parsed = Number(String(input?.value ?? '').replace(',', '.'));
+  return Number.isFinite(parsed) ? Math.max(0, parsed) : fallback;
+}
+
+function writeResourceNumber(input, value) {
+  if (input) input.value = String(Math.max(0, Math.round(Number(value) || 0)));
+}
+
 function clampResources() {
   const hp = document.getElementById('currentHp');
   const mana = document.getElementById('currentMana');
-  if (hp) hp.value = Math.min(Math.max(0, Number(hp.value || 0)), getCalculatedMaxHp());
-  if (mana) mana.value = Math.min(Math.max(0, Number(mana.value || 0)), getCalculatedMaxMana());
+  if (hp) writeResourceNumber(hp, Math.min(readResourceNumber(hp), getCalculatedMaxHp()));
+  if (mana) writeResourceNumber(mana, Math.min(readResourceNumber(mana), getCalculatedMaxMana()));
 }
 
 function touchResource(type) {
@@ -1390,6 +1399,32 @@ function setResourceMessage(message) {
   if (fileTarget && /arquivo|pdf|ficha importada|ficha salva|inválido/i.test(message)) fileTarget.textContent = message;
 }
 
+function refreshResourceDisplay() {
+  const calculatedMaxHp = getCalculatedMaxHp();
+  const calculatedMaxMana = getCalculatedMaxMana();
+  const energyLabel = getEnergyLabel();
+  const currentHp = document.getElementById('currentHp');
+  const currentMana = document.getElementById('currentMana');
+  const combatHp = document.getElementById('combatHp');
+  const maxMana = document.getElementById('maxMana');
+  const sideHpCurrent = document.getElementById('sideHpCurrent');
+  const sideHpMax = document.getElementById('sideHpMax');
+  const sideEnergyLabel = document.getElementById('sideEnergyLabel');
+  const sideEnergyCurrent = document.getElementById('sideEnergyCurrent');
+  const sideEnergyMax = document.getElementById('sideEnergyMax');
+
+  if (combatHp) combatHp.textContent = calculatedMaxHp;
+  if (maxMana) maxMana.textContent = calculatedMaxMana;
+  if (sideHpCurrent) sideHpCurrent.textContent = currentHp?.value || calculatedMaxHp;
+  if (sideHpMax) sideHpMax.textContent = calculatedMaxHp;
+  if (sideEnergyLabel) sideEnergyLabel.textContent = energyLabel;
+  if (sideEnergyCurrent) sideEnergyCurrent.textContent = currentMana?.value || calculatedMaxMana;
+  if (sideEnergyMax) sideEnergyMax.textContent = calculatedMaxMana;
+  document.querySelectorAll('[data-energy-label]').forEach(target => {
+    target.textContent = energyLabel;
+  });
+}
+
 function updateResource(action, amount) {
   const value = Math.max(0, Number(amount) || 0);
   const hp = document.getElementById('currentHp');
@@ -1398,36 +1433,39 @@ function updateResource(action, amount) {
   const maxMana = getCalculatedMaxMana();
   if (action === 'damage') {
     touchResource('hp');
-    hp.value = Math.max(0, Number(hp.value || 0) - value);
+    writeResourceNumber(hp, readResourceNumber(hp) - value);
     setResourceMessage(`Recebeu ${value} de dano.`);
   }
   if (action === 'heal') {
     touchResource('hp');
-    hp.value = Math.min(maxHp, Number(hp.value || 0) + value);
+    writeResourceNumber(hp, Math.min(maxHp, readResourceNumber(hp) + value));
     setResourceMessage(`Curou ${value} PV.`);
   }
   if (action === 'spendMana') {
     touchResource('energy');
-    mana.value = Math.max(0, Number(mana.value || 0) - value);
+    writeResourceNumber(mana, readResourceNumber(mana) - value);
     setResourceMessage(`Gastou ${value} de ${getEnergyLabel().toLowerCase()}.`);
   }
   if (action === 'restoreMana') {
     touchResource('energy');
-    mana.value = Math.min(maxMana, Number(mana.value || 0) + value);
+    writeResourceNumber(mana, Math.min(maxMana, readResourceNumber(mana) + value));
     setResourceMessage(`Recuperou ${value} de ${getEnergyLabel().toLowerCase()}.`);
   }
+  refreshResourceDisplay();
   synchronize();
 }
 
 function usePower(power, button = null) {
   const profile = getAutoPowerProfile(power);
   const mana = document.getElementById('currentMana');
-  if (profile.manaCost > Number(mana.value || 0)) {
+  const currentEnergy = readResourceNumber(mana);
+  if (profile.manaCost > currentEnergy) {
     setResourceMessage(`${power.name} precisa de ${profile.manaCost} ${getEnergyLabel().toLowerCase()}.`);
     return;
   }
-  mana.value = Math.max(0, Number(mana.value || 0) - profile.manaCost);
+  writeResourceNumber(mana, currentEnergy - profile.manaCost);
   touchResource('energy');
+  refreshResourceDisplay();
   saveDraftSoon();
   const type = power.effectType || 'damage';
   if (type === 'utility') {
@@ -1449,6 +1487,7 @@ function usePower(power, button = null) {
       const action = type === 'damage' ? 'dano' : type === 'heal' ? 'cura' : getEnergyLabel().toLowerCase();
       const defense = profile.save && profile.save !== 'nenhuma' ? ` · Resistência ${profile.save}${profile.negation ? ` (${profile.negation})` : ''}` : '';
       elements.rollResult.innerHTML = `<span class="dice-icon">${results.join(', ')}</span><span>${power.name}: ${total} ${action}${defense}</span>`;
+      refreshResourceDisplay();
       setResourceMessage(`${power.name}: ${total} ${action}. ${profile.actionCost}. ${getEnergyLabel()} restante: ${mana.value}.${defense}`);
     }
   });
@@ -2448,8 +2487,10 @@ function synchronize() {
   const energyLabel = getEnergyLabel();
   const currentHp = document.getElementById('currentHp');
   const currentMana = document.getElementById('currentMana');
-  if (currentHp && (!resourceTouched.hp || Number(currentHp.value || 0) >= lastCalculatedMaxHp)) currentHp.value = calculatedMaxHp;
-  if (currentMana && (!resourceTouched.energy || Number(currentMana.value || 0) > calculatedMaxMana)) currentMana.value = calculatedMaxMana;
+  if (currentHp && (!resourceTouched.hp || readResourceNumber(currentHp) >= lastCalculatedMaxHp)) writeResourceNumber(currentHp, calculatedMaxHp);
+  else if (currentHp) writeResourceNumber(currentHp, readResourceNumber(currentHp));
+  if (currentMana && (!resourceTouched.energy || readResourceNumber(currentMana) > calculatedMaxMana)) writeResourceNumber(currentMana, calculatedMaxMana);
+  else if (currentMana) writeResourceNumber(currentMana, readResourceNumber(currentMana));
   lastCalculatedMaxHp = calculatedMaxHp;
   elements.vidaMaxima.value = calculatedMaxHp;
   if (combatHp) combatHp.textContent = calculatedMaxHp;
@@ -2459,11 +2500,7 @@ function synchronize() {
   document.getElementById('combatSpeed').textContent = getCalculatedSpeed();
   document.getElementById('combatVision').textContent = document.getElementById('vision').value || '-';
   document.getElementById('combatHitDie').textContent = document.getElementById('hitDie').value;
-  document.getElementById('sideHpCurrent').textContent = currentHp?.value || calculatedMaxHp;
-  document.getElementById('sideHpMax').textContent = calculatedMaxHp;
-  document.getElementById('sideEnergyLabel').textContent = energyLabel;
-  document.getElementById('sideEnergyCurrent').textContent = currentMana?.value || calculatedMaxMana;
-  document.getElementById('sideEnergyMax').textContent = calculatedMaxMana;
+  refreshResourceDisplay();
   document.querySelectorAll('[data-energy-label]').forEach(target => {
     target.textContent = energyLabel;
   });
