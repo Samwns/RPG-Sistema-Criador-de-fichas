@@ -2389,6 +2389,64 @@ input[type="color"]::-webkit-color-swatch {
   justify-content: flex-end;
 }
 
+.saved-action {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  padding: 10px 14px;
+  font: 800 .66rem/1 var(--mono);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+}
+
+.saved-action span {
+  font: 800 1.15rem/1 sans-serif;
+}
+
+.saved-action:hover {
+  transform: translateY(-2px);
+}
+
+.saved-action:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--blue) 55%, transparent);
+  outline-offset: 2px;
+}
+
+.recover-action {
+  border-color: color-mix(in srgb, var(--blue) 48%, #aaa);
+  background: color-mix(in srgb, var(--blue) 12%, #f5f5f3);
+  box-shadow: 0 3px 0 color-mix(in srgb, var(--blue) 42%, #555);
+  color: #3e4850;
+}
+
+.recover-action:hover {
+  background: color-mix(in srgb, var(--blue) 20%, #f5f5f3);
+  box-shadow: 0 5px 0 color-mix(in srgb, var(--blue) 48%, #555);
+}
+
+.clear-action {
+  border-color: #863832;
+  background: #963f39;
+  box-shadow: 0 3px 0 #642824;
+  color: #fff;
+}
+
+.clear-action:hover {
+  background: #a94a43;
+  box-shadow: 0 5px 0 #642824;
+}
+
+.saved-action:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, .35);
+}
+
 .saved-card {
   display: flex;
   min-width: 0;
