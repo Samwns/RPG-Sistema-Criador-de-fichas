@@ -42,6 +42,7 @@ let themeColors = { primary: '#7EBAEE', secondary: '#F0A06F' };
 let isRestoringCharacter = false;
 let draftTimer = null;
 let activeCharacterId = '';
+let manualMaxHpFloor = 30;
 
 const casterManaByClass = {
   Bardo: 6,
@@ -532,6 +533,7 @@ function handleRoll(type) {
 
 function resetFicha() {
   activeCharacterId = '';
+  manualMaxHpFloor = 30;
   elements.nome.value = '';
   elements.jogador.value = '';
   elements.sistema.value = 'D&D';
@@ -1098,7 +1100,7 @@ function getCalculatedMaxHp() {
     ? Number(elements.nivel.value || 1)
     : 0;
   const distributedHp = Math.max(0, Number(elements.pontosVida.value) || 0) * 2;
-  return Math.max(Number(elements.vidaMaxima.value) || 0, classHp + raceHp + distributedHp) + getItemBonus('maxHpBonus');
+  return Math.max(manualMaxHpFloor, classHp + raceHp + distributedHp) + getItemBonus('maxHpBonus');
 }
 
 function getCalculatedMaxMana() {
@@ -1830,7 +1832,9 @@ function synchronize() {
   const combatProf = document.getElementById('combatProf');
   const combatInit = document.getElementById('combatInit');
   const combatDefense = document.getElementById('combatDefense');
-  if (combatHp) combatHp.textContent = getCalculatedMaxHp();
+  const calculatedMaxHp = getCalculatedMaxHp();
+  elements.vidaMaxima.value = calculatedMaxHp;
+  if (combatHp) combatHp.textContent = calculatedMaxHp;
   if (combatProf) combatProf.textContent = elements.profBonus.value;
   if (combatInit) combatInit.textContent = elements.modDex.textContent;
   if (combatDefense) combatDefense.textContent = getCalculatedArmorClass();
@@ -2112,7 +2116,8 @@ function getCharacterData() {
     nivel: elements.nivel.value,
     xp: elements.xp.value,
     profBonus: elements.profBonus.value,
-    vidaMaxima: elements.vidaMaxima.value,
+    vidaMaxima: getCalculatedMaxHp(),
+    vidaMaximaManual: manualMaxHpFloor,
     currentHp: document.getElementById('currentHp').value,
     armorClass: document.getElementById('armorClass').value,
     speed: document.getElementById('speed').value,
@@ -2187,8 +2192,9 @@ function loadCharacter(index) {
   elements.jogador.value = character.jogador || '';
   elements.nivel.value = character.nivel || 1;
   elements.xp.value = character.xp || 0;
-  elements.vidaMaxima.value = character.vidaMaxima || 30;
-  document.getElementById('currentHp').value = character.currentHp || character.vidaMaxima || 30;
+  manualMaxHpFloor = Number(character.vidaMaximaManual || character.vidaMaxima || 30);
+  elements.vidaMaxima.value = character.vidaMaxima || manualMaxHpFloor;
+  document.getElementById('currentHp').value = character.currentHp || character.vidaMaxima || manualMaxHpFloor;
   document.getElementById('armorClass').value = character.armorClass || 10;
   document.getElementById('speed').value = character.speed || '9 m';
   document.getElementById('vision').value = character.vision || 'normal';
@@ -2395,7 +2401,6 @@ function init() {
     elements.nome,
     elements.raca,
     elements.classe1,
-    elements.vidaMaxima,
     document.getElementById('armorClass'),
     document.getElementById('speed'),
     document.getElementById('vision'),

@@ -92,7 +92,7 @@ textarea:focus-visible {
 
 .character-sheet {
   display: grid;
-  grid-template-columns: 285px minmax(0, 1fr);
+  grid-template-columns: 315px minmax(0, 1fr);
   min-height: 900px;
   overflow: hidden;
   border-radius: 18px;
@@ -106,7 +106,7 @@ textarea:focus-visible {
   position: relative;
   z-index: 2;
   min-width: 0;
-  padding: 12px 20px 20px 28px;
+  padding: 12px 24px 20px 42px;
   overflow: hidden;
   color: #e4e4e4;
   background:
@@ -130,7 +130,7 @@ textarea:focus-visible {
 
 .stat-sidebar-title {
   height: 74px;
-  margin: -12px -20px 4px -28px;
+  margin: -12px -24px 4px -42px;
   overflow: hidden;
   border-radius: 16px 0 16px 0;
   background: #393939;
@@ -151,16 +151,16 @@ textarea:focus-visible {
 .stat-block {
   position: relative;
   display: grid;
-  grid-template-columns: 108px minmax(0, 1fr);
+  grid-template-columns: 122px minmax(0, 1fr);
   min-height: 106px;
   margin-top: 8px;
-  transform: translateX(8px);
+  transform: translateX(18px);
 }
 
 .stat-score {
   width: 104px;
   height: 100px;
-  margin-left: -8px;
+  margin-left: 0;
   overflow: hidden;
   border-radius: 0 15px 15px 0;
   background: #4c4c4c;
@@ -178,7 +178,7 @@ textarea:focus-visible {
   z-index: 1;
   align-self: center;
   min-width: 0;
-  padding-left: 10px;
+  padding-left: 14px;
   font: 600 .66rem/1.65 var(--mono);
   letter-spacing: .06em;
   text-transform: uppercase;
@@ -191,7 +191,7 @@ textarea:focus-visible {
   max-width: 100%;
   position: absolute;
   top: -4px;
-  left: -112px;
+  left: -122px;
   margin: 0;
   padding: 5px 8px 5px 10px;
   border-radius: 10px;
@@ -1961,19 +1961,19 @@ input[type="file"] {
   }
 
   .character-sheet {
-    grid-template-columns: 245px minmax(0, 1fr);
+    grid-template-columns: 270px minmax(0, 1fr);
   }
 
   .stat-sidebar {
-    padding: 12px 18px 18px 24px;
+    padding: 12px 18px 18px 34px;
   }
 
   .stat-sidebar-title {
-    margin-left: -24px;
+    margin-left: -34px;
   }
 
   .stat-score {
-    margin-left: -8px;
+    margin-left: 0;
   }
 
   .stat-copy p {
