@@ -107,7 +107,7 @@ export function rollDicePool() {
 function rollSpecs(specs, modifier, label, onComplete) {
   if (!world || !scene) return;
   createDiceSet(specs);
-  pendingRoll = { specs, modifier, label, onComplete };
+  pendingRoll = { specs, modifier, label, onComplete, startedAt: performance.now() };
   lastLiveTotal = null;
   setBadge(specs);
   updateLiveResult(true);
@@ -392,7 +392,7 @@ function onInputStart(event) {
   isHolding = true;
   needsResultCheck = false;
   const specs = groupDiceObjects();
-  pendingRoll = { specs, modifier: 0, label: specs.map(formatSpec).join(" + "), onComplete: null };
+  pendingRoll = { specs, modifier: 0, label: specs.map(formatSpec).join(" + "), onComplete: null, startedAt: performance.now() };
   diceObjects.forEach(({ body }) => body.wakeUp());
 }
 
@@ -473,6 +473,14 @@ function playCollisionSound(impact) {
 
 function finishRoll() {
   if (!pendingRoll || isHolding) return;
+  const forced = performance.now() - Number(pendingRoll.startedAt || 0) > 12000;
+  if (!forced && !diceAreSettled()) {
+    clearTimeout(resultFallbackTimer);
+    resultFallbackTimer = window.setTimeout(finishRoll, 260);
+    return;
+  }
+  if (forced) freezeDice();
+  syncDiceMeshes();
   const snapshot = getCurrentRollSnapshot();
   if (!snapshot) return;
   const { groupedResults, results, rawTotal, total, modifier, detail, modifierText } = snapshot;
@@ -485,8 +493,30 @@ function finishRoll() {
   clearTimeout(resultFallbackTimer);
 }
 
-function getTopFaceValue(die) {
-  return getFaceValue(getBestFace(die, new THREE.Vector3(0, 1, 0))?.label, die.sides);
+function diceAreSettled() {
+  return diceObjects.every(({ body }) => (
+    body.sleepState === CANNON.Body.SLEEPING
+    || (body.velocity.length() < .16 && body.angularVelocity.length() < .16 && body.position.y < 3.8)
+  ));
+}
+
+function freezeDice() {
+  diceObjects.forEach(({ body }) => {
+    body.velocity.setZero();
+    body.angularVelocity.setZero();
+    body.sleep();
+  });
+}
+
+function syncDiceMeshes() {
+  diceObjects.forEach(({ mesh, body }) => {
+    mesh.position.copy(body.position);
+    mesh.quaternion.copy(body.quaternion);
+  });
+}
+
+function getDisplayedFaceValue(die) {
+  return getFaceValue(getDisplayedFace(die)?.label, die.sides);
 }
 
 function getFaceValue(label, sides) {
@@ -510,6 +540,12 @@ function getBestFace(die, direction) {
   return { ...bestFace, score: bestScore };
 }
 
+function getDisplayedFace(die) {
+  if (!camera || !die?.mesh) return getBestFace(die, new THREE.Vector3(0, 1, 0));
+  const towardCamera = camera.position.clone().sub(die.mesh.position).normalize();
+  return getBestFace(die, towardCamera);
+}
+
 function getCurrentRollSnapshot() {
   if (!pendingRoll) return null;
   const availableDice = [...diceObjects];
@@ -518,7 +554,7 @@ function getCurrentRollSnapshot() {
     for (let index = 0; index < spec.count; index += 1) {
       const dieIndex = availableDice.findIndex(die => die.sides === spec.sides);
       const [die] = dieIndex >= 0 ? availableDice.splice(dieIndex, 1) : [];
-      results.push(die ? getTopFaceValue(die) : Math.floor(Math.random() * spec.sides) + 1);
+      results.push(die ? getDisplayedFaceValue(die) : Math.floor(Math.random() * spec.sides) + 1);
     }
     return { ...spec, results };
   });
@@ -555,9 +591,8 @@ function updateLiveResult(force = false) {
 function updateFaceHighlights() {
   const up = new THREE.Vector3(0, 1, 0);
   diceObjects.forEach(die => {
-    const towardCamera = camera.position.clone().sub(die.mesh.position).normalize();
     const topFace = getBestFace(die, up);
-    const frontFace = getBestFace(die, towardCamera);
+    const frontFace = getDisplayedFace(die);
     die.faceLabels?.forEach(face => {
       const isTop = face.label === topFace?.label;
       const isFront = face.label === frontFace?.label;
@@ -566,11 +601,23 @@ function updateFaceHighlights() {
         face.number.material.opacity += (targetOpacity - face.number.material.opacity) * .28;
       }
       if (face.number) {
-        const targetScale = isTop ? 1.16 : isFront ? 1.08 : 1;
+        const targetScale = isFront ? 1.16 : isTop ? 1.08 : 1;
         face.number.scale.lerp(new THREE.Vector3(targetScale, targetScale, 1), .25);
       }
     });
   });
+}
+
+if (typeof window !== "undefined") {
+  window.__diceRollerDebug = {
+    getSnapshot: getCurrentRollSnapshot,
+    getDice: () => diceObjects.map(die => ({
+      sides: die.sides,
+      displayed: getDisplayedFaceValue(die),
+      displayedLabel: getDisplayedFace(die)?.label || "",
+      top: getFaceValue(getBestFace(die, new THREE.Vector3(0, 1, 0))?.label, die.sides)
+    }))
+  };
 }
 
 function animate() {
