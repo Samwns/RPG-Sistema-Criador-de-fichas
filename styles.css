@@ -2016,10 +2016,19 @@ input[type="file"] {
 }
 
 @media (max-width: 760px) {
+  body {
+    background-attachment: scroll;
+  }
+
+  .riche-app {
+    padding: 12px;
+  }
+
   .sheet-frame {
     padding: 0;
     overflow: hidden;
     border-radius: 20px;
+    box-shadow: 0 18px 45px rgb(0 0 0 / 24%);
   }
 
   .character-sheet {
@@ -2031,26 +2040,31 @@ input[type="file"] {
   .stat-sidebar {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
-    padding: 16px;
+    gap: 8px;
+    padding: 12px;
   }
 
   .stat-sidebar-title {
     grid-column: 1 / -1;
-    height: 58px;
-    margin: -16px 0 2px -16px;
+    height: 52px;
+    margin: -12px -12px 2px;
+    border-radius: 0 0 14px 0;
+    text-align: left;
   }
 
   .stat-sidebar-title span {
-    padding-top: 28px;
-    font-size: 3rem;
+    margin-left: 14px;
+    padding-top: 7px;
+    font-size: clamp(2.2rem, 12vw, 3.35rem);
+    line-height: .9;
   }
 
   .stat-block {
-    display: block;
+    display: grid;
+    grid-template-columns: 1fr;
     min-height: 0;
     margin: 0;
-    padding: 12px;
+    padding: 10px 8px;
     transform: none;
     border-radius: 10px;
     background: #4b4b4b;
@@ -2065,22 +2079,27 @@ input[type="file"] {
     border-radius: 0;
     background: transparent;
     box-shadow: none;
-    font-size: 2.8rem;
-    line-height: .9;
-    letter-spacing: -3px;
-    text-align: left;
+    font-size: clamp(2.2rem, 12vw, 3.15rem);
+    line-height: .88;
+    letter-spacing: -2px;
+    text-align: center;
   }
 
   .stat-copy {
+    display: grid;
+    place-items: center;
     padding: 0;
   }
 
   .stat-copy h2 {
-    display: block;
+    display: inline-flex;
     position: static;
-    margin: 8px 0 0;
+    max-width: 100%;
+    margin: 8px auto 0;
+    padding: 5px 7px;
     overflow: hidden;
     text-overflow: ellipsis;
+    font-size: .5rem;
   }
 
   .stat-copy p {
@@ -2089,18 +2108,36 @@ input[type="file"] {
   }
 
   .sheet-hero {
-    min-height: 300px;
-    padding: 38px 24px 150px;
+    min-height: 0;
+    padding: 28px 18px 72px;
+  }
+
+  .sheet-hero h1 {
+    font-size: clamp(2.6rem, 13vw, 4.6rem);
+    letter-spacing: -2px;
+  }
+
+  .hero-copy > p:last-child {
+    font-size: .58rem;
+    line-height: 1.5;
   }
 
   .hero-actions {
+    position: relative;
     top: auto;
-    right: 18px;
-    left: 18px;
-    bottom: 24px;
+    right: auto;
+    left: auto;
+    bottom: auto;
     flex-wrap: wrap;
     justify-content: flex-start;
     max-width: none;
+    margin-top: 16px;
+  }
+
+  .hero-actions button,
+  .banner-upload {
+    flex: 1 1 calc(50% - 6px);
+    min-height: 42px;
   }
 
   .banner-url {
@@ -2113,11 +2150,39 @@ input[type="file"] {
   }
 
   .sheet-tabs {
-    margin-inline: 18px;
+    gap: 8px;
+    margin: -34px 12px 0;
+    padding-bottom: 12px;
+  }
+
+  .tab-button {
+    min-width: auto;
+    padding: 10px 12px;
+    font-size: .58rem;
   }
 
   .sheet-content {
-    padding: 18px;
+    padding: 16px;
+  }
+
+  .panel-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .panel-heading h2,
+  .section-title h2 {
+    font-size: 1.72rem;
+  }
+
+  .action-buttons {
+    justify-content: flex-start;
+  }
+
+  .action-buttons button,
+  .import-character-button {
+    flex: 1 1 calc(50% - 5px);
+    text-align: center;
   }
 
   .identity-grid,
@@ -2161,7 +2226,24 @@ input[type="file"] {
   }
 
   .dice-pool-builder {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+    padding: 10px;
+  }
+
+  .pool-die {
+    grid-template-columns: 26px 1fr 26px;
+    gap: 4px;
+    padding: 8px;
+  }
+
+  .pool-die button {
+    width: 26px;
+    height: 26px;
+  }
+
+  .pool-die span {
+    min-width: 0;
   }
 
   .dice-canvas-area {
@@ -2170,6 +2252,15 @@ input[type="file"] {
 
   .progression-grid {
     grid-template-columns: 1fr;
+  }
+
+  .resource-distribution-card .section-title,
+  .resource-point-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .magic-budget {
+    justify-content: flex-start;
   }
 }
 
@@ -2187,8 +2278,17 @@ input[type="file"] {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .stat-sidebar-title span {
+    font-size: clamp(2rem, 15vw, 3rem);
+  }
+
   .sheet-hero h1 {
-    font-size: 2.85rem;
+    font-size: clamp(2.35rem, 14vw, 3.6rem);
+  }
+
+  .hero-actions {
+    gap: 7px;
+    margin-top: 14px;
   }
 
   .sheet-content {
@@ -2219,8 +2319,16 @@ input[type="file"] {
     justify-content: flex-start;
   }
 
+  .hero-actions button,
+  .banner-upload,
+  .action-buttons button,
+  .import-character-button {
+    flex: 1 1 100%;
+  }
+
   .content-card {
-    padding: 17px;
+    margin-top: 14px;
+    padding: 16px;
   }
 
   .portrait-column {
@@ -2254,6 +2362,10 @@ input[type="file"] {
     margin: 0;
   }
 
+  .dice-pool-builder {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .equipment-shop {
     grid-template-columns: 1fr;
   }
@@ -2275,7 +2387,7 @@ input[type="file"] {
     height: 360px;
   }
 
-.dice-result-container {
+  .dice-result-container {
     flex-wrap: wrap;
   }
 }
@@ -2287,7 +2399,7 @@ input[type="file"] {
 @media print {
   @page {
     size: A4;
-    margin: 14mm;
+    margin: 10mm;
   }
 
   body.printing-sheet {
@@ -2302,30 +2414,33 @@ input[type="file"] {
     display: block !important;
     color: #303030;
     font-family: Georgia, serif;
+    font-size: 12px;
+    line-height: 1.35;
     background: #fff;
   }
 
   body.printing-sheet .pdf-sheet {
-    padding: 18px;
-    border: 2px solid #333;
-    border-radius: 18px;
+    padding: 14px;
+    border: 1.5px solid #333;
+    border-radius: 10px;
     background: #fffaf2;
+    box-shadow: none;
   }
 
   body.printing-sheet .pdf-header {
     display: grid;
-    grid-template-columns: 130px 1fr;
-    gap: 18px;
+    grid-template-columns: 110px 1fr;
+    gap: 14px;
     align-items: center;
     border-bottom: 2px solid #333;
-    padding-bottom: 16px;
+    padding-bottom: 12px;
   }
 
   body.printing-sheet .pdf-header img,
   body.printing-sheet .empty-photo {
     display: grid;
-    width: 130px;
-    height: 160px;
+    width: 110px;
+    height: 135px;
     place-items: center;
     object-fit: contain;
     border: 2px solid #333;
@@ -2344,21 +2459,21 @@ input[type="file"] {
 
   body.printing-sheet .pdf-header h1 {
     margin: 0;
-    font-size: 42px;
+    font-size: 34px;
     line-height: .95;
     font-style: italic;
     text-transform: lowercase;
   }
 
   body.printing-sheet .pdf-sheet h2 {
-    margin: 18px 0 8px;
-    font-size: 20px;
+    margin: 14px 0 7px;
+    font-size: 18px;
     border-bottom: 1px solid #aaa;
   }
 
   body.printing-sheet .pdf-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 8px;
   }
 
@@ -2381,8 +2496,21 @@ input[type="file"] {
 
   body.printing-sheet .pdf-two {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: 12px;
+  }
+
+  body.printing-sheet .pdf-header,
+  body.printing-sheet .pdf-grid div,
+  body.printing-sheet .pdf-box,
+  body.printing-sheet li {
+    break-inside: avoid;
+  }
+
+  body.printing-sheet .pdf-sheet,
+  body.printing-sheet .pdf-sheet * {
+    color-adjust: exact;
+    print-color-adjust: exact;
   }
 
   body.printing-sheet ul {
