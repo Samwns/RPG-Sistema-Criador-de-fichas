@@ -296,7 +296,7 @@ export function computeModifier(total) {
 
 export function requiredMagicLife(level) {
   const lvl = Number(level) || 1;
-  return 20 + lvl * 2;
+  return 30 + Math.max(0, lvl - 1) * 2;
 }
 
 export function getRemainingPoints(level, values) {

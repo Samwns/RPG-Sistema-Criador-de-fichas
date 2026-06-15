@@ -150,6 +150,24 @@
                     <div><span id="xpLevelLabel">Nível 1</span><b id="xpNextLabel">300 XP para o nível 2</b></div>
                     <progress id="xpProgress" max="300" value="0"></progress>
                   </div>
+                  <div class="resource-distribution-card inline-resource-card full-width">
+                    <div class="section-title">
+                      <div>
+                        <p class="panel-kicker">Vida e mana</p>
+                        <h3 id="resourceBudgetLabel">Restam 30 pontos</h3>
+                      </div>
+                      <div class="magic-budget">
+                        <span>Disponíveis <b id="requiredMagicLife">30</b></span>
+                        <span>Gastos <b id="totalMagiaVida">30</b></span>
+                        <span>Restantes <b id="magicDifference">0</b></span>
+                      </div>
+                    </div>
+                    <div class="form-grid resource-point-grid">
+                      <label><span>Pontos para mana</span><input id="pontosMagia" type="number" min="0" value="15"><small>1 ponto = +2 mana máxima</small></label>
+                      <label><span>Pontos para vida</span><input id="pontosVida" type="number" min="0" value="15"><small>1 ponto = +2 PV máximo</small></label>
+                    </div>
+                    <p class="magic-note" id="magicNote">Distribua os pontos entre Vida e Mana. Bônus de classe, raça e itens entram por cima.</p>
+                  </div>
                   <label><span>Proficiência</span><input id="profBonus" type="text" readonly value="+3"></label>
                   <label><span>Vida máxima</span><input id="vidaMaxima" type="number" min="1" value="30"></label>
                   <label><span>Classe de armadura</span><input id="armorClass" type="number" min="0" value="10"></label>
@@ -182,8 +200,8 @@
                 <div class="section-title">
                   <div>
                     <p class="panel-kicker">Distribuição</p>
-                    <h3 id="budgetLabel">Distribua 40 pontos</h3>
-                    <p class="budget-helper">Aumente FOR, DEX, CON, INT, SAB e CAR usando o orçamento disponível.</p>
+                    <h3 id="budgetLabel">Restam 40 pontos</h3>
+                    <p class="budget-helper" id="budgetHelper">Distribua seus pontos em FOR, DEX, CON, INT, SAB e CAR.</p>
                   </div>
                   <div class="point-counter">
                     <span>Disponíveis <b id="availablePoints">40</b></span>
@@ -404,17 +422,10 @@
 
               <section class="content-card magic-section active" data-magic-section="magic-sheet">
                 <div class="form-grid">
-                  <label><span>Pontos para mana</span><input id="pontosMagia" type="number" min="0" value="15"><small>1 ponto = +2 mana máxima</small></label>
-                  <label><span>Pontos para vida</span><input id="pontosVida" type="number" min="0" value="15"><small>1 ponto = +2 PV máximo</small></label>
                   <label><span>Atributo de conjuração</span><select id="castingStat"><option value="int">INT</option><option value="sab">SAB</option><option value="car">CAR</option></select></label>
                   <label><span>Espaços totais</span><input id="spellSlots" type="number" min="0" value="0"></label>
                 </div>
-                <div class="magic-budget">
-                  <span>Disponíveis <b id="requiredMagicLife">30</b></span>
-                  <span>Gastos <b id="totalMagiaVida">30</b></span>
-                  <span>Restantes <b id="magicDifference">0</b></span>
-                </div>
-                <p class="magic-note" id="magicNote">Distribua os pontos entre Vida e Mana. Bônus de classe, raça e itens entram por cima.</p>
+                <p class="magic-note">Os pontos de Vida e Mana ficam na aba Ficha, logo abaixo dos atributos.</p>
               </section>
 
               <section class="content-card magic-section active" data-magic-section="magic-sheet">

@@ -33,6 +33,7 @@ export const elements = {
   usedPoints: document.getElementById('usedPoints'),
   remainingPoints: document.getElementById('remainingPoints'),
   budgetLabel: document.getElementById('budgetLabel'),
+  budgetHelper: document.getElementById('budgetHelper'),
   budgetWarning: document.getElementById('budgetWarning'),
   totalFor: document.getElementById('totalFor'),
   totalDex: document.getElementById('totalDex'),
@@ -77,10 +78,14 @@ export function populateSelect(select, options) {
 }
 
 export function updateBudgetText(remainingData) {
+  const remaining = Math.max(0, remainingData.remaining);
   if (elements.availablePoints) elements.availablePoints.textContent = remainingData.budget;
   elements.usedPoints.textContent = remainingData.used;
-  elements.remainingPoints.textContent = Math.max(0, remainingData.remaining);
-  elements.budgetLabel.textContent = `Distribua ${remainingData.budget} pontos`;
+  elements.remainingPoints.textContent = remaining;
+  elements.budgetLabel.textContent = `Restam ${remaining} ponto${remaining === 1 ? '' : 's'}`;
+  if (elements.budgetHelper) {
+    elements.budgetHelper.textContent = `Disponíveis ${remainingData.budget} · usados ${remainingData.used}. Distribua em FOR, DEX, CON, INT, SAB e CAR.`;
+  }
   elements.budgetWarning.textContent = remainingData.remaining < 0 ? 'Você ultrapassou o limite disponível.' : '';
 }
 
@@ -116,6 +121,11 @@ export function updateMagicLifeUI(magic, life, level) {
   elements.totalMagiaVida.textContent = total;
   elements.requiredMagicLife.textContent = required;
   const diffLabel = document.getElementById('magicDifference');
+  const resourceBudgetLabel = document.getElementById('resourceBudgetLabel');
+  if (resourceBudgetLabel) {
+    const visibleRemaining = Math.max(0, remaining);
+    resourceBudgetLabel.textContent = `Restam ${visibleRemaining} ponto${visibleRemaining === 1 ? '' : 's'}`;
+  }
 
   if (remaining === 0) {
     diffLabel.textContent = '0';
