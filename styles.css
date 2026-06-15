@@ -2395,30 +2395,28 @@ input[type="color"]::-webkit-color-swatch {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  padding: 11px 15px;
-  font: 800 .68rem/1 var(--mono);
-  letter-spacing: .07em;
+  border: 0;
+  border-radius: 7px;
+  padding: 11px 14px;
+  background: #e4e4e4;
+  box-shadow: 3px 3px 0 #444, 4px 4px 0 rgba(227, 227, 227, .65);
+  color: #444;
+  font: 800 .62rem/1 var(--mono);
+  letter-spacing: .1em;
   text-transform: uppercase;
   cursor: pointer;
   appearance: none;
   -webkit-appearance: none;
-  transition: transform .18s ease, box-shadow .18s ease, background-color .18s ease, border-color .18s ease;
+  transition: transform .18s ease, opacity .18s ease;
 }
 
 .saved-action span {
-  display: grid;
-  width: 22px;
-  height: 22px;
-  place-items: center;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, .2);
   font: 800 1rem/1 sans-serif;
 }
 
 .saved-action:hover {
-  transform: translateY(-2px);
+  opacity: .86;
+  transform: translateY(-1px);
 }
 
 .saved-action:focus-visible {
@@ -2427,41 +2425,19 @@ input[type="color"]::-webkit-color-swatch {
 }
 
 .recover-action {
-  border-color: color-mix(in srgb, var(--blue) 58%, #aaa);
-  background: color-mix(in srgb, var(--blue) 18%, #f5f5f3);
-  box-shadow:
-    0 3px 0 color-mix(in srgb, var(--blue) 45%, #555),
-    0 7px 14px rgba(68, 68, 68, .1);
-  color: #303940;
-}
-
-.recover-action:hover {
-  border-color: color-mix(in srgb, var(--blue) 75%, #777);
-  background: color-mix(in srgb, var(--blue) 28%, #f5f5f3);
-  box-shadow:
-    0 5px 0 color-mix(in srgb, var(--blue) 48%, #555),
-    0 10px 18px rgba(68, 68, 68, .13);
+  background: #e4e4e4;
+  color: #444;
 }
 
 .clear-action {
-  border-color: #7d302b;
-  background: #963f39;
-  box-shadow:
-    0 3px 0 #642824,
-    0 7px 14px rgba(100, 40, 36, .16);
-  color: #fff;
-}
-
-.clear-action:hover {
-  background: #a94a43;
-  box-shadow:
-    0 5px 0 #642824,
-    0 10px 18px rgba(100, 40, 36, .2);
+  background: #444;
+  box-shadow: 3px 3px 0 var(--orange);
+  color: #eee;
 }
 
 .saved-action:active {
   transform: translateY(1px);
-  box-shadow: 0 1px 0 rgba(0, 0, 0, .35);
+  box-shadow: 1px 1px 0 #444;
 }
 
 .saved-card {
