@@ -1,3 +1,5 @@
+import { allClassOptions } from './mechanics.js';
+
 export const spellcastingClasses = [
   "Bardo", "Clérigo", "Druida", "Paladino", "Patrulheiro", "Feiticeiro", "Bruxo", "Mago"
 ];
@@ -43,6 +45,27 @@ export const abilityCatalog = [
   { className: "Bell Seer", name: "Presságio Partido", cost: 2, description: "Antes de uma rolagem importante, declare uma visão curta para ganhar +2 ou revelar risco oculto." },
   { className: "Ashen Vagrant", name: "Nome Emprestado", cost: 1, description: "Passe por guarda, patrulha ou testemunha usando identidade roubada ou esquecida." }
 ];
+
+const generatedAbilityPatterns = [
+  ["Técnica Inicial", 1, "ganhe +1 narrativo em uma ação central da classe durante a cena."],
+  ["Reação Tática", 1, "quando sofrer pressão, reposicione-se ou proteja um aliado próximo."],
+  ["Golpe Assinado", 2, "adicione dano, controle ou condição leve ao próximo acerto relevante."],
+  ["Rito de Campo", 2, "prepare uma vantagem de exploração, social ou investigação ligada ao tema da classe."],
+  ["Ápice Momentâneo", 3, "uma vez por descanso, transforme uma falha importante em sucesso com custo narrativo."]
+];
+
+allClassOptions.forEach(className => {
+  generatedAbilityPatterns.forEach(([suffix, cost, description]) => {
+    const name = `${suffix} de ${className}`;
+    if (abilityCatalog.some(ability => ability.name === name)) return;
+    abilityCatalog.push({
+      className,
+      name,
+      cost,
+      description: `${className}: ${description}`
+    });
+  });
+});
 
 export const spellCatalog = [
   { name: "Luz", level: 0, school: "Evocação", classes: ["Bardo", "Clérigo", "Feiticeiro", "Mago"] },

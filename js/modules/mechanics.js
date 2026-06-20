@@ -156,30 +156,164 @@ export const raceData = {
   }
 };
 
-export const raceOptions = Object.keys(raceData);
-
 export const systemNames = {
-  DND: "D&D",
-  SHATTERED_REBIRTH: "Shattered Rebirth",
-  OTHER: "Outro"
+  DND: "DND",
+  SHATTERED_REBIRTH: "SR",
+  OSR: "OSR",
+  T20: "T20",
+  CYBERPUNK: "CBP",
+  ARCANE: "ARC",
+  OTHER: "OTH"
 };
 
-export const shatteredRebirthRaceOptions = ["Fragmentado", "Vidrano", "Cinzerroto"];
-export const baseRaceOptions = raceOptions.filter(name => !shatteredRebirthRaceOptions.includes(name));
+export const systemLabels = {
+  DND: "DND",
+  SR: "SR",
+  OSR: "OSR",
+  T20: "T20",
+  CBP: "CBP",
+  ARC: "ARC",
+  OTH: "OTH"
+};
+
+export const legacySystemMap = {
+  "D&D": systemNames.DND,
+  "Shattered Rebirth": systemNames.SHATTERED_REBIRTH,
+  Outro: systemNames.OTHER
+};
+
+export const systemOptions = Object.values(systemNames);
+
+const raceSystemTags = {
+  Fragmentado: [systemNames.SHATTERED_REBIRTH],
+  Vidrano: [systemNames.SHATTERED_REBIRTH],
+  Cinzerroto: [systemNames.SHATTERED_REBIRTH]
+};
+
+Object.keys(raceData).forEach(name => {
+  if (!raceSystemTags[name]) raceSystemTags[name] = [systemNames.DND];
+});
+
+const generatedRaceGroups = [
+  {
+    system: systemNames.DND,
+    source: "DND · expansão da mesa",
+    names: ["Aasimar", "Genasi", "Kenku", "Tritão", "Centauro", "Changeling", "Shifter", "Kalashtar", "Harengon", "Fada", "Sátiro", "Leonino", "Vedalken", "Simic Híbrido", "Gith", "Yuan-ti", "Kobold", "Tortle", "Owlin", "Draco-Elfo"]
+  },
+  {
+    system: systemNames.SHATTERED_REBIRTH,
+    source: "SR · Praga Estilhaçada",
+    names: ["Sangue de Prisma", "Eco de Vidro", "Morto-Lúcido", "Muralha Quebrada", "Coro Azul", "Coro Amarelo", "Coro Escarlate", "Lágrima de Quartzo", "Peregrino Rachado", "Carne de Espelho", "Vulto Estilhaçado", "Filho do Ossário", "Cinza de Sino", "Vidrano-Elfo", "Fragmentado-Anão", "Coração de Caco", "Olho de Safira"]
+  },
+  {
+    system: systemNames.OSR,
+    source: "OSR · exploração clássica",
+    names: ["Homem-Corvo", "Anão Profundo", "Elfo Crepuscular", "Pequenino de Toca", "Povo-Fungo", "Homem-Javali", "Sombra Viva", "Homem-Cobra", "Meio-Gigante", "Povo-Toupeira", "Nascido da Névoa", "Osso-Andante"]
+  },
+  {
+    system: systemNames.T20,
+    source: "T20 · fantasia épica",
+    names: ["Kallyanach", "Dahllan", "Hynne", "Osteon", "Medusa", "Sereia Tritão", "Sílfide", "Trog", "Moreau", "Golem Arcano"]
+  },
+  {
+    system: systemNames.CYBERPUNK,
+    source: "CBP · futuro urbano",
+    names: ["Humano Chrome", "Sintético", "Clone Livre", "Ciborgue Pesado", "Nômade Orbital", "Mutante Neon", "Hacker Neural", "Replicante", "Meio-Máquina", "Bioforjado", "Fantasma Digital"]
+  },
+  {
+    system: systemNames.ARCANE,
+    source: "ARC · fantasia arcana",
+    names: ["Astralino", "Umbraférico", "Solariano", "Lunarita", "Cristalino", "Povo-Runa", "Meio-Elemental", "Draco-Fada", "Anão-Forjado", "Elfo-Sombra"]
+  }
+];
+
+const raceAttributePairs = [
+  ["for", "con"], ["dex", "sab"], ["int", "dex"], ["car", "sab"], ["con", "car"], ["sab", "int"]
+];
+
+generatedRaceGroups.forEach(group => {
+  group.names.forEach((name, index) => {
+    const [primary, secondary] = raceAttributePairs[index % raceAttributePairs.length];
+    raceData[name] = {
+      source: group.source,
+      traits: `Raça extra de ${group.system} para mesas maiores, com traços mistos e espaço para adaptação do mestre.`,
+      subraces: {
+        [`${name} Puro`]: { bonuses: { [primary]: 2, [secondary]: 1 }, trait: "Herança direta e traço cultural forte." },
+        [`${name} Mestiço`]: { bonuses: { [secondary]: 2, [primary]: 1 }, trait: "Mistura de sangue, técnica e tradição de outro povo." }
+      }
+    };
+    raceSystemTags[name] = [group.system];
+  });
+});
+
+export { raceSystemTags };
+
+export const raceOptions = Object.keys(raceData);
+export const shatteredRebirthRaceOptions = raceOptions.filter(name => raceSystemTags[name]?.includes(systemNames.SHATTERED_REBIRTH));
+export const baseRaceOptions = raceOptions.filter(name => raceSystemTags[name]?.includes(systemNames.DND));
 
 export const originOptions = [
   "Acolhido", "Aventureiro Nato", "Criminoso Redimido", "Soldado Veterano"
 ];
 
 export const classOptions = [
-  "Bárbaro", "Guerreiro", "Paladino", "Patrulheiro", "Ladino", "Monge", "Bardo", "Clérigo", "Mago", "Feiticeiro", "Bruxo", "Druida"
+  "Bárbaro", "Guerreiro", "Paladino", "Patrulheiro", "Ladino", "Monge", "Bardo", "Clérigo", "Mago", "Feiticeiro", "Bruxo", "Druida",
+  "Artífice", "Cavaleiro Rúnico", "Samurai", "Psi Warrior", "Lâmina Cantante", "Arqueiro Arcano", "Arauto Divino", "Xamã", "Necromante", "Duelista", "Místico", "Caçador de Monstros", "Guardião Ancestral", "Corsário", "Inquisidor", "Cronomante", "Cavaleiro Dracônico", "Herbalista"
 ];
 
 export const shatteredRebirthClassOptions = [
-  "Gravebound", "Shard Knight", "Plague Warden", "Bell Seer", "Ashen Vagrant"
+  "Gravebound", "Shard Knight", "Plague Warden", "Bell Seer", "Ashen Vagrant",
+  "Glass Monk", "Choir Butcher", "Pale Binder", "Shard Alchemist", "Wall Hunter", "Cinder Saint", "Blue Veil", "Red Penitent", "Yellow Exorcist", "Memory Thief", "Corpse Cartographer", "Mirror Pilgrim", "Ruin Confessor", "Bell Duelist", "Crystal Beggar"
 ];
 
-export const allClassOptions = [...classOptions, ...shatteredRebirthClassOptions];
+export const osrClassOptions = ["Dungeon Delver", "Torchbearer", "Hex Ranger", "Oathless Knight", "Grave Robber", "Witch Finder", "Mold Druid", "Iron Theurge", "Cave Prophet", "Relic Seeker", "Rat Duelist", "Old King"];
+export const tormentaClassOptions = ["Arcanista", "Bucaneiro", "Caçador T20", "Cavaleiro T20", "Inventor", "Nobre", "Druida T20", "Lutador", "Samurai T20", "Frade", "Miragem", "Gladiador"];
+export const cyberpunkClassOptions = ["Solo", "Netrunner", "Techie", "Medtech", "Fixer", "Nomad", "Rockerboy", "Corporate", "Media", "Chrome Monk", "Drone Shepherd", "Street Witch", "Black ICE Saint"];
+export const arcaneClassOptions = ["Runesmith", "Starcaller", "Voidblade", "Moon Oracle", "Sun Herald", "Spellbreaker", "Fate Weaver", "Dream Knight", "Soul Cartographer", "Leyline Warden", "Prism Duelist", "Golem Binder", "Ink Sorcerer"];
+
+export const allClassOptions = [
+  ...classOptions,
+  ...shatteredRebirthClassOptions,
+  ...osrClassOptions,
+  ...tormentaClassOptions,
+  ...cyberpunkClassOptions,
+  ...arcaneClassOptions
+];
+
+export const classSystemTags = Object.fromEntries([
+  ...classOptions.map(name => [name, [systemNames.DND]]),
+  ...shatteredRebirthClassOptions.map(name => [name, [systemNames.SHATTERED_REBIRTH]]),
+  ...osrClassOptions.map(name => [name, [systemNames.OSR]]),
+  ...tormentaClassOptions.map(name => [name, [systemNames.T20]]),
+  ...cyberpunkClassOptions.map(name => [name, [systemNames.CYBERPUNK]]),
+  ...arcaneClassOptions.map(name => [name, [systemNames.ARCANE]])
+]);
+
+const manualClassNames = new Set([
+  "Bárbaro", "Guerreiro", "Paladino", "Patrulheiro", "Ladino", "Monge", "Bardo", "Clérigo", "Mago", "Feiticeiro", "Bruxo", "Druida",
+  "Gravebound", "Shard Knight", "Plague Warden", "Bell Seer", "Ashen Vagrant"
+]);
+
+function buildGeneratedClassData(name, index) {
+  const attackStats = ["for", "dex", "sab", "int", "car", "for/dex", "dex/car", "sab/int"];
+  const hitDice = ["d6", "d8", "d10", "d12"];
+  const saves = [["for", "con"], ["dex", "int"], ["sab", "car"], ["int", "sab"], ["dex", "car"], ["con", "sab"]];
+  const attackStat = attackStats[index % attackStats.length];
+  const castingStat = attackStat.includes("int") ? "int" : attackStat.includes("sab") ? "sab" : attackStat.includes("car") ? "car" : "";
+  return {
+    multiclass: attackStat.includes("/")
+      ? { any: attackStat.split("/") }
+      : { all: [attackStat || "for"] },
+    saves: saves[index % saves.length],
+    hitDie: hitDice[index % hitDice.length],
+    attackStat,
+    attackDie: index % 3 === 0 ? "1d10" : index % 3 === 1 ? "1d8" : "1d6",
+    weaponStyle: `Estilo de ${name}: combate, exploração e recurso próprio adaptável ao sistema`,
+    castingStat,
+    subclasses: [`${name} da Vanguarda`, `${name} do Véu`, `${name} do Juramento`],
+    core: [`Base de ${name}`, `${name} Aprimorado`, `Tradição de ${name}`, `Golpe de ${name}`, `Ápice de ${name}`]
+  };
+}
 
 export const xpThresholds = [
   0, 300, 900, 2700, 6500, 14000, 23000, 34000, 48000, 64000,
@@ -206,6 +340,15 @@ export const classData = {
   "Bell Seer": { multiclass: { all: ["int"] }, saves: ["int", "sab"], hitDie: "d6", attackStat: "int", attackDie: "1d6", weaponStyle: "Presságios, vidro ressonante e rituais mentais", castingStat: "int", subclasses: ["Blue Oracle", "Broken Choir", "Dream Cartographer"], core: ["Hear the Glass", "Echo Casting", "Memory Map", "Fracture Vision", "Half-Sung Fate"] },
   "Ashen Vagrant": { multiclass: { all: ["dex"] }, saves: ["dex", "car"], hitDie: "d8", attackStat: "dex/car", attackDie: "1d6", weaponStyle: "Adagas, truques sujos e mobilidade de estrada", castingStat: "car", subclasses: ["Road Heretic", "Wall Exile", "Cinder Trickster"], core: ["Hunted Step", "Borrowed Face", "Rotten Luck", "Escape the Pile", "Nameless Return"] }
 };
+
+Object.assign(
+  classData,
+  Object.fromEntries(
+    allClassOptions
+      .filter(name => !manualClassNames.has(name))
+      .map((name, index) => [name, buildGeneratedClassData(name, index)])
+  )
+);
 
 export const universalLevelFeatures = {
   1: "Fundamentos da classe",

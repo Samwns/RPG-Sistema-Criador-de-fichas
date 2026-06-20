@@ -8,6 +8,10 @@ import {
   allClassOptions,
   shatteredRebirthClassOptions,
   systemNames,
+  systemOptions,
+  legacySystemMap,
+  raceSystemTags,
+  classSystemTags,
   distInputs,
   raceBonusInputs,
   computeProfBonus,
@@ -153,7 +157,7 @@ const equipmentCatalog = [
 ];
 
 function getEquipmentCatalog() {
-  const currentSystem = elements?.sistema?.value || systemNames.DND;
+  const currentSystem = normalizeSystemValue(elements?.sistema?.value || systemNames.DND);
   return [...equipmentCatalog, ...customItems].filter(item => !item.uniqueSystem || item.uniqueSystem === currentSystem);
 }
 
@@ -400,8 +404,12 @@ function normalizeCharacterKey(character) {
   return [
     character?.nome || '',
     character?.jogador || '',
-    character?.sistema || 'D&D'
+    normalizeSystemValue(character?.sistema || systemNames.DND)
   ].map(value => String(value).trim().toLowerCase()).join('|');
+}
+
+function normalizeSystemValue(value) {
+  return legacySystemMap[value] || (systemOptions.includes(value) ? value : systemNames.DND);
 }
 
 function isShatteredRebirth() {
@@ -409,13 +417,15 @@ function isShatteredRebirth() {
 }
 
 function getCurrentRaceOptions() {
-  if (isShatteredRebirth()) return shatteredRebirthRaceOptions;
-  return baseRaceOptions;
+  const system = normalizeSystemValue(elements.sistema.value);
+  if (system === systemNames.OTHER) return raceOptions;
+  return raceOptions.filter(name => raceSystemTags[name]?.includes(system));
 }
 
 function getCurrentClassOptions() {
-  if (isShatteredRebirth()) return shatteredRebirthClassOptions;
-  return classOptions;
+  const system = normalizeSystemValue(elements.sistema.value);
+  if (system === systemNames.OTHER) return allClassOptions;
+  return allClassOptions.filter(name => classSystemTags[name]?.includes(system));
 }
 
 function ensureSelectValue(select, fallbackOptions) {
@@ -782,7 +792,7 @@ function resetFicha() {
   resourceTouched = { hp: false, energy: false };
   elements.nome.value = '';
   elements.jogador.value = '';
-  elements.sistema.value = 'D&D';
+  elements.sistema.value = systemNames.DND;
   elements.nivel.value = 1;
   elements.xp.value = 0;
   elements.vidaMaxima.value = 30;
@@ -1572,7 +1582,7 @@ function getCalculatedMaxMana() {
   const castingStat = document.getElementById('castingStat').value;
   const castingBonus = Math.max(0, getAttributeModifier(castingStat));
   const classMana = getClassBuild().reduce((sum, entry) => {
-    const perLevel = casterManaByClass[entry.className] || 1;
+    const perLevel = casterManaByClass[entry.className] || (classData[entry.className]?.castingStat ? 3 : 1);
     return sum + Math.max(0, Number(entry.level) || 0) * perLevel;
   }, 0);
   const racialMana = (raceGrantedSpells[document.getElementById('subraca').value] || []).length * 2;
@@ -1582,7 +1592,7 @@ function getCalculatedMaxMana() {
 
 function usesManaResource() {
   const classNames = [elements.classe1.value, elements.classe2.value, elements.classe3.value].filter(Boolean);
-  const hasCasterClass = classNames.some(className => spellcastingClasses.includes(className) || casterManaByClass[className]);
+  const hasCasterClass = classNames.some(className => spellcastingClasses.includes(className) || casterManaByClass[className] || classData[className]?.castingStat);
   const hasRacialMagic = (raceGrantedSpells[document.getElementById('subraca')?.value] || []).length > 0;
   return hasCasterClass || hasRacialMagic || purchasedSpells.length > 0 || customSpells.length > 0;
 }
@@ -2931,7 +2941,7 @@ function loadSavedCharacters() {
 
     const header = document.createElement('div');
     header.className = 'saved-card-header';
-    header.innerHTML = `<strong>${character.nome || 'Personagem sem nome'} (${character.sistema || 'D&D'})</strong>`;
+    header.innerHTML = `<strong>${character.nome || 'Personagem sem nome'} (${normalizeSystemValue(character.sistema || systemNames.DND)})</strong>`;
 
     const controls = document.createElement('div');
     controls.className = 'saved-card-controls';
@@ -3271,7 +3281,7 @@ function loadCharacter(index) {
 
   isRestoringCharacter = true;
   activeCharacterId = character.id || createCharacterId();
-  elements.sistema.value = character.sistema || 'D&D';
+  elements.sistema.value = normalizeSystemValue(character.sistema || systemNames.DND);
   plagueScore = clampPlague(character.plagueScore || 0);
   refreshSystemOptions({ preserve: false });
   elements.nome.value = character.nome || '';

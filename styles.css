@@ -453,7 +453,14 @@ body[data-effect="smoky"] .ambient-effect .effect-layer::after {
   font: italic 800 clamp(2.8rem, 5.5vw, 5.1rem)/.88 var(--serif);
   letter-spacing: 0;
   text-transform: lowercase;
-  text-shadow: 3px 3px 0 rgba(68, 68, 68, .45);
+  -webkit-text-stroke: 1px rgba(38, 38, 38, .72);
+  paint-order: stroke fill;
+  text-shadow:
+    -1px -1px 0 rgba(38, 38, 38, .7),
+    1px -1px 0 rgba(38, 38, 38, .7),
+    -1px 1px 0 rgba(38, 38, 38, .7),
+    1px 1px 0 rgba(38, 38, 38, .7),
+    3px 3px 0 rgba(68, 68, 68, .45);
 }
 
 .hero-copy > p:last-child {
@@ -461,6 +468,21 @@ body[data-effect="smoky"] .ambient-effect .effect-layer::after {
   font: 700 .78rem/1.4 var(--mono);
   letter-spacing: .08em;
   text-transform: uppercase;
+  text-shadow:
+    -1px -1px 0 rgba(38, 38, 38, .62),
+    1px -1px 0 rgba(38, 38, 38, .62),
+    -1px 1px 0 rgba(38, 38, 38, .62),
+    1px 1px 0 rgba(38, 38, 38, .62),
+    0 2px 4px rgba(38, 38, 38, .45);
+}
+
+.sheet-hero .eyebrow {
+  text-shadow:
+    -1px -1px 0 rgba(38, 38, 38, .58),
+    1px -1px 0 rgba(38, 38, 38, .58),
+    -1px 1px 0 rgba(38, 38, 38, .58),
+    1px 1px 0 rgba(38, 38, 38, .58),
+    0 2px 4px rgba(38, 38, 38, .42);
 }
 
 .hero-actions {
@@ -918,7 +940,59 @@ body[data-effect="smoky"] .ambient-effect .effect-layer::after {
 }
 
 .plague-actions button {
+  position: relative;
+  min-height: 42px;
   min-width: 150px;
+  overflow: hidden;
+  border: 2px solid rgba(58, 58, 58, .86);
+  border-radius: 7px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, .92), rgba(220, 226, 230, .72)),
+    #f4f4f2;
+  color: #333;
+  box-shadow:
+    3px 3px 0 rgba(68, 68, 68, .82),
+    inset 0 0 0 1px rgba(255, 255, 255, .72);
+  font: 900 .72rem/1 var(--mono);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  transition: transform .16s ease, box-shadow .16s ease, background .16s ease;
+}
+
+.plague-actions button::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: .55;
+  background:
+    linear-gradient(90deg, transparent, rgba(126, 186, 238, .28), transparent);
+  transform: translateX(-110%);
+  transition: transform .28s ease;
+}
+
+.plague-actions button:hover {
+  transform: translate(-1px, -1px);
+  box-shadow:
+    4px 4px 0 rgba(68, 68, 68, .88),
+    inset 0 0 0 1px rgba(255, 255, 255, .85);
+}
+
+.plague-actions button:hover::before {
+  transform: translateX(110%);
+}
+
+.plague-actions button:active {
+  transform: translate(2px, 2px);
+  box-shadow:
+    1px 1px 0 rgba(68, 68, 68, .82),
+    inset 0 0 0 1px rgba(255, 255, 255, .72);
+}
+
+.plague-actions .button-muted {
+  border-color: color-mix(in srgb, var(--orange) 76%, #333);
+  background:
+    linear-gradient(135deg, rgba(255, 245, 231, .94), rgba(240, 160, 111, .24)),
+    #f4f4f2;
 }
 
 .identity-grid {
