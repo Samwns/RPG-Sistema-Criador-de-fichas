@@ -170,7 +170,7 @@
                 <div class="form-grid">
                   <label><span>Nome do personagem</span><input id="nome" type="text" placeholder="Nome"></label>
                   <label><span>Jogador</span><input id="jogador" type="text" placeholder="Nome do jogador"></label>
-                  <label><span>Sistema</span><select id="sistema"><option value="D&D">D&amp;D</option><option value="Outro">Outro</option></select></label>
+                  <label><span>Sistema</span><select id="sistema"><option value="D&D">D&amp;D</option><option value="Shattered Rebirth">Shattered Rebirth</option><option value="Outro">Outro</option></select></label>
                   <label><span>Nível total</span><input id="nivel" type="number" min="1" max="20" value="1"></label>
                   <label><span>Experiência</span><input id="xp" type="number" min="0" value="0"></label>
                   <label><span>Gold</span><input id="goldAmount" type="number" min="0" value="100"></label>
@@ -210,6 +210,21 @@
                   <label><span>Nível da classe</span><input id="nivelC1" type="number" min="1" max="20" value="1"></label>
                   <label><span>Subclasse</span><select id="subclasse1"></select></label>
                   <label class="toggle-row"><span>Ativar multiclasse</span><input id="multiclasse" type="checkbox"></label>
+                  <section id="shatteredRebirthPanel" class="shattered-panel full-width hidden" aria-live="polite">
+                    <div class="section-title">
+                      <div>
+                        <p class="panel-kicker">Shattered Rebirth</p>
+                        <h3>Praga Estilhaçada</h3>
+                      </div>
+                      <strong><b id="plagueValue">0</b> / 10</strong>
+                    </div>
+                    <progress id="plagueProgress" max="10" value="0"></progress>
+                    <p id="plagueText" class="system-rule">Você não morre. Ao cair a 0 PV, retorna com a praga agravada.</p>
+                    <div class="plague-actions">
+                      <button id="markDeath" type="button">Registrar morte</button>
+                      <button id="lowerPlague" type="button" class="button-muted">Reduzir praga</button>
+                    </div>
+                  </section>
                 </div>
               </section>
 
@@ -817,6 +832,7 @@
                 <button type="button" class="system-tab" data-system-target="system-combat">Combate</button>
                 <button type="button" class="system-tab" data-system-target="system-master">Guia do mestre</button>
                 <button type="button" class="system-tab" data-system-target="system-equipment">Equipamentos</button>
+                <button type="button" class="system-tab" data-system-target="system-shattered">Shattered Rebirth</button>
               </nav>
 
               <div class="system-panel active" id="system-start">
@@ -949,6 +965,18 @@
                   <article class="book-card"><span>Armas</span><h3>Ataque e dano</h3><p>Armas aparecem em Combate. Ataque usa d20 + atributo + proficiência; dano usa o dado da arma + atributo.</p></article>
                   <article class="book-card"><span>Armaduras</span><h3>Classe de armadura</h3><p>Armaduras definem uma CA base. Escudos acrescentam bônus e o sistema recalcula o valor mostrado.</p></article>
                   <article class="book-card"><span>Venda</span><h3>Troca antes do jogo</h3><p>Venda um item pelo mesmo custo para recuperar os pontos e experimentar outra configuração inicial.</p></article>
+                </div>
+              </div>
+
+              <div class="system-panel" id="system-shattered">
+                <article class="rule-example shattered-lore"><span>Monólogo</span><p>Era uma vez, diziam as velhas lendas, um mundo onde as mentes repousavam em silêncio. Então veio a Praga Estilhaçada: não como tempestade, mas como melodia doentia. Os Fragmentados ouviram o tilintar, quebraram pela metade e permaneceram lúcidos. Quando caem, a carne recusa o fim; retornam das pilhas esquecidas, pagando com memória, técnica e força.</p></article>
+                <div class="book-grid">
+                  <article class="book-card"><span>Nome</span><h3>Shattered Rebirth</h3><p>Sistema de renascimento amaldiçoado inspirado em retorno após queda: a morte não encerra a ficha, mas aumenta a Praga Estilhaçada.</p></article>
+                  <article class="book-card"><span>Praga</span><h3>Barra 0 a 10</h3><p>Cair a 0 PV registra uma morte, restaura o personagem e aumenta a praga em 1. Em 10, o mestre deve cobrar perda pesada de memória, técnica ou identidade.</p></article>
+                  <article class="book-card"><span>Item único</span><h3>Glassheart Effigy</h3><p>Consumível raro. Dá direito a refazer a ficha mantendo nome, jogador, história e a marca da praga atual.</p></article>
+                  <article class="book-card"><span>Alívio</span><h3>Shardbane Tonic</h3><p>Consumível próprio do sistema. Reduz a barra de praga em 1 e representa tratamento temporário, nunca cura definitiva.</p></article>
+                  <article class="book-card"><span>Classes</span><h3>Novas trilhas</h3><p>Gravebound, Shard Knight, Plague Warden, Bell Seer e Ashen Vagrant trazem subclasses focadas em morte recusada, vidro, sinos, caça e memória.</p></article>
+                  <article class="book-card"><span>Raças</span><h3>Marcados</h3><p>Fragmentado, Vidrano e Cinzerroto substituem as raças padrão quando este sistema está selecionado.</p></article>
                 </div>
               </div>
             </section>

@@ -866,6 +866,61 @@ body[data-effect="smoky"] .ambient-effect .effect-layer::after {
   padding: clamp(18px, 2.4vw, 24px);
 }
 
+.shattered-panel {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 2px solid rgba(70, 80, 86, .38);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(126, 186, 238, .18), rgba(179, 54, 54, .12) 48%, rgba(226, 195, 66, .14)),
+    rgba(246, 246, 244, .9);
+}
+
+.shattered-panel.hidden {
+  display: none;
+}
+
+.shattered-panel .section-title {
+  margin: 0;
+}
+
+.shattered-panel strong {
+  color: #444;
+  font: 900 .85rem/1 var(--mono);
+}
+
+.shattered-panel progress {
+  width: 100%;
+  height: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(68, 68, 68, .22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .62);
+}
+
+.shattered-panel progress::-webkit-progress-bar {
+  background: rgba(255, 255, 255, .62);
+}
+
+.shattered-panel progress::-webkit-progress-value {
+  background: linear-gradient(90deg, #7ebaee, #e2c342, #b33636);
+}
+
+.shattered-panel progress::-moz-progress-bar {
+  background: linear-gradient(90deg, #7ebaee, #e2c342, #b33636);
+}
+
+.plague-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.plague-actions button {
+  min-width: 150px;
+}
+
 .identity-grid {
   display: grid;
   grid-template-columns: 210px minmax(0, 1fr);
@@ -2604,6 +2659,12 @@ input[type="color"]::-webkit-color-swatch {
 .rule-example {
   margin-top: 14px;
   background: linear-gradient(135deg, rgba(126, 186, 238, .16), rgba(240, 160, 111, .18)), #f4f4f2;
+}
+
+.shattered-lore {
+  background:
+    linear-gradient(135deg, rgba(126, 186, 238, .16), rgba(179, 54, 54, .12), rgba(226, 195, 66, .16)),
+    #f4f4f2;
 }
 
 .rule-example > span {

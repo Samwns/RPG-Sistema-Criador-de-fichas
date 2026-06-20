@@ -1,8 +1,13 @@
 import {
   raceOptions,
+  baseRaceOptions,
+  shatteredRebirthRaceOptions,
   raceData,
   originOptions,
   classOptions,
+  allClassOptions,
+  shatteredRebirthClassOptions,
+  systemNames,
   distInputs,
   raceBonusInputs,
   computeProfBonus,
@@ -41,6 +46,7 @@ let goldAmount = 100;
 let customItems = [];
 let purchasedSpells = [];
 let customSpells = [];
+let plagueScore = 0;
 let themeColors = { primary: '#7EBAEE', secondary: '#F0A06F' };
 let masterState = { enemies: [], maps: [], encounters: [] };
 let appearanceState = {
@@ -77,7 +83,12 @@ const casterManaByClass = {
   Bruxo: 5,
   Paladino: 3,
   Patrulheiro: 3,
-  Monge: 2
+  Monge: 2,
+  Gravebound: 1,
+  "Shard Knight": 1,
+  "Plague Warden": 4,
+  "Bell Seer": 5,
+  "Ashen Vagrant": 2
 };
 
 const featurePowerOverrides = {
@@ -136,11 +147,14 @@ const equipmentCatalog = [
   { id: 'boots_wind', name: 'Botas do Vento', category: 'Acessório', rarity: 'Incomum', cost: 10, speedBonus: 3, description: '+3 m de deslocamento e vantagem narrativa em saltos.' },
   { id: 'staff_archmage', name: 'Cajado do Arquimago', category: 'Foco', rarity: 'Lendário', cost: 34, die: 6, attribute: 'int', attackBonus: 2, damageBonus: 2, spellBonus: 2, range: '1,5 m', description: '+2 em ataques, dano de arma e magia. Foco lendário.' },
   { id: 'ring_wish', name: 'Anel do Desejo Guardado', category: 'Acessório', rarity: 'Lendário', cost: 40, spellBonus: 3, description: '+3 em magia e espaço narrativo para um milagre raro controlado pelo mestre.' },
-  { id: 'amulet_health', name: 'Amuleto da Vitalidade', category: 'Acessório', rarity: 'Raro', cost: 16, maxHpBonus: 10, description: '+10 PV máximos enquanto estiver no inventário.' }
+  { id: 'amulet_health', name: 'Amuleto da Vitalidade', category: 'Acessório', rarity: 'Raro', cost: 16, maxHpBonus: 10, description: '+10 PV máximos enquanto estiver no inventário.' },
+  { id: 'glassheart_effigy', name: 'Glassheart Effigy', category: 'Consumível', rarity: 'Único', cost: 0, uniqueSystem: systemNames.SHATTERED_REBIRTH, rebirthReset: true, description: 'Item único de Shattered Rebirth. Consuma para refazer a ficha mantendo identidade, história e praga atual.' },
+  { id: 'shardbane_tonic', name: 'Shardbane Tonic', category: 'Consumível', rarity: 'Raro', cost: 6, uniqueSystem: systemNames.SHATTERED_REBIRTH, plagueRelief: 1, description: 'Tônico raro que reduz a Praga Estilhaçada em 1. A doença recua, mas nunca desaparece de verdade.' }
 ];
 
 function getEquipmentCatalog() {
-  return [...equipmentCatalog, ...customItems];
+  const currentSystem = elements?.sistema?.value || systemNames.DND;
+  return [...equipmentCatalog, ...customItems].filter(item => !item.uniqueSystem || item.uniqueSystem === currentSystem);
 }
 
 const featureDescriptions = {
@@ -179,6 +193,38 @@ const featureDescriptions = {
   "Disciplina marcial.": "Treinamento de formação ajuda aliados e melhora decisões táticas sob pressão.",
   "Sobrevivência anfíbia.": "Você nada bem, prende o fôlego por mais tempo e usa mordida/armadura natural.",
   "Investida poderosa.": "Ao correr em linha reta, seus chifres transformam movimento em impacto de controle.",
+  "Lucidez fragmentada.": "A melodia parou no meio. Você ganha vantagem narrativa para resistir a pânico, delírio e controle da praga.",
+  "Fúria de vidro.": "Farpas escarlates respondem à dor. Uma vez por cena, transforme ferimento em pressão ofensiva.",
+  "Percepção corrosiva.": "Cristais amarelos revelam fissuras em corpos, portas e mentiras.",
+  "Sangue das muralhas.": "Você conhece o medo das cidades fechadas e resiste melhor a acusações, exclusão e interrogatório.",
+  "Audição do tilintar.": "Antes de um surto da praga, você ouve o vidro cantar e pode alertar o grupo.",
+  "Carne de ossário.": "Seu corpo já voltou de uma pilha esquecida. Marcas de morte contam como proteção narrativa.",
+  "Empatia persistente.": "Mesmo perdendo memórias, você se agarra a afeto, promessa ou culpa para não se quebrar.",
+  "Undying Flesh": "Ao cair, seu corpo retorna. A morte aumenta a Praga Estilhaçada em vez de encerrar o personagem.",
+  "Corpse Rise": "Levante de queda recente com um lampejo de força bruta e presença horrível.",
+  "Grave Debt": "Cada retorno cobra algo. O mestre pode marcar memória, técnica ou vínculo ameaçado.",
+  "Shatter Resist": "Resista melhor a sangramento, medo e dor causada por vidro ou cristal.",
+  "Last Memory": "Escolha uma lembrança que ainda não foi consumida; ela pode salvar uma rolagem decisiva.",
+  "Crystal Guard": "Use farpas como escudo e transforme defesa em contra-ataque lento.",
+  "Splinter Counter": "Quando bloqueia um golpe, devolva estilhaços ao atacante.",
+  "Heavy Step": "Avance como uma armadura viva, difícil de empurrar ou parar.",
+  "Shardbreaker": "Quebre cristais, armaduras e proteções frágeis com golpes precisos.",
+  "Crown of Cuts": "No ápice, suas cicatrizes viram autoridade terrível entre os amaldiçoados.",
+  "Plague Sense": "Sinta surtos, infectados e lugares onde o tilintar ficou preso.",
+  "Lull the Chime": "Acalme temporariamente a melodia doentia em si ou em outro Fragmentado.",
+  "Warding Rite": "Crie marcas de contenção que atrasam transformação e paranoia.",
+  "Cleanse Shards": "Remova farpas instáveis ou reduza sintomas em uma cena segura.",
+  "Silent Ward": "Uma proteção forte contra a praga, comprada com exaustão ou lembrança.",
+  "Hear the Glass": "Ouça ecos de morte, retorno e delírio presos no vidro.",
+  "Echo Casting": "Conjure pela ressonância dos cristais, usando INT como foco.",
+  "Memory Map": "Reconstrua um caminho a partir de fragmentos de memória quebrada.",
+  "Fracture Vision": "Veja futuros rachados e escolha qual falha evitar.",
+  "Half-Sung Fate": "Force a melodia a parar no meio e negue um destino imediato.",
+  "Hunted Step": "Mova-se como alguém caçado por muralhas e patrulhas.",
+  "Borrowed Face": "Imite costumes, nomes e gestos que talvez tenham sido seus.",
+  "Rotten Luck": "Transforme azar em oportunidade suja uma vez por cena.",
+  "Escape the Pile": "Saia de contenções, escombros e cadáveres antes que percebam.",
+  "Nameless Return": "Retorne sem nome por um instante e escape de uma consequência social.",
   "Fúria": "Entre em fúria para receber vantagem narrativa em força, resistir melhor a dano físico e causar mais impacto corpo a corpo.",
   "Defesa sem Armadura": "Quando estiver sem armadura pesada, sua resistência e agilidade ajudam a compor a defesa.",
   "Ataque Imprudente": "Você pode atacar com brutalidade, ganhando pressão ofensiva em troca de se expor até o próximo turno.",
@@ -254,7 +300,22 @@ const subclassDescriptions = {
   "Patrono Corruptor": "Bruxo com poder sombrio, resistência e magia destrutiva.",
   "Patrono Feérico": "Bruxo de encanto, ilusão e barganhas com cortes feéricas.",
   "Círculo da Terra": "Druida conjurador ligado a biomas e recuperação natural.",
-  "Círculo da Lua": "Druida focado em Forma Selvagem forte e combate animal."
+  "Círculo da Lua": "Druida focado em Forma Selvagem forte e combate animal.",
+  "Corpse Saint": "Gravebound que protege outros Fragmentados com o próprio corpo morto-vivo.",
+  "Pit Revenant": "Retornado de valas comuns, focado em dano, medo e sobrevivência bruta.",
+  "Bone Lantern": "Carrega luz de ossário para guiar aliados e repelir infectados quebrados.",
+  "Glass Bastion": "Shard Knight defensivo, feito para muralhas, escudos e resistência.",
+  "Red Edge": "Duelista escarlate que converte dor em cortes violentos.",
+  "Mirror Duelist": "Lutador técnico que usa reflexos, fintas e cópias quebradas.",
+  "Bell Doctor": "Plague Warden cirúrgico, capaz de conter surtos e aliviar a praga.",
+  "Yellow Choir": "Médico herege que entende a melodia corrosiva e a usa contra inimigos.",
+  "Mercy Cleaver": "Executor de misericórdia que impede transformações completas.",
+  "Blue Oracle": "Bell Seer frio e lúcido, guiado por cristais azuis e previsões curtas.",
+  "Broken Choir": "Vidente que canta junto da praga para distorcer mente e som.",
+  "Dream Cartographer": "Mapeia memórias, sonhos e rotas impossíveis entre mortes.",
+  "Road Heretic": "Ashen Vagrant caçado nas estradas, especialista em fuga e emboscada.",
+  "Wall Exile": "Exilado das muralhas que conhece leis, guardas e passagens proibidas.",
+  "Cinder Trickster": "Trapaceiro de cinza que troca identidade por sobrevivência."
 };
 
 const spellSchoolDescriptions = {
@@ -341,6 +402,50 @@ function normalizeCharacterKey(character) {
     character?.jogador || '',
     character?.sistema || 'D&D'
   ].map(value => String(value).trim().toLowerCase()).join('|');
+}
+
+function isShatteredRebirth() {
+  return elements.sistema.value === systemNames.SHATTERED_REBIRTH;
+}
+
+function getCurrentRaceOptions() {
+  if (isShatteredRebirth()) return shatteredRebirthRaceOptions;
+  return baseRaceOptions;
+}
+
+function getCurrentClassOptions() {
+  if (isShatteredRebirth()) return shatteredRebirthClassOptions;
+  return classOptions;
+}
+
+function ensureSelectValue(select, fallbackOptions) {
+  const options = fallbackOptions.filter(Boolean);
+  if (!options.length) return;
+  if (!options.includes(select.value)) select.value = options[0];
+}
+
+function refreshSystemOptions({ preserve = true } = {}) {
+  const previousRace = preserve ? elements.raca.value : '';
+  const previousClasses = preserve ? [elements.classe1.value, elements.classe2.value, elements.classe3.value] : [];
+  const currentRaces = getCurrentRaceOptions();
+  const currentClasses = getCurrentClassOptions();
+
+  populateSelect(elements.raca, currentRaces);
+  if (currentRaces.includes(previousRace)) elements.raca.value = previousRace;
+  else ensureSelectValue(elements.raca, currentRaces);
+
+  [elements.classe1, elements.classe2, elements.classe3].forEach((select, index) => {
+    populateSelect(select, currentClasses);
+    if (currentClasses.includes(previousClasses[index])) select.value = previousClasses[index];
+    else ensureSelectValue(select, currentClasses);
+  });
+
+  populateSelect(document.getElementById('progressionClass'), currentClasses);
+  ensureSelectValue(document.getElementById('progressionClass'), currentClasses);
+  populateSelect(document.getElementById('abilityClassFilter'), ['Todas', ...currentClasses]);
+  applySelectedRaceBonuses();
+  updateClassProgression();
+  renderSystemMode();
 }
 
 function parseCharacterCollection(raw) {
@@ -707,6 +812,7 @@ function resetFicha() {
   customItems = [];
   purchasedSpells = [];
   customSpells = [];
+  plagueScore = 0;
   bannerPhoto = '';
   applyDynamicTheme('#7EBAEE', '#F0A06F');
   resetSkillEditor();
@@ -733,6 +839,7 @@ function resetFicha() {
   renderEquipment();
   renderSpellCatalog();
   renderCustomSpells();
+  refreshSystemOptions({ preserve: false });
   synchronize();
 }
 
@@ -962,7 +1069,11 @@ function renderAbilityCatalog() {
   const container = document.getElementById('abilityCatalog');
   if (!container) return;
   const filter = document.getElementById('abilityClassFilter').value;
-  const options = abilityCatalog.filter(ability => filter === 'Todas' || ability.className === filter || ability.className === 'Geral');
+  const validClasses = getCurrentClassOptions();
+  const options = abilityCatalog.filter(ability => {
+    const belongsToSystem = ability.className === 'Geral' || validClasses.includes(ability.className);
+    return belongsToSystem && (filter === 'Todas' || ability.className === filter || ability.className === 'Geral');
+  });
   container.innerHTML = '';
   options.forEach(ability => {
     const owned = purchasedSkills.some(skill => skill.name === ability.name);
@@ -1028,6 +1139,8 @@ function getItemStatusTags(item) {
   if (item.maxHpBonus) tags.push(`PV ${formatSigned(item.maxHpBonus).replace(' ', '')}`);
   if (item.speedBonus) tags.push(`Desloc. ${formatSigned(item.speedBonus).replace(' ', '')} m`);
   if (item.healing) tags.push('Uso: cura 2d4+2');
+  if (item.plagueRelief) tags.push(`Praga -${item.plagueRelief}`);
+  if (item.rebirthReset) tags.push('Refazer ficha');
   return tags;
 }
 
@@ -1047,13 +1160,27 @@ function getRarityClass(item) {
 }
 
 function canUseItem(item) {
-  return item.healing || item.category === 'Consumível' || item.category === 'Pergaminho';
+  return item.healing || item.plagueRelief || item.rebirthReset || item.category === 'Consumível' || item.category === 'Pergaminho';
 }
 
 function useInventoryItem(itemId) {
   const item = getEquipmentCatalog().find(entry => entry.id === itemId);
   if (!item) return;
-  if (item.healing) {
+  if (item.plagueRelief) {
+    if (lowerShatteredPlague(item.plagueRelief, item.name)) {
+      inventory = inventory.filter(id => id !== itemId);
+      equippedItems = equippedItems.filter(id => id !== itemId);
+      delete equipmentPurchases[itemId];
+      renderEquipment();
+      synchronize();
+    }
+  } else if (item.rebirthReset) {
+    if (!isShatteredRebirth()) return;
+    inventory = inventory.filter(id => id !== itemId);
+    equippedItems = equippedItems.filter(id => id !== itemId);
+    delete equipmentPurchases[itemId];
+    rebuildForShatteredRebirth();
+  } else if (item.healing) {
     const total = Array.from({ length: 2 }, () => Math.floor(Math.random() * 4) + 1).reduce((sum, value) => sum + value, 2);
     updateResource('heal', total);
     setResourceMessage(`${item.name} usada: curou ${total} PV.`);
@@ -1546,6 +1673,88 @@ function refreshResourceDisplay() {
   });
 }
 
+function clampPlague(value) {
+  return Math.max(0, Math.min(10, Number(value) || 0));
+}
+
+function updatePlagueScore(nextValue, message = '') {
+  plagueScore = clampPlague(nextValue);
+  renderSystemMode();
+  if (message) setResourceMessage(message);
+  saveDraftSoon();
+}
+
+function markShatteredDeath(reason = 'morte') {
+  if (!isShatteredRebirth()) return false;
+  const maxHp = getCalculatedMaxHp();
+  const hp = document.getElementById('currentHp');
+  touchResource('hp');
+  writeResourceNumber(hp, Math.max(1, Math.floor(maxHp / 2)));
+  updatePlagueScore(plagueScore + 1, `Shattered Rebirth: ${reason}. Você retorna com ${hp.value} PV e a Praga Estilhaçada sobe para ${clampPlague(plagueScore + 1)}/10.`);
+  refreshResourceDisplay();
+  return true;
+}
+
+function lowerShatteredPlague(amount = 1, source = 'tratamento') {
+  if (!isShatteredRebirth()) return false;
+  const before = plagueScore;
+  updatePlagueScore(plagueScore - amount, `Shattered Rebirth: ${source} reduziu a praga de ${before}/10 para ${clampPlague(before - amount)}/10.`);
+  return true;
+}
+
+function rebuildForShatteredRebirth() {
+  const snapshot = getCharacterData();
+  const keep = {
+    id: snapshot.id,
+    sistema: snapshot.sistema,
+    nome: snapshot.nome,
+    jogador: snapshot.jogador,
+    historia: snapshot.historia,
+    habilidades: snapshot.habilidades,
+    photo: snapshot.photo,
+    banner: snapshot.banner,
+    plagueScore
+  };
+  resetFicha();
+  activeCharacterId = keep.id;
+  elements.sistema.value = systemNames.SHATTERED_REBIRTH;
+  plagueScore = keep.plagueScore;
+  refreshSystemOptions({ preserve: false });
+  elements.nome.value = keep.nome;
+  elements.jogador.value = keep.jogador;
+  elements.historia.value = keep.historia;
+  elements.habilidades.value = keep.habilidades;
+  if (keep.photo) {
+    elements.photoPreview.innerHTML = `<img src="${keep.photo}" alt="Personagem" />`;
+    elements.photoPreview.dataset.photo = keep.photo;
+  }
+  applyBanner(keep.banner || '');
+  setResourceMessage('Glassheart Effigy consumida: a ficha foi preparada para renascimento. Escolha nova raça, classe e distribuição.');
+  synchronize();
+}
+
+function renderSystemMode() {
+  const panel = document.getElementById('shatteredRebirthPanel');
+  if (!panel) return;
+  const active = isShatteredRebirth();
+  panel.classList.toggle('hidden', !active);
+  document.body.classList.toggle('shattered-mode', active);
+  if (!active) return;
+
+  const value = clampPlague(plagueScore);
+  const progress = document.getElementById('plagueProgress');
+  document.getElementById('plagueValue').textContent = value;
+  progress.value = value;
+  const state = value >= 10
+    ? 'A praga está no limite: o mestre deve cobrar perda severa de memória, técnica ou identidade.'
+    : value >= 7
+      ? 'O tilintar domina sonhos, reflexos e lembranças. Cada retorno está ficando caro.'
+      : value >= 4
+        ? 'Farpas crescem sob a pele. A lucidez ainda responde, mas falha em silêncio.'
+        : 'Você não morre. Ao cair a 0 PV, retorna com a praga agravada.';
+  document.getElementById('plagueText').textContent = state;
+}
+
 function updateResource(action, amount) {
   const value = Math.max(0, Number(amount) || 0);
   const hp = document.getElementById('currentHp');
@@ -1554,8 +1763,14 @@ function updateResource(action, amount) {
   const maxMana = getCalculatedMaxMana();
   if (action === 'damage') {
     touchResource('hp');
-    writeResourceNumber(hp, readResourceNumber(hp) - value);
-    setResourceMessage(`Recebeu ${value} de dano.`);
+    const nextHp = readResourceNumber(hp) - value;
+    if (isShatteredRebirth() && nextHp <= 0) {
+      writeResourceNumber(hp, 0);
+      markShatteredDeath('caiu a 0 PV');
+    } else {
+      writeResourceNumber(hp, nextHp);
+      setResourceMessage(`Recebeu ${value} de dano.`);
+    }
   }
   if (action === 'heal') {
     touchResource('hp');
@@ -2217,7 +2432,7 @@ function renderClassBrowser(activeClass) {
   const browser = document.getElementById('classBrowser');
   if (!browser) return;
   browser.innerHTML = '';
-  classOptions.forEach(className => {
+  getCurrentClassOptions().forEach(className => {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = className === activeClass ? 'active' : '';
@@ -2669,6 +2884,7 @@ function synchronize() {
   renderFreeSpells();
   renderAbilityCatalog();
   updateProficiencyUI();
+  renderSystemMode();
 
   const combatHp = document.getElementById('combatHp');
   const combatProf = document.getElementById('combatProf');
@@ -3035,6 +3251,7 @@ function getCharacterData() {
     customItems,
     purchasedSpells,
     customSpells,
+    plagueScore,
     themeColors,
     storedFields: Object.fromEntries(
       [...document.querySelectorAll('[data-store]')].map(input => [input.dataset.store, input.value])
@@ -3055,6 +3272,8 @@ function loadCharacter(index) {
   isRestoringCharacter = true;
   activeCharacterId = character.id || createCharacterId();
   elements.sistema.value = character.sistema || 'D&D';
+  plagueScore = clampPlague(character.plagueScore || 0);
+  refreshSystemOptions({ preserve: false });
   elements.nome.value = character.nome || '';
   elements.jogador.value = character.jogador || '';
   elements.nivel.value = character.nivel || 1;
@@ -3074,17 +3293,21 @@ function loadCharacter(index) {
   document.getElementById('hitDie').value = character.hitDie || 'd10';
   const migratedRace = legacyRaceMap[character.raca];
   elements.raca.value = migratedRace?.[0] || character.raca || 'Forjado Bélico';
+  ensureSelectValue(elements.raca, getCurrentRaceOptions());
   applySelectedRaceBonuses();
   document.getElementById('subraca').value = character.subraca || migratedRace?.[1] || document.getElementById('subraca').value;
   applySelectedSubraceBonuses();
   elements.origem.value = character.origem || 'Acolhido';
   elements.classe1.value = character.classe1 || 'Bárbaro';
+  ensureSelectValue(elements.classe1, getCurrentClassOptions());
   elements.nivelC1.value = character.nivelC1 || 1;
   elements.multiclasse.checked = character.multiclasse || false;
   toggleMulticlassFields();
   elements.classe2.value = character.classe2 || 'Bárbaro';
+  ensureSelectValue(elements.classe2, getCurrentClassOptions());
   elements.nivelC2.value = character.nivelC2 || 1;
   elements.classe3.value = character.classe3 || 'Bárbaro';
+  ensureSelectValue(elements.classe3, getCurrentClassOptions());
   elements.nivelC3.value = character.nivelC3 || 0;
   updateClassProgression();
   document.getElementById('subclasse1').value = character.subclasse1 || document.getElementById('subclasse1').value;
@@ -3216,11 +3439,11 @@ function init() {
   isRestoringCharacter = true;
   populateSelect(elements.raca, raceOptions);
   populateSelect(elements.origem, originOptions);
-  populateSelect(elements.classe1, classOptions);
-  populateSelect(elements.classe2, classOptions);
-  populateSelect(elements.classe3, classOptions);
-  populateSelect(document.getElementById('progressionClass'), classOptions);
-  populateSelect(document.getElementById('abilityClassFilter'), ['Todas', ...classOptions]);
+  populateSelect(elements.classe1, allClassOptions);
+  populateSelect(elements.classe2, allClassOptions);
+  populateSelect(elements.classe3, allClassOptions);
+  populateSelect(document.getElementById('progressionClass'), allClassOptions);
+  populateSelect(document.getElementById('abilityClassFilter'), ['Todas', ...allClassOptions]);
   populateSelect(document.getElementById('spellClassFilter'), spellcastingClasses);
   document.getElementById('spellClassFilter').value = spellcastingClasses.includes(elements.classe1.value)
     ? elements.classe1.value
@@ -3232,6 +3455,13 @@ function init() {
   });
   document.getElementById('goldAmount').addEventListener('input', () => {
     if (Number(document.getElementById('goldAmount').value) < 0) document.getElementById('goldAmount').value = 0;
+    renderEquipment();
+    synchronize();
+  });
+  elements.sistema.addEventListener('change', () => {
+    refreshSystemOptions({ preserve: true });
+    document.getElementById('progressionClass').value = elements.classe1.value;
+    renderClassProgression();
     renderEquipment();
     synchronize();
   });
@@ -3297,11 +3527,13 @@ function init() {
   const currentManaInput = document.getElementById('currentMana');
   currentHpInput.addEventListener('input', () => {
     touchResource('hp');
-    synchronize();
+    if (isShatteredRebirth() && readResourceNumber(currentHpInput) <= 0) markShatteredDeath('caiu a 0 PV');
+    else synchronize();
   });
   currentHpInput.addEventListener('change', () => {
     touchResource('hp');
-    synchronize();
+    if (isShatteredRebirth() && readResourceNumber(currentHpInput) <= 0) markShatteredDeath('caiu a 0 PV');
+    else synchronize();
   });
   currentManaInput.addEventListener('input', () => {
     touchResource('energy');
@@ -3398,6 +3630,8 @@ function init() {
   document.getElementById('applyHealing').addEventListener('click', () => updateResource('heal', document.getElementById('resourceAmount').value));
   document.getElementById('spendMana').addEventListener('click', () => updateResource('spendMana', document.getElementById('resourceAmount').value));
   document.getElementById('restoreMana').addEventListener('click', () => updateResource('restoreMana', document.getElementById('resourceAmount').value));
+  document.getElementById('markDeath').addEventListener('click', () => markShatteredDeath('morte registrada'));
+  document.getElementById('lowerPlague').addEventListener('click', () => lowerShatteredPlague(1, 'alívio manual'));
   document.getElementById('photoUrl').addEventListener('change', event => applyImageUrl(event.target, url => {
     elements.photoPreview.innerHTML = `<img src="${url}" alt="Foto do personagem">`;
     elements.photoPreview.dataset.photo = url;
@@ -3444,6 +3678,7 @@ function init() {
   renderRaceReference();
   renderClassReference();
   initDiceRoller();
+  refreshSystemOptions({ preserve: false });
   toggleMulticlassFields();
   applySelectedRaceBonuses();
   loadSavedCharacters();

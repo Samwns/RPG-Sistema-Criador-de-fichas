@@ -128,10 +128,44 @@ export const raceData = {
     source: "Legado adaptado",
     traits: "Chifres, investida e orientação em labirintos.",
     subraces: { "Chifres de Ferro": { bonuses: { for: 2, con: 1 }, trait: "Investida poderosa." } }
+  },
+  "Fragmentado": {
+    source: "Shattered Rebirth",
+    traits: "A Praga Estilhaçada parou no meio do corpo. Você retorna após a queda, mas perde pedaços de si.",
+    subraces: {
+      "Cristal Azul": { bonuses: { sab: 2, con: 1 }, trait: "Lucidez fria; reduz pânico e delírio em cenas de horror." },
+      "Cristal Escarlate": { bonuses: { for: 2, con: 1 }, trait: "Fúria preservada; empurra o corpo além da dor." },
+      "Cristal Amarelo": { bonuses: { int: 2, dex: 1 }, trait: "Mente corrosiva; percebe padrões da praga e pontos fracos." }
+    }
+  },
+  "Vidrano": {
+    source: "Shattered Rebirth",
+    traits: "Descendentes de cidades muradas que nasceram com vidro vivo sob a pele.",
+    subraces: {
+      "Muralhado": { bonuses: { con: 2, car: 1 }, trait: "Presença severa e resistência a rejeição social." },
+      "Sino Vazio": { bonuses: { dex: 2, sab: 1 }, trait: "Ouve o tilintar antes dos surtos e emboscadas." }
+    }
+  },
+  "Cinzerroto": {
+    source: "Shattered Rebirth",
+    traits: "Sobreviventes de pilhas de cadáveres, reconstruídos por cinza, farpas e memória quebrada.",
+    subraces: {
+      "Ossário": { bonuses: { con: 2, for: 1 }, trait: "Difícil de derrubar; marcas da morte viram armadura narrativa." },
+      "Coração Opaco": { bonuses: { car: 2, sab: 1 }, trait: "Mantém empatia mesmo com lembranças faltando." }
+    }
   }
 };
 
 export const raceOptions = Object.keys(raceData);
+
+export const systemNames = {
+  DND: "D&D",
+  SHATTERED_REBIRTH: "Shattered Rebirth",
+  OTHER: "Outro"
+};
+
+export const shatteredRebirthRaceOptions = ["Fragmentado", "Vidrano", "Cinzerroto"];
+export const baseRaceOptions = raceOptions.filter(name => !shatteredRebirthRaceOptions.includes(name));
 
 export const originOptions = [
   "Acolhido", "Aventureiro Nato", "Criminoso Redimido", "Soldado Veterano"
@@ -140,6 +174,12 @@ export const originOptions = [
 export const classOptions = [
   "Bárbaro", "Guerreiro", "Paladino", "Patrulheiro", "Ladino", "Monge", "Bardo", "Clérigo", "Mago", "Feiticeiro", "Bruxo", "Druida"
 ];
+
+export const shatteredRebirthClassOptions = [
+  "Gravebound", "Shard Knight", "Plague Warden", "Bell Seer", "Ashen Vagrant"
+];
+
+export const allClassOptions = [...classOptions, ...shatteredRebirthClassOptions];
 
 export const xpThresholds = [
   0, 300, 900, 2700, 6500, 14000, 23000, 34000, 48000, 64000,
@@ -159,7 +199,12 @@ export const classData = {
   "Mago": { multiclass: { all: ["int"] }, saves: ["int", "sab"], hitDie: "d6", attackStat: "int", attackDie: "1d6", weaponStyle: "Truques e foco arcano", castingStat: "int", subclasses: ["Evocador", "Ilusionista"], core: ["Grimório", "Recuperação Arcana", "Memorizar Magia", "Maestria em Magia", "Magias Características"] },
   "Feiticeiro": { multiclass: { all: ["car"] }, saves: ["con", "car"], hitDie: "d6", attackStat: "car", attackDie: "1d6", weaponStyle: "Truques e magia inata", castingStat: "car", subclasses: ["Feitiçaria Dracônica", "Magia Selvagem Controlada"], core: ["Conjuração Inata", "Fonte de Magia", "Metamagia", "Restauração Feiticeira"] },
   "Bruxo": { multiclass: { all: ["car"] }, saves: ["sab", "car"], hitDie: "d8", attackStat: "car", attackDie: "1d10", weaponStyle: "Rajada mística ou arma de pacto", castingStat: "car", subclasses: ["Patrono Corruptor", "Patrono Feérico"], core: ["Magia de Pacto", "Invocações Místicas", "Dádiva do Pacto", "Arcanos Místicos"] },
-  "Druida": { multiclass: { all: ["sab"] }, saves: ["int", "sab"], hitDie: "d8", attackStat: "sab", attackDie: "1d8", weaponStyle: "Magia natural, cajado ou forma selvagem", castingStat: "sab", subclasses: ["Círculo da Terra", "Círculo da Lua"], core: ["Druídico", "Conjuração", "Forma Selvagem", "Corpo Atemporal", "Arquedruida"] }
+  "Druida": { multiclass: { all: ["sab"] }, saves: ["int", "sab"], hitDie: "d8", attackStat: "sab", attackDie: "1d8", weaponStyle: "Magia natural, cajado ou forma selvagem", castingStat: "sab", subclasses: ["Círculo da Terra", "Círculo da Lua"], core: ["Druídico", "Conjuração", "Forma Selvagem", "Corpo Atemporal", "Arquedruida"] },
+  "Gravebound": { multiclass: { all: ["con"] }, saves: ["con", "sab"], hitDie: "d12", attackStat: "for/con", attackDie: "1d12", weaponStyle: "Armas pesadas, carne morta e resistência brutal", castingStat: "", subclasses: ["Corpse Saint", "Pit Revenant", "Bone Lantern"], core: ["Undying Flesh", "Corpse Rise", "Grave Debt", "Shatter Resist", "Last Memory"] },
+  "Shard Knight": { multiclass: { any: ["for", "dex"] }, saves: ["for", "con"], hitDie: "d10", attackStat: "for/dex", attackDie: "1d10", weaponStyle: "Lâminas rachadas, escudos de vidro e duelos lentos", castingStat: "", subclasses: ["Glass Bastion", "Red Edge", "Mirror Duelist"], core: ["Crystal Guard", "Splinter Counter", "Heavy Step", "Shardbreaker", "Crown of Cuts"] },
+  "Plague Warden": { multiclass: { all: ["sab"] }, saves: ["sab", "con"], hitDie: "d8", attackStat: "sab/dex", attackDie: "1d8", weaponStyle: "Ferramentas de contenção, sinos e lâminas cirúrgicas", castingStat: "sab", subclasses: ["Bell Doctor", "Yellow Choir", "Mercy Cleaver"], core: ["Plague Sense", "Lull the Chime", "Warding Rite", "Cleanse Shards", "Silent Ward"] },
+  "Bell Seer": { multiclass: { all: ["int"] }, saves: ["int", "sab"], hitDie: "d6", attackStat: "int", attackDie: "1d6", weaponStyle: "Presságios, vidro ressonante e rituais mentais", castingStat: "int", subclasses: ["Blue Oracle", "Broken Choir", "Dream Cartographer"], core: ["Hear the Glass", "Echo Casting", "Memory Map", "Fracture Vision", "Half-Sung Fate"] },
+  "Ashen Vagrant": { multiclass: { all: ["dex"] }, saves: ["dex", "car"], hitDie: "d8", attackStat: "dex/car", attackDie: "1d6", weaponStyle: "Adagas, truques sujos e mobilidade de estrada", castingStat: "car", subclasses: ["Road Heretic", "Wall Exile", "Cinder Trickster"], core: ["Hunted Step", "Borrowed Face", "Rotten Luck", "Escape the Pile", "Nameless Return"] }
 };
 
 export const universalLevelFeatures = {
@@ -221,7 +266,14 @@ export const raceAbilityBySubrace = {
   Bugbear: "Alcance e surpresa.",
   Hobgoblin: "Disciplina marcial.",
   "Caçador dos Pântanos": "Sobrevivência anfíbia.",
-  "Chifres de Ferro": "Investida poderosa."
+  "Chifres de Ferro": "Investida poderosa.",
+  "Cristal Azul": "Lucidez fragmentada.",
+  "Cristal Escarlate": "Fúria de vidro.",
+  "Cristal Amarelo": "Percepção corrosiva.",
+  Muralhado: "Sangue das muralhas.",
+  "Sino Vazio": "Audição do tilintar.",
+  "Ossário": "Carne de ossário.",
+  "Coração Opaco": "Empatia persistente."
 };
 
 export const distInputs = [

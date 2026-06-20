@@ -36,7 +36,12 @@ export const abilityCatalog = [
   { className: "Druida", name: "Forma Selvagem Menor", cost: 2, description: "Assuma uma forma animal simples para exploração por curto período." },
   { className: "Feiticeiro", name: "Metamagia: Acelerar", cost: 3, description: "Uma magia simples pode ser conjurada como ação rápida, se o mestre permitir." },
   { className: "Bruxo", name: "Invocação: Visão Arcana", cost: 2, description: "Detecte traços mágicos próximos sem gastar espaço de magia." },
-  { className: "Mago", name: "Recuperação Arcana", cost: 2, description: "Recupere parte da energia mágica após um descanso curto." }
+  { className: "Mago", name: "Recuperação Arcana", cost: 2, description: "Recupere parte da energia mágica após um descanso curto." },
+  { className: "Gravebound", name: "Mão do Ossário", cost: 1, description: "Depois de retornar, ganhe vantagem narrativa para se levantar, agarrar ou bloquear passagem." },
+  { className: "Shard Knight", name: "Postura de Vidro", cost: 1, description: "Até o fim da cena, descreva defesa rígida; o próximo contra-ataque recebe +1 no dano." },
+  { className: "Plague Warden", name: "Sutura de Sinos", cost: 2, description: "Reduza sintomas de um Fragmentado na cena e permita uma tentativa segura de recuar." },
+  { className: "Bell Seer", name: "Presságio Partido", cost: 2, description: "Antes de uma rolagem importante, declare uma visão curta para ganhar +2 ou revelar risco oculto." },
+  { className: "Ashen Vagrant", name: "Nome Emprestado", cost: 1, description: "Passe por guarda, patrulha ou testemunha usando identidade roubada ou esquecida." }
 ];
 
 export const spellCatalog = [
