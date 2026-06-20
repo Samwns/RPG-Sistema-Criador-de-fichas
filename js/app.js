@@ -419,6 +419,12 @@ function isShatteredRebirth() {
 function getCurrentRaceOptions() {
   const system = normalizeSystemValue(elements.sistema.value);
   if (system === systemNames.OTHER) return raceOptions;
+  if (system === systemNames.SHATTERED_REBIRTH) {
+    return raceOptions.filter(name => {
+      const tags = raceSystemTags[name] || [];
+      return tags.includes(systemNames.DND) || tags.includes(systemNames.SHATTERED_REBIRTH);
+    });
+  }
   return raceOptions.filter(name => raceSystemTags[name]?.includes(system));
 }
 

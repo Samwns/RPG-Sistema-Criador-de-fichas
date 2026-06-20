@@ -157,7 +157,7 @@ export const raceData = {
 };
 
 export const systemNames = {
-  DND: "DND",
+  DND: "D&D",
   SHATTERED_REBIRTH: "SR",
   OSR: "OSR",
   T20: "T20",
@@ -167,7 +167,7 @@ export const systemNames = {
 };
 
 export const systemLabels = {
-  DND: "DND",
+  "D&D": "D&D",
   SR: "SR",
   OSR: "OSR",
   T20: "T20",
@@ -177,6 +177,7 @@ export const systemLabels = {
 };
 
 export const legacySystemMap = {
+  DND: systemNames.DND,
   "D&D": systemNames.DND,
   "Shattered Rebirth": systemNames.SHATTERED_REBIRTH,
   Outro: systemNames.OTHER
@@ -197,13 +198,16 @@ Object.keys(raceData).forEach(name => {
 const generatedRaceGroups = [
   {
     system: systemNames.DND,
-    source: "DND · expansão da mesa",
+    source: "D&D · expansão da mesa",
     names: ["Aasimar", "Genasi", "Kenku", "Tritão", "Centauro", "Changeling", "Shifter", "Kalashtar", "Harengon", "Fada", "Sátiro", "Leonino", "Vedalken", "Simic Híbrido", "Gith", "Yuan-ti", "Kobold", "Tortle", "Owlin", "Draco-Elfo"]
   },
   {
     system: systemNames.SHATTERED_REBIRTH,
     source: "SR · Praga Estilhaçada",
-    names: ["Sangue de Prisma", "Eco de Vidro", "Morto-Lúcido", "Muralha Quebrada", "Coro Azul", "Coro Amarelo", "Coro Escarlate", "Lágrima de Quartzo", "Peregrino Rachado", "Carne de Espelho", "Vulto Estilhaçado", "Filho do Ossário", "Cinza de Sino", "Vidrano-Elfo", "Fragmentado-Anão", "Coração de Caco", "Olho de Safira"]
+    names: [
+      "Sangue de Prisma", "Eco de Vidro", "Morto-Lúcido", "Muralha Quebrada", "Coro Azul", "Coro Amarelo", "Coro Escarlate", "Lágrima de Quartzo", "Peregrino Rachado", "Carne de Espelho", "Vulto Estilhaçado", "Filho do Ossário", "Cinza de Sino", "Vidrano-Elfo", "Fragmentado-Anão", "Coração de Caco", "Olho de Safira",
+      "Humano Fragmentado", "Elfo Estilhaçado", "Anão de Cristal", "Halfling do Sino", "Dragonborn Rachado", "Gnomo Prismático", "Tiefling de Caco", "Orc Vidrado", "Goliata de Quartzo", "Forjado de Vidro", "Tabaxi Escarlate", "Firbolg Azul", "Goblin Amarelo", "Minotauro Espelhado", "Povo-Lagarto de Prisma", "Aasimar Quebrado", "Genasi Vitrificado", "Kenku do Tilintar", "Centauro de Ossário", "Changeling Opaco", "Shifter de Farpas", "Kalashtar Ecoado", "Harengon de Cinza", "Fada do Vidro", "Sátiro Rachado", "Leonino de Quartzo", "Vedalken do Coro", "Kobold Cristalino", "Tortle de Muralha", "Owlin do Sino"
+    ]
   },
   {
     system: systemNames.OSR,
