@@ -51,6 +51,7 @@ let customItems = [];
 let purchasedSpells = [];
 let customSpells = [];
 let plagueScore = 0;
+let srStarterKitGranted = false;
 let themeColors = { primary: '#7EBAEE', secondary: '#F0A06F' };
 let masterState = { enemies: [], maps: [], encounters: [] };
 let appearanceState = {
@@ -152,13 +153,22 @@ const equipmentCatalog = [
   { id: 'staff_archmage', name: 'Cajado do Arquimago', category: 'Foco', rarity: 'Lendário', cost: 34, die: 6, attribute: 'int', attackBonus: 2, damageBonus: 2, spellBonus: 2, range: '1,5 m', description: '+2 em ataques, dano de arma e magia. Foco lendário.' },
   { id: 'ring_wish', name: 'Anel do Desejo Guardado', category: 'Acessório', rarity: 'Lendário', cost: 40, spellBonus: 3, description: '+3 em magia e espaço narrativo para um milagre raro controlado pelo mestre.' },
   { id: 'amulet_health', name: 'Amuleto da Vitalidade', category: 'Acessório', rarity: 'Raro', cost: 16, maxHpBonus: 10, description: '+10 PV máximos enquanto estiver no inventário.' },
-  { id: 'glassheart_effigy', name: 'Glassheart Effigy', category: 'Consumível', rarity: 'Único', cost: 0, uniqueSystem: systemNames.SHATTERED_REBIRTH, rebirthReset: true, description: 'Item único de Shattered Rebirth. Consuma para refazer a ficha mantendo identidade, história e praga atual.' },
-  { id: 'shardbane_tonic', name: 'Shardbane Tonic', category: 'Consumível', rarity: 'Raro', cost: 6, uniqueSystem: systemNames.SHATTERED_REBIRTH, plagueRelief: 1, description: 'Tônico raro que reduz a Praga Estilhaçada em 1. A doença recua, mas nunca desaparece de verdade.' }
+  { id: 'glassheart_effigy', name: 'Efígie do Coração de Vidro', category: 'Consumível', rarity: 'Único', cost: 0, uniqueSystem: systemNames.SHATTERED_REBIRTH, starterOnly: true, rebirthReset: true, description: 'Item inicial único. Consuma para recriar a ficha; nome, história e praga permanecem, mas todos os níveis, XP, atributos, classe, habilidades e demais itens são perdidos.' },
+  { id: 'shardbane_tonic', name: 'Tônico Antiestilhaço', category: 'Consumível', rarity: 'Raro', cost: 0, uniqueSystem: systemNames.SHATTERED_REBIRTH, starterOnly: true, plagueRelief: 1, description: 'Item inicial consumível. Abafa temporariamente a melodia e reduz a Praga Estilhaçada em 1 nível.' }
 ];
 
 function getEquipmentCatalog() {
   const currentSystem = normalizeSystemValue(elements?.sistema?.value || systemNames.DND);
   return [...equipmentCatalog, ...customItems].filter(item => !item.uniqueSystem || item.uniqueSystem === currentSystem);
+}
+
+function ensureShatteredStarterInventory() {
+  if (!isShatteredRebirth() || srStarterKitGranted) return;
+  ['glassheart_effigy', 'shardbane_tonic'].forEach(itemId => {
+    if (!inventory.includes(itemId)) inventory.push(itemId);
+    equipmentPurchases[itemId] = 'starter';
+  });
+  srStarterKitGranted = true;
 }
 
 const featureDescriptions = {
@@ -229,6 +239,31 @@ const featureDescriptions = {
   "Rotten Luck": "Transforme azar em oportunidade suja uma vez por cena.",
   "Escape the Pile": "Saia de contenções, escombros e cadáveres antes que percebam.",
   "Nameless Return": "Retorne sem nome por um instante e escape de uma consequência social.",
+  "Carne Imortal": "Quando cai, o cristal recusa o fim. Você retorna marcado pela praga em vez de abandonar a ficha.",
+  "Erguer do Cadáver": "Levante de uma queda recente usando a força guardada nos ossos e farpas.",
+  "Dívida da Sepultura": "Converta uma lembrança ameaçada em resistência para proteger outro Fragmentado.",
+  "Resistência ao Estilhaço": "Suporte melhor dor, sangramento e crescimento violento de cristal.",
+  "Última Memória": "Escolha uma lembrança essencial e use-a como âncora quando a praga tentar consumir sua identidade.",
+  "Guarda de Cristal": "Faça as farpas crescerem como escudo antes que elas rasguem sua carne.",
+  "Contra-Ataque de Farpas": "Devolva ao agressor os estilhaços arrancados da sua proteção.",
+  "Passo Pesado": "Avance como uma muralha viva, difícil de empurrar ou interromper.",
+  "Quebra-Estilhaços": "Encontre a fissura de cristais, armaduras e monumentos infectados.",
+  "Coroa de Cortes": "Assuma controle temporário das farpas sem esconder o preço cobrado ao corpo.",
+  "Sentir a Praga": "Perceba infectados, surtos próximos e lugares onde a melodia ficou presa.",
+  "Silenciar o Tilintar": "Acalme por alguns instantes o som que conduz um infectado à paranoia.",
+  "Rito de Proteção": "Trace sinais e toque sinos de contenção para atrasar a transformação.",
+  "Purificar Farpas": "Remova cristal instável antes que ele alcance órgãos ou memórias importantes.",
+  "Guarda Silenciosa": "Crie uma zona breve onde a melodia da praga perde força.",
+  "Ouvir o Vidro": "Escute ecos de morte, retorno e delírio guardados em superfícies cristalizadas.",
+  "Conjuração de Eco": "Transforme ressonância e lembranças repetidas em efeito arcano.",
+  "Mapa de Memórias": "Reconstrua caminhos a partir de fragmentos de experiências esquecidas.",
+  "Visão Fraturada": "Enxergue futuros possíveis como rachaduras e escolha qual delas evitar.",
+  "Destino Interrompido": "Faça a melodia parar no meio para negar uma consequência imediata.",
+  "Passo do Caçado": "Atravesse estradas e becos usando o instinto de quem nunca pode descansar.",
+  "Rosto Emprestado": "Vista hábitos, gestos e nomes de uma identidade que talvez já tenha sido sua.",
+  "Sorte Apodrecida": "Transforme um fracasso sujo em oportunidade antes que tudo desabe.",
+  "Escapar da Vala": "Saia de escombros, contenções e pilhas de mortos sem entregar sua posição.",
+  "Retorno sem Nome": "Apague sua presença por um instante e volte sem o peso da identidade perseguida.",
   "Fúria": "Entre em fúria para receber vantagem narrativa em força, resistir melhor a dano físico e causar mais impacto corpo a corpo.",
   "Defesa sem Armadura": "Quando estiver sem armadura pesada, sua resistência e agilidade ajudam a compor a defesa.",
   "Ataque Imprudente": "Você pode atacar com brutalidade, ganhando pressão ofensiva em troca de se expor até o próximo turno.",
@@ -305,21 +340,21 @@ const subclassDescriptions = {
   "Patrono Feérico": "Bruxo de encanto, ilusão e barganhas com cortes feéricas.",
   "Círculo da Terra": "Druida conjurador ligado a biomas e recuperação natural.",
   "Círculo da Lua": "Druida focado em Forma Selvagem forte e combate animal.",
-  "Corpse Saint": "Gravebound que protege outros Fragmentados com o próprio corpo morto-vivo.",
-  "Pit Revenant": "Retornado de valas comuns, focado em dano, medo e sobrevivência bruta.",
-  "Bone Lantern": "Carrega luz de ossário para guiar aliados e repelir infectados quebrados.",
-  "Glass Bastion": "Shard Knight defensivo, feito para muralhas, escudos e resistência.",
-  "Red Edge": "Duelista escarlate que converte dor em cortes violentos.",
-  "Mirror Duelist": "Lutador técnico que usa reflexos, fintas e cópias quebradas.",
-  "Bell Doctor": "Plague Warden cirúrgico, capaz de conter surtos e aliviar a praga.",
-  "Yellow Choir": "Médico herege que entende a melodia corrosiva e a usa contra inimigos.",
-  "Mercy Cleaver": "Executor de misericórdia que impede transformações completas.",
-  "Blue Oracle": "Bell Seer frio e lúcido, guiado por cristais azuis e previsões curtas.",
-  "Broken Choir": "Vidente que canta junto da praga para distorcer mente e som.",
-  "Dream Cartographer": "Mapeia memórias, sonhos e rotas impossíveis entre mortes.",
-  "Road Heretic": "Ashen Vagrant caçado nas estradas, especialista em fuga e emboscada.",
-  "Wall Exile": "Exilado das muralhas que conhece leis, guardas e passagens proibidas.",
-  "Cinder Trickster": "Trapaceiro de cinza que troca identidade por sobrevivência."
+  "Santo do Cadáver": "Protege outros Fragmentados com o corpo que já foi abandonado pela morte.",
+  "Retornado da Vala": "Usa o horror das pilhas de cadáveres como força, medo e resistência bruta.",
+  "Lanterna de Ossos": "Acende luz entre ossos e memórias para guiar aliados e repelir quebrados.",
+  "Bastião de Vidro": "Ergue placas de cristal para defender estradas, refúgios e companheiros caçados.",
+  "Lâmina Escarlate": "Converte dor e crescimento vermelho em golpes violentos e precisos.",
+  "Duelista do Espelho": "Combate com reflexos, fintas e imagens de vidas que já esqueceu.",
+  "Médico do Sino": "Opera farpas e usa sinos para conter surtos antes da transformação completa.",
+  "Coro Amarelo": "Entende a melodia corrosiva e a devolve contra infectados hostis.",
+  "Cutelo da Misericórdia": "Interrompe mutações irreversíveis quando nenhum tratamento ainda responde.",
+  "Oráculo Azul": "Preserva lucidez por meio de cristais azuis e previsões breves.",
+  "Coro Quebrado": "Canta junto da praga para distorcer mente, som e intenção.",
+  "Cartógrafo dos Sonhos": "Mapeia memórias, pesadelos e rotas impossíveis entre retornos.",
+  "Herege da Estrada": "Conhece rotas de fuga, emboscadas e refúgios proibidos fora das muralhas.",
+  "Exilado das Muralhas": "Usa leis, hábitos de guardas e passagens esquecidas contra os perseguidores.",
+  "Trapaceiro das Cinzas": "Troca identidade, rumor e sorte por mais uma noite de sobrevivência."
 };
 
 const spellSchoolDescriptions = {
@@ -334,11 +369,13 @@ const spellSchoolDescriptions = {
 };
 
 function describeFeature(name) {
-  return featureDescriptions[name] || "Recurso automático já liberado na ficha. Defina o detalhe final com o mestre e registre qualquer limite de uso na descrição.";
+  const generatedDescription = Object.values(classData).find(data => data.featureDetails?.[name])?.featureDetails?.[name];
+  return featureDescriptions[name] || generatedDescription || "Recurso automático já liberado na ficha. Defina o detalhe final com o mestre e registre qualquer limite de uso na descrição.";
 }
 
 function describeSubclass(name) {
-  return subclassDescriptions[name] || "Subclasse jogável com recursos no nível 3, 6, 10 e 14. Defina detalhes com o mestre antes da campanha.";
+  const generatedDescription = Object.values(classData).find(data => data.subclassDetails?.[name])?.subclassDetails?.[name];
+  return subclassDescriptions[name] || generatedDescription || "Subclasse jogável com recursos no nível 3, 6, 10 e 14. Defina detalhes com o mestre antes da campanha.";
 }
 
 function describeSpell(spell) {
@@ -829,6 +866,7 @@ function resetFicha() {
   purchasedSpells = [];
   customSpells = [];
   plagueScore = 0;
+  srStarterKitGranted = false;
   bannerPhoto = '';
   applyDynamicTheme('#7EBAEE', '#F0A06F');
   resetSkillEditor();
@@ -1115,7 +1153,7 @@ function getEquipmentBudget() {
 
 function getEquipmentSpent() {
   return inventory.reduce((sum, itemId) => {
-    if (equipmentPurchases[itemId] === 'gold') return sum;
+    if (equipmentPurchases[itemId] === 'gold' || equipmentPurchases[itemId] === 'starter') return sum;
     return sum + (getEquipmentCatalog().find(item => item.id === itemId)?.cost || 0);
   }, 0);
 }
@@ -1183,6 +1221,10 @@ function useInventoryItem(itemId) {
   const item = getEquipmentCatalog().find(entry => entry.id === itemId);
   if (!item) return;
   if (item.plagueRelief) {
+    if (plagueScore <= 0) {
+      setResourceMessage(`${item.name} não foi consumido: a Praga Estilhaçada já está em 0/10.`);
+      return;
+    }
     if (lowerShatteredPlague(item.plagueRelief, item.name)) {
       inventory = inventory.filter(id => id !== itemId);
       equippedItems = equippedItems.filter(id => id !== itemId);
@@ -1192,6 +1234,8 @@ function useInventoryItem(itemId) {
     }
   } else if (item.rebirthReset) {
     if (!isShatteredRebirth()) return;
+    const confirmed = window.confirm('Consumir a Efígie do Coração de Vidro? A ficha será recriada no nível 1 e perderá todo XP, classes, atributos, habilidades e itens acumulados.');
+    if (!confirmed) return;
     inventory = inventory.filter(id => id !== itemId);
     equippedItems = equippedItems.filter(id => id !== itemId);
     delete equipmentPurchases[itemId];
@@ -1252,7 +1296,7 @@ function rollShopPurchase(currency = 'points') {
   const spent = getEquipmentSpent();
   const gold = getCurrentGold();
   const candidates = getEquipmentCatalog().filter(item => {
-    if (inventory.includes(item.id)) return false;
+    if (inventory.includes(item.id) || item.starterOnly) return false;
     return currency === 'gold'
       ? getGoldCost(item) <= gold
       : spent + item.cost <= budget;
@@ -1286,7 +1330,7 @@ function renderEquipment() {
   document.getElementById('inventoryCount').textContent = inventory.length;
 
   shop.innerHTML = '';
-  getEquipmentCatalog().forEach(item => {
+  getEquipmentCatalog().filter(item => !item.starterOnly).forEach(item => {
     const owned = inventory.includes(item.id);
     const goldCost = getGoldCost(item);
     const card = document.createElement('article');
@@ -1337,11 +1381,13 @@ function renderEquipment() {
       equipButton.addEventListener('click', () => toggleEquippedItem(item.id));
       row.appendChild(equipButton);
     }
-    const sellButton = document.createElement('button');
-    sellButton.type = 'button';
-    sellButton.textContent = 'Vender';
-    sellButton.addEventListener('click', () => sellEquipment(item.id));
-    row.appendChild(sellButton);
+    if (!item.starterOnly) {
+      const sellButton = document.createElement('button');
+      sellButton.type = 'button';
+      sellButton.textContent = 'Vender';
+      sellButton.addEventListener('click', () => sellEquipment(item.id));
+      row.appendChild(sellButton);
+    }
     target.appendChild(row);
   };
 
@@ -1375,13 +1421,14 @@ function renderEquipment() {
   });
 
   usableItemList.innerHTML = '';
-  const usable = ownedItems.filter(canUseItem);
+  const usable = ownedItems.filter(item => canUseItem(item) && !item.starterOnly);
   if (!usable.length) usableItemList.innerHTML = '<p class="system-rule">Nenhum item usável no inventário.</p>';
   usable.forEach(item => renderInventoryRow(item, usableItemList, { compact: true, includeEquip: false, includeUse: true }));
 
   craftSuggestions.innerHTML = '';
   const className = elements.classe1.value;
   const craftPool = getEquipmentCatalog().filter(item => {
+    if (item.starterOnly) return false;
     if (className === 'Mago' || className === 'Feiticeiro' || className === 'Clérigo') return ['Pergaminho', 'Foco', 'Consumível'].includes(item.category);
     if (className === 'Guerreiro' || className === 'Bárbaro' || className === 'Paladino') return ['Arma', 'Armadura'].includes(item.category);
     if (className === 'Ladino' || className === 'Patrulheiro') return ['Arma', 'Aventura', 'Consumível'].includes(item.category);
@@ -1729,12 +1776,14 @@ function rebuildForShatteredRebirth() {
     habilidades: snapshot.habilidades,
     photo: snapshot.photo,
     banner: snapshot.banner,
-    plagueScore
+    plagueScore,
+    srStarterKitGranted: true
   };
   resetFicha();
   activeCharacterId = keep.id;
   elements.sistema.value = systemNames.SHATTERED_REBIRTH;
   plagueScore = keep.plagueScore;
+  srStarterKitGranted = keep.srStarterKitGranted;
   refreshSystemOptions({ preserve: false });
   elements.nome.value = keep.nome;
   elements.jogador.value = keep.jogador;
@@ -1745,7 +1794,7 @@ function rebuildForShatteredRebirth() {
     elements.photoPreview.dataset.photo = keep.photo;
   }
   applyBanner(keep.banner || '');
-  setResourceMessage('Glassheart Effigy consumida: a ficha foi preparada para renascimento. Escolha nova raça, classe e distribuição.');
+  setResourceMessage('Efígie consumida: a ficha retornou ao nível 1 e perdeu XP, classes, atributos, habilidades e itens acumulados. Escolha uma nova construção.');
   synchronize();
 }
 
@@ -2404,6 +2453,7 @@ function renderClassProgression() {
   renderClassBrowser(className);
   overview.innerHTML = `
     <div><p class="panel-kicker">Dado de vida ${data.hitDie}</p><h3>${className}</h3></div>
+    ${data.description ? `<p class="system-rule full-width">${data.description}</p>` : ''}
     <div><b>Status de ataque</b><p>${formatAttributeLabel(data.attackStat)} · ${data.attackDie} · ${data.weaponStyle}</p></div>
     <div><b>Salvaguardas</b><p>Proficiência em ${data.saves.map(formatAttributeLabel).join(' e ')}</p></div>
     <div><b>Conjuração</b><p>${data.castingStat ? formatAttributeLabel(data.castingStat) : 'Não conjurador base'}</p></div>
@@ -2464,9 +2514,14 @@ function renderClassBrowser(activeClass) {
 function getAutomaticAbilities() {
   const subrace = document.getElementById('subraca').value;
   const abilities = [];
-  if (raceAbilityBySubrace[subrace]) {
-    const feature = raceAbilityBySubrace[subrace];
-    abilities.push({ source: subrace, name: feature, description: describeFeature(feature) });
+  const subraceData = raceData[elements.raca.value]?.subraces?.[subrace];
+  const racialFeature = subraceData?.ability || raceAbilityBySubrace[subrace];
+  if (racialFeature) {
+    abilities.push({
+      source: subrace,
+      name: racialFeature,
+      description: subraceData?.abilityDescription || describeFeature(racialFeature)
+    });
   }
   getClassBuild().forEach(entry => {
     const data = classData[entry.className];
@@ -2803,7 +2858,9 @@ function renderRaceReference() {
   grid.innerHTML = '';
   Object.entries(raceData).forEach(([name, race]) => {
     const article = document.createElement('article');
-    const subraces = Object.keys(race.subraces).join(' · ');
+    const subraces = Object.entries(race.subraces)
+      .map(([subraceName, subrace]) => `<b>${subraceName}:</b> ${subrace.trait}${subrace.ability ? ` Habilidade: ${subrace.ability}. ${subrace.abilityDescription}` : ''}`)
+      .join('<br>');
     article.innerHTML = `<h3>${name}</h3><b>${race.source}</b><p>${race.traits}</p><small>${subraces}</small>`;
     grid.appendChild(article);
   });
@@ -2815,7 +2872,7 @@ function renderClassReference() {
   grid.innerHTML = '';
   Object.entries(classData).forEach(([name, data]) => {
     const article = document.createElement('article');
-    article.innerHTML = `<h3>${name}</h3><b>${data.hitDie} · ATK ${formatAttributeLabel(data.attackStat)} · ${data.attackDie}</b><p>${data.weaponStyle}. ${data.core.map(feature => `${feature}: ${describeFeature(feature)}`).join(' ')}</p><small>Salvaguardas: ${data.saves.map(formatAttributeLabel).join(' e ')} · Conjuração: ${data.castingStat ? formatAttributeLabel(data.castingStat) : 'não conjurador base'} · Subclasses: ${data.subclasses.map(subclass => `${subclass} (${describeSubclass(subclass)})`).join(' · ')}</small>`;
+    article.innerHTML = `<h3>${name}</h3><b>${data.hitDie} · ATK ${formatAttributeLabel(data.attackStat)} · ${data.attackDie}</b><p>${data.description ? `${data.description} ` : ''}${data.weaponStyle}. ${data.core.map(feature => `${feature}: ${describeFeature(feature)}`).join(' ')}</p><small>Salvaguardas: ${data.saves.map(formatAttributeLabel).join(' e ')} · Conjuração: ${data.castingStat ? formatAttributeLabel(data.castingStat) : 'não conjurador base'} · Subclasses: ${data.subclasses.map(subclass => `${subclass} (${describeSubclass(subclass)})`).join(' · ')}</small>`;
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'inline-pill';
@@ -2876,6 +2933,7 @@ function updateSpellStats() {
 }
 
 function synchronize() {
+  if (!isRestoringCharacter) ensureShatteredStarterInventory();
   const earlyEnergyLabel = getEnergyLabel();
   document.querySelectorAll('[data-energy-label]').forEach(target => {
     target.textContent = earlyEnergyLabel;
@@ -3268,6 +3326,7 @@ function getCharacterData() {
     purchasedSpells,
     customSpells,
     plagueScore,
+    srStarterKitGranted,
     themeColors,
     storedFields: Object.fromEntries(
       [...document.querySelectorAll('[data-store]')].map(input => [input.dataset.store, input.value])
@@ -3289,6 +3348,7 @@ function loadCharacter(index) {
   activeCharacterId = character.id || createCharacterId();
   elements.sistema.value = normalizeSystemValue(character.sistema || systemNames.DND);
   plagueScore = clampPlague(character.plagueScore || 0);
+  srStarterKitGranted = Boolean(character.srStarterKitGranted);
   refreshSystemOptions({ preserve: false });
   elements.nome.value = character.nome || '';
   elements.jogador.value = character.jogador || '';
@@ -3355,6 +3415,7 @@ function loadCharacter(index) {
   inventory = Array.isArray(character.inventory) ? character.inventory : [];
   equippedItems = Array.isArray(character.equippedItems) ? character.equippedItems : [];
   equipmentPurchases = character.equipmentPurchases && typeof character.equipmentPurchases === 'object' ? character.equipmentPurchases : {};
+  ensureShatteredStarterInventory();
   customItems = Array.isArray(character.customItems) ? character.customItems : [];
   purchasedSpells = Array.isArray(character.purchasedSpells) ? character.purchasedSpells : [];
   customSpells = Array.isArray(character.customSpells) ? character.customSpells : [];

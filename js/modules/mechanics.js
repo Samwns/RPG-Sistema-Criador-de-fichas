@@ -133,25 +133,25 @@ export const raceData = {
     source: "Shattered Rebirth",
     traits: "A Praga Estilhaçada parou no meio do corpo. Você retorna após a queda, mas perde pedaços de si.",
     subraces: {
-      "Cristal Azul": { bonuses: { sab: 2, con: 1 }, trait: "Lucidez fria; reduz pânico e delírio em cenas de horror." },
-      "Cristal Escarlate": { bonuses: { for: 2, con: 1 }, trait: "Fúria preservada; empurra o corpo além da dor." },
-      "Cristal Amarelo": { bonuses: { int: 2, dex: 1 }, trait: "Mente corrosiva; percebe padrões da praga e pontos fracos." }
+      "Cristal Azul": { bonuses: { sab: 2, con: 1 }, trait: "O azul preserva a lucidez enquanto congela lembranças dolorosas.", ability: "Lucidez Fragmentada", abilityDescription: "Uma vez por cena, silencie o tilintar para resistir a medo, delírio ou controle mental." },
+      "Cristal Escarlate": { bonuses: { for: 2, con: 1 }, trait: "O escarlate converte dor, raiva e memórias de violência em força física.", ability: "Fúria de Vidro", abilityDescription: "Ao sofrer dano, transforme as farpas sob a pele em impulso para o próximo ataque ou esforço físico." },
+      "Cristal Amarelo": { bonuses: { int: 2, dex: 1 }, trait: "O amarelo corrói certezas e revela fissuras em matéria, mentira e pensamento.", ability: "Percepção Corrosiva", abilityDescription: "Examine um alvo ou lugar para perceber uma fraqueza, contaminação ou lembrança falsa." }
     }
   },
   "Vidrano": {
     source: "Shattered Rebirth",
     traits: "Descendentes de cidades muradas que nasceram com vidro vivo sob a pele.",
     subraces: {
-      "Muralhado": { bonuses: { con: 2, car: 1 }, trait: "Presença severa e resistência a rejeição social." },
-      "Sino Vazio": { bonuses: { dex: 2, sab: 1 }, trait: "Ouve o tilintar antes dos surtos e emboscadas." }
+      "Muralhado": { bonuses: { con: 2, car: 1 }, trait: "Criado entre muralhas que tratam infectados como feras, aprendeu a suportar suspeita e cerco.", ability: "Sangue das Muralhas", abilityDescription: "Mantenha a posição diante de multidões hostis, guardas ou criaturas que tentem expulsá-lo." },
+      "Sino Vazio": { bonuses: { dex: 2, sab: 1 }, trait: "Seu crânio ressoa antes de surtos, emboscadas e concentrações de cristal vivo.", ability: "Ouvir o Tilintar", abilityDescription: "Perceba a aproximação da Praga Estilhaçada antes que seus sinais se tornem visíveis." }
     }
   },
   "Cinzerroto": {
     source: "Shattered Rebirth",
     traits: "Sobreviventes de pilhas de cadáveres, reconstruídos por cinza, farpas e memória quebrada.",
     subraces: {
-      "Ossário": { bonuses: { con: 2, for: 1 }, trait: "Difícil de derrubar; marcas da morte viram armadura narrativa." },
-      "Coração Opaco": { bonuses: { car: 2, sab: 1 }, trait: "Mantém empatia mesmo com lembranças faltando." }
+      "Ossário": { bonuses: { con: 2, for: 1 }, trait: "Voltou de uma vala onde ossos alheios se fundiram às farpas do próprio corpo.", ability: "Carne de Ossário", abilityDescription: "Ignore por um instante a dor de uma queda, esmagamento ou ferimento que impediria seu movimento." },
+      "Coração Opaco": { bonuses: { car: 2, sab: 1 }, trait: "Perde nomes e rostos a cada retorno, mas protege a emoção que ainda os ligava.", ability: "Empatia Persistente", abilityDescription: "Use um vínculo ou promessa esquecida para alcançar alguém dominado por paranoia ou fúria." }
     }
   }
 };
@@ -232,15 +232,63 @@ const raceAttributePairs = [
   ["for", "con"], ["dex", "sab"], ["int", "dex"], ["car", "sab"], ["con", "car"], ["sab", "int"]
 ];
 
+const shatteredCrystalThemes = [
+  { color: "azul", gift: "lucidez", cost: "uma lembrança afetiva perde calor e detalhes" },
+  { color: "escarlate", gift: "força alimentada pela dor", cost: "a raiva passa a responder antes da razão" },
+  { color: "amarelo", gift: "percepção de fissuras e mentiras", cost: "pensamentos estranhos se misturam aos seus" },
+  { color: "opaco", gift: "resistência ao tilintar", cost: "nomes e rostos se apagam mais depressa" }
+];
+
+const shatteredAncestries = [
+  [/(Humano|Muralha|Peregrino)/i, "herança humana e adaptação às cidades muradas"],
+  [/(Elfo|Fada|Firbolg)/i, "sentidos feéricos deformados pela melodia da praga"],
+  [/(Anão|Goliata|Minotauro|Centauro)/i, "estrutura robusta que aprisiona cristais profundos"],
+  [/(Dragonborn|Kobold|Povo-Lagarto|Tortle)/i, "sangue reptiliano que altera a forma das farpas"],
+  [/(Gnomo|Vedalken|Kalashtar)/i, "mente treinada que tenta organizar memórias quebradas"],
+  [/(Tiefling|Aasimar|Genasi)/i, "energia sobrenatural contaminada pelo vidro vivo"],
+  [/(Tabaxi|Leonino|Shifter|Harengon)/i, "instinto animal que reage ao tilintar antes da consciência"],
+  [/(Goblin|Kenku|Owlin|Changeling)/i, "corpo adaptável marcado pela perseguição fora das muralhas"]
+];
+
+function describeShatteredRace(name, index) {
+  const theme = shatteredCrystalThemes[index % shatteredCrystalThemes.length];
+  const ancestry = shatteredAncestries.find(([pattern]) => pattern.test(name))?.[1]
+    || "linhagem sobrevivente das estradas, valas e ruínas contaminadas";
+  return {
+    traits: `${name} carrega ${ancestry}. Seus cristais de tom ${theme.color} interromperam a transformação completa, concedendo ${theme.gift}; a cada retorno, ${theme.cost}.`,
+    pureTrait: `A praga domina a linhagem: o cristal ${theme.color} cresce de forma previsível e responde com mais força aos seus dons.`,
+    mixedTrait: `Sangue mortal e cristal vivo disputam o corpo. A mistura preserva hábitos da ancestralidade, mas torna cada renascimento diferente do anterior.`,
+    pureAbility: `Domínio do Cristal ${theme.color[0].toUpperCase()}${theme.color.slice(1)}`,
+    mixedAbility: "Herança Entre Estilhaços",
+    pureAbilityDescription: `Uma vez por cena, manifeste ${theme.gift} sem aumentar a Praga; depois, descreva qual memória ficou mais distante.`,
+    mixedAbilityDescription: "Uma vez por cena, use um traço da ancestralidade original para conter um sintoma da praga ou proteger um aliado do tilintar."
+  };
+}
+
 generatedRaceGroups.forEach(group => {
   group.names.forEach((name, index) => {
     const [primary, secondary] = raceAttributePairs[index % raceAttributePairs.length];
+    const shattered = group.system === systemNames.SHATTERED_REBIRTH
+      ? describeShatteredRace(name, index)
+      : null;
     raceData[name] = {
       source: group.source,
-      traits: `Raça extra de ${group.system} para mesas maiores, com traços mistos e espaço para adaptação do mestre.`,
+      traits: shattered
+        ? shattered.traits
+        : `${name} reúne uma linhagem própria, costumes reconhecíveis e adaptações adequadas ao cenário de origem.`,
       subraces: {
-        [`${name} Puro`]: { bonuses: { [primary]: 2, [secondary]: 1 }, trait: "Herança direta e traço cultural forte." },
-        [`${name} Mestiço`]: { bonuses: { [secondary]: 2, [primary]: 1 }, trait: "Mistura de sangue, técnica e tradição de outro povo." }
+        [`${name} de Linhagem Dominante`]: {
+          bonuses: { [primary]: 2, [secondary]: 1 },
+          trait: shattered?.pureTrait || "A herança principal define aparência, treinamento e aptidão dominante.",
+          ability: shattered?.pureAbility || "Herança Desperta",
+          abilityDescription: shattered?.pureAbilityDescription || "Uma vez por cena, destaque o traço mais forte da sua linhagem em um teste relacionado."
+        },
+        [`${name} de Sangue Misto`]: {
+          bonuses: { [secondary]: 2, [primary]: 1 },
+          trait: shattered?.mixedTrait || "Duas heranças formam costumes, aparência e talentos que não pertencem por completo a nenhum povo.",
+          ability: shattered?.mixedAbility || "Legado Mestiço",
+          abilityDescription: shattered?.mixedAbilityDescription || "Uma vez por cena, adapte um costume ou talento herdado para superar uma situação inesperada."
+        }
       }
     };
     raceSystemTags[name] = [group.system];
@@ -295,13 +343,68 @@ const manualClassNames = new Set([
   "Gravebound", "Shard Knight", "Plague Warden", "Bell Seer", "Ashen Vagrant"
 ]);
 
+export const classDisplayNames = {
+  Gravebound: "Vinculado à Sepultura",
+  "Shard Knight": "Cavaleiro do Estilhaço",
+  "Plague Warden": "Guardião da Praga",
+  "Bell Seer": "Vidente do Sino",
+  "Ashen Vagrant": "Errante das Cinzas",
+  "Glass Monk": "Monge de Vidro",
+  "Choir Butcher": "Carniceiro do Coro",
+  "Pale Binder": "Atador Pálido",
+  "Shard Alchemist": "Alquimista de Estilhaços",
+  "Wall Hunter": "Caçador das Muralhas",
+  "Cinder Saint": "Santo das Cinzas",
+  "Blue Veil": "Véu Azul",
+  "Red Penitent": "Penitente Escarlate",
+  "Yellow Exorcist": "Exorcista Amarelo",
+  "Memory Thief": "Ladrão de Memórias",
+  "Corpse Cartographer": "Cartógrafo de Cadáveres",
+  "Mirror Pilgrim": "Peregrino do Espelho",
+  "Ruin Confessor": "Confessor das Ruínas",
+  "Bell Duelist": "Duelista do Sino",
+  "Crystal Beggar": "Mendigo de Cristal"
+};
+
+const shatteredClassThemes = [
+  ["Carne que Recusa o Fim", "Retorno Doloroso", "Dívida de Memória", "Corpo Estilhaçado", "Último Vestígio"],
+  ["Escuta do Tilintar", "Passo entre Farpas", "Marca da Praga", "Rito de Contenção", "Lucidez Amaldiçoada"],
+  ["Cinza dos Mortos", "Juramento Quebrado", "Proteção da Muralha", "Corte Misericordioso", "Nome Recuperado"]
+];
+
+function buildShatteredClassData(name, index, base) {
+  const displayName = classDisplayNames[name] || name;
+  const core = shatteredClassThemes[index % shatteredClassThemes.length].map((feature, featureIndex) => `${feature}: ${displayName}`);
+  const subclasses = [
+    `${displayName} do Cristal Azul`,
+    `${displayName} do Coro Escarlate`,
+    `${displayName} da Cinza Amarela`
+  ];
+  return {
+    ...base,
+    description: `${displayName} sobreviveu ao ponto em que a Praga Estilhaçada deveria ter consumido sua identidade. Seu treinamento transforma retorno, perseguição e perda de memória em técnicas que mantêm o grupo vivo fora das muralhas.`,
+    weaponStyle: `${displayName}: combate moldado por vidro vivo, sinos de contenção e lembranças oferecidas como preço`,
+    subclasses,
+    core,
+    featureDetails: Object.fromEntries(core.map((feature, featureIndex) => [
+      feature,
+      `No estágio ${featureIndex + 1}, ${displayName} usa a maldição sem se entregar por completo: ganha poder imediato, mas revela como a praga altera corpo, memória ou relações.`
+    ])),
+    subclassDetails: {
+      [subclasses[0]]: "Canaliza cristais azuis para preservar lucidez, prever surtos e proteger lembranças importantes.",
+      [subclasses[1]]: "Aceita a violência do cristal escarlate e converte dor, perseguição e fúria em pressão de combate.",
+      [subclasses[2]]: "Estuda o cristal amarelo, a cinza dos retornados e os ritos capazes de atrasar a transformação final."
+    }
+  };
+}
+
 function buildGeneratedClassData(name, index) {
   const attackStats = ["for", "dex", "sab", "int", "car", "for/dex", "dex/car", "sab/int"];
   const hitDice = ["d6", "d8", "d10", "d12"];
   const saves = [["for", "con"], ["dex", "int"], ["sab", "car"], ["int", "sab"], ["dex", "car"], ["con", "sab"]];
   const attackStat = attackStats[index % attackStats.length];
   const castingStat = attackStat.includes("int") ? "int" : attackStat.includes("sab") ? "sab" : attackStat.includes("car") ? "car" : "";
-  return {
+  const base = {
     multiclass: attackStat.includes("/")
       ? { any: attackStat.split("/") }
       : { all: [attackStat || "for"] },
@@ -314,6 +417,9 @@ function buildGeneratedClassData(name, index) {
     subclasses: [`${name} da Vanguarda`, `${name} do Véu`, `${name} do Juramento`],
     core: [`Base de ${name}`, `${name} Aprimorado`, `Tradição de ${name}`, `Golpe de ${name}`, `Ápice de ${name}`]
   };
+  return shatteredRebirthClassOptions.includes(name)
+    ? buildShatteredClassData(name, index, base)
+    : base;
 }
 
 export const xpThresholds = [
@@ -335,11 +441,11 @@ export const classData = {
   "Feiticeiro": { multiclass: { all: ["car"] }, saves: ["con", "car"], hitDie: "d6", attackStat: "car", attackDie: "1d6", weaponStyle: "Truques e magia inata", castingStat: "car", subclasses: ["Feitiçaria Dracônica", "Magia Selvagem Controlada"], core: ["Conjuração Inata", "Fonte de Magia", "Metamagia", "Restauração Feiticeira"] },
   "Bruxo": { multiclass: { all: ["car"] }, saves: ["sab", "car"], hitDie: "d8", attackStat: "car", attackDie: "1d10", weaponStyle: "Rajada mística ou arma de pacto", castingStat: "car", subclasses: ["Patrono Corruptor", "Patrono Feérico"], core: ["Magia de Pacto", "Invocações Místicas", "Dádiva do Pacto", "Arcanos Místicos"] },
   "Druida": { multiclass: { all: ["sab"] }, saves: ["int", "sab"], hitDie: "d8", attackStat: "sab", attackDie: "1d8", weaponStyle: "Magia natural, cajado ou forma selvagem", castingStat: "sab", subclasses: ["Círculo da Terra", "Círculo da Lua"], core: ["Druídico", "Conjuração", "Forma Selvagem", "Corpo Atemporal", "Arquedruida"] },
-  "Gravebound": { multiclass: { all: ["con"] }, saves: ["con", "sab"], hitDie: "d12", attackStat: "for/con", attackDie: "1d12", weaponStyle: "Armas pesadas, carne morta e resistência brutal", castingStat: "", subclasses: ["Corpse Saint", "Pit Revenant", "Bone Lantern"], core: ["Undying Flesh", "Corpse Rise", "Grave Debt", "Shatter Resist", "Last Memory"] },
-  "Shard Knight": { multiclass: { any: ["for", "dex"] }, saves: ["for", "con"], hitDie: "d10", attackStat: "for/dex", attackDie: "1d10", weaponStyle: "Lâminas rachadas, escudos de vidro e duelos lentos", castingStat: "", subclasses: ["Glass Bastion", "Red Edge", "Mirror Duelist"], core: ["Crystal Guard", "Splinter Counter", "Heavy Step", "Shardbreaker", "Crown of Cuts"] },
-  "Plague Warden": { multiclass: { all: ["sab"] }, saves: ["sab", "con"], hitDie: "d8", attackStat: "sab/dex", attackDie: "1d8", weaponStyle: "Ferramentas de contenção, sinos e lâminas cirúrgicas", castingStat: "sab", subclasses: ["Bell Doctor", "Yellow Choir", "Mercy Cleaver"], core: ["Plague Sense", "Lull the Chime", "Warding Rite", "Cleanse Shards", "Silent Ward"] },
-  "Bell Seer": { multiclass: { all: ["int"] }, saves: ["int", "sab"], hitDie: "d6", attackStat: "int", attackDie: "1d6", weaponStyle: "Presságios, vidro ressonante e rituais mentais", castingStat: "int", subclasses: ["Blue Oracle", "Broken Choir", "Dream Cartographer"], core: ["Hear the Glass", "Echo Casting", "Memory Map", "Fracture Vision", "Half-Sung Fate"] },
-  "Ashen Vagrant": { multiclass: { all: ["dex"] }, saves: ["dex", "car"], hitDie: "d8", attackStat: "dex/car", attackDie: "1d6", weaponStyle: "Adagas, truques sujos e mobilidade de estrada", castingStat: "car", subclasses: ["Road Heretic", "Wall Exile", "Cinder Trickster"], core: ["Hunted Step", "Borrowed Face", "Rotten Luck", "Escape the Pile", "Nameless Return"] }
+  "Gravebound": { description: "Um retornado que ancora a própria alma em ossos e farpas. Cada técnica recorda a vala de onde se levantou e protege outros Fragmentados do mesmo destino.", multiclass: { all: ["con"] }, saves: ["con", "sab"], hitDie: "d12", attackStat: "for/con", attackDie: "1d12", weaponStyle: "Armas pesadas, carne recusada pela morte e resistência brutal", castingStat: "", subclasses: ["Santo do Cadáver", "Retornado da Vala", "Lanterna de Ossos"], core: ["Carne Imortal", "Erguer do Cadáver", "Dívida da Sepultura", "Resistência ao Estilhaço", "Última Memória"] },
+  "Shard Knight": { description: "Guerreiro que permite ao cristal formar placas, lâminas e reflexos sobre o corpo. Defende os caçados nas estradas enquanto luta para não virar monumento de dor.", multiclass: { any: ["for", "dex"] }, saves: ["for", "con"], hitDie: "d10", attackStat: "for/dex", attackDie: "1d10", weaponStyle: "Lâminas rachadas, escudos de vidro e duelos lentos", castingStat: "", subclasses: ["Bastião de Vidro", "Lâmina Escarlate", "Duelista do Espelho"], core: ["Guarda de Cristal", "Contra-Ataque de Farpas", "Passo Pesado", "Quebra-Estilhaços", "Coroa de Cortes"] },
+  "Plague Warden": { description: "Cirurgião, carrasco e protetor que aprendeu a ouvir a praga no sangue. Seus sinos e cortes atrasam surtos, mas nunca oferecem cura definitiva.", multiclass: { all: ["sab"] }, saves: ["sab", "con"], hitDie: "d8", attackStat: "sab/dex", attackDie: "1d8", weaponStyle: "Ferramentas de contenção, sinos e lâminas cirúrgicas", castingStat: "sab", subclasses: ["Médico do Sino", "Coro Amarelo", "Cutelo da Misericórdia"], core: ["Sentir a Praga", "Silenciar o Tilintar", "Rito de Proteção", "Purificar Farpas", "Guarda Silenciosa"] },
+  "Bell Seer": { description: "Vidente que interpreta a melodia presa nos cristais e encontra futuros em lembranças partidas. Quanto mais enxerga, menos distingue sua voz do coro.", multiclass: { all: ["int"] }, saves: ["int", "sab"], hitDie: "d6", attackStat: "int", attackDie: "1d6", weaponStyle: "Presságios, vidro ressonante e rituais mentais", castingStat: "int", subclasses: ["Oráculo Azul", "Coro Quebrado", "Cartógrafo dos Sonhos"], core: ["Ouvir o Vidro", "Conjuração de Eco", "Mapa de Memórias", "Visão Fraturada", "Destino Interrompido"] },
+  "Ashen Vagrant": { description: "Herege das estradas que sobrevive com nomes roubados, cinza nas roupas e rotas que guardas esqueceram. Ajuda Fragmentados a escapar das muralhas e valas.", multiclass: { all: ["dex"] }, saves: ["dex", "car"], hitDie: "d8", attackStat: "dex/car", attackDie: "1d6", weaponStyle: "Adagas, truques sujos e mobilidade de estrada", castingStat: "car", subclasses: ["Herege da Estrada", "Exilado das Muralhas", "Trapaceiro das Cinzas"], core: ["Passo do Caçado", "Rosto Emprestado", "Sorte Apodrecida", "Escapar da Vala", "Retorno sem Nome"] }
 };
 
 Object.assign(

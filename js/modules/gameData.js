@@ -1,4 +1,4 @@
-import { allClassOptions } from './mechanics.js';
+import { allClassOptions, classDisplayNames } from './mechanics.js';
 
 export const spellcastingClasses = [
   "Bardo", "Clérigo", "Druida", "Paladino", "Patrulheiro", "Feiticeiro", "Bruxo", "Mago"
@@ -56,7 +56,8 @@ const generatedAbilityPatterns = [
 
 allClassOptions.forEach(className => {
   generatedAbilityPatterns.forEach(([suffix, cost, description]) => {
-    const name = `${suffix} de ${className}`;
+    const localizedClassName = classDisplayNames[className] || className;
+    const name = `${suffix} de ${localizedClassName}`;
     if (abilityCatalog.some(ability => ability.name === name)) return;
     abilityCatalog.push({
       className,
