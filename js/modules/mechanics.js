@@ -159,27 +159,24 @@ export const raceData = {
 export const systemNames = {
   DND: "D&D",
   SHATTERED_REBIRTH: "SR",
-  OSR: "OSR",
-  T20: "T20",
-  CYBERPUNK: "CBP",
-  ARCANE: "ARC",
-  OTHER: "OTH"
+  OTHER: "Outro"
 };
 
 export const systemLabels = {
   "D&D": "D&D",
   SR: "SR",
-  OSR: "OSR",
-  T20: "T20",
-  CBP: "CBP",
-  ARC: "ARC",
-  OTH: "OTH"
+  Outro: "Outro"
 };
 
 export const legacySystemMap = {
   DND: systemNames.DND,
   "D&D": systemNames.DND,
   "Shattered Rebirth": systemNames.SHATTERED_REBIRTH,
+  OSR: systemNames.OTHER,
+  T20: systemNames.OTHER,
+  CBP: systemNames.OTHER,
+  ARC: systemNames.OTHER,
+  OTH: systemNames.OTHER,
   Outro: systemNames.OTHER
 };
 
@@ -210,22 +207,22 @@ const generatedRaceGroups = [
     ]
   },
   {
-    system: systemNames.OSR,
+    system: systemNames.DND,
     source: "OSR · exploração clássica",
     names: ["Homem-Corvo", "Anão Profundo", "Elfo Crepuscular", "Pequenino de Toca", "Povo-Fungo", "Homem-Javali", "Sombra Viva", "Homem-Cobra", "Meio-Gigante", "Povo-Toupeira", "Nascido da Névoa", "Osso-Andante"]
   },
   {
-    system: systemNames.T20,
+    system: systemNames.DND,
     source: "T20 · fantasia épica",
     names: ["Kallyanach", "Dahllan", "Hynne", "Osteon", "Medusa", "Sereia Tritão", "Sílfide", "Trog", "Moreau", "Golem Arcano"]
   },
   {
-    system: systemNames.CYBERPUNK,
+    system: systemNames.DND,
     source: "CBP · futuro urbano",
     names: ["Humano Chrome", "Sintético", "Clone Livre", "Ciborgue Pesado", "Nômade Orbital", "Mutante Neon", "Hacker Neural", "Replicante", "Meio-Máquina", "Bioforjado", "Fantasma Digital"]
   },
   {
-    system: systemNames.ARCANE,
+    system: systemNames.DND,
     source: "ARC · fantasia arcana",
     names: ["Astralino", "Umbraférico", "Solariano", "Lunarita", "Cristalino", "Povo-Runa", "Meio-Elemental", "Draco-Fada", "Anão-Forjado", "Elfo-Sombra"]
   }
@@ -287,10 +284,10 @@ export const allClassOptions = [
 export const classSystemTags = Object.fromEntries([
   ...classOptions.map(name => [name, [systemNames.DND]]),
   ...shatteredRebirthClassOptions.map(name => [name, [systemNames.SHATTERED_REBIRTH]]),
-  ...osrClassOptions.map(name => [name, [systemNames.OSR]]),
-  ...tormentaClassOptions.map(name => [name, [systemNames.T20]]),
-  ...cyberpunkClassOptions.map(name => [name, [systemNames.CYBERPUNK]]),
-  ...arcaneClassOptions.map(name => [name, [systemNames.ARCANE]])
+  ...osrClassOptions.map(name => [name, [systemNames.DND]]),
+  ...tormentaClassOptions.map(name => [name, [systemNames.DND]]),
+  ...cyberpunkClassOptions.map(name => [name, [systemNames.DND]]),
+  ...arcaneClassOptions.map(name => [name, [systemNames.DND]])
 ]);
 
 const manualClassNames = new Set([
