@@ -1234,6 +1234,14 @@ function canUseItem(item) {
   return item.healing || item.plagueRelief || item.rebirthReset || item.category === 'Consumível' || item.category === 'Pergaminho';
 }
 
+function consumeInventoryItem(itemId) {
+  inventory = inventory.filter(id => id !== itemId);
+  equippedItems = equippedItems.filter(id => id !== itemId);
+  delete equipmentPurchases[itemId];
+  renderEquipment();
+  synchronize();
+}
+
 function useInventoryItem(itemId) {
   const item = getEquipmentCatalog().find(entry => entry.id === itemId);
   if (!item) return;
@@ -1243,11 +1251,7 @@ function useInventoryItem(itemId) {
       return;
     }
     if (lowerShatteredPlague(item.plagueRelief, item.name)) {
-      inventory = inventory.filter(id => id !== itemId);
-      equippedItems = equippedItems.filter(id => id !== itemId);
-      delete equipmentPurchases[itemId];
-      renderEquipment();
-      synchronize();
+      consumeInventoryItem(itemId);
     }
   } else if (item.rebirthReset) {
     if (!isShatteredRebirth()) return;
@@ -1261,6 +1265,7 @@ function useInventoryItem(itemId) {
     const total = Array.from({ length: 2 }, () => Math.floor(Math.random() * 4) + 1).reduce((sum, value) => sum + value, 2);
     updateResource('heal', total);
     setResourceMessage(`${item.name} usada: curou ${total} PV.`);
+    consumeInventoryItem(itemId);
   } else if (item.die) {
     openDiceTab();
     rollDice({
@@ -1269,8 +1274,10 @@ function useInventoryItem(itemId) {
       modifier: item.attribute ? getAttributeModifier(item.attribute) + Number(item.spellBonus || 0) : Number(item.spellBonus || 0),
       label: `Usar ${item.name}`
     });
+    if (item.category === 'Consumível' || item.category === 'Pergaminho') consumeInventoryItem(itemId);
   } else {
     setResourceMessage(`${item.name} marcado como usado na cena.`);
+    if (item.category === 'Consumível' || item.category === 'Pergaminho') consumeInventoryItem(itemId);
   }
 }
 
@@ -1301,11 +1308,16 @@ function buyEquipment(itemId, currency = 'points') {
 }
 
 function sellEquipment(itemId) {
+  const item = getEquipmentCatalog().find(entry => entry.id === itemId);
+  const purchaseCurrency = equipmentPurchases[itemId];
+  if (!item || !inventory.includes(itemId)) return;
+  if (purchaseCurrency === 'gold') setCurrentGold(getCurrentGold() + getGoldCost(item));
   inventory = inventory.filter(id => id !== itemId);
   equippedItems = equippedItems.filter(id => id !== itemId);
   delete equipmentPurchases[itemId];
   renderEquipment();
   synchronize();
+  setResourceMessage(`${item.name} vendido${purchaseCurrency === 'gold' ? ` por ${getGoldCost(item)} gold` : '; os pontos foram devolvidos'}.`);
 }
 
 function toggleEquippedItem(itemId) {

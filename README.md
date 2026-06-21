@@ -35,6 +35,16 @@ Este projeto fornece um criador de fichas para RPG com foco em D&D, usando uma i
 
 O design funciona em dispositivos móveis e desktop.
 
+## Testes
+
+A suíte end-to-end cria personagens físicos, conjuradores e de Shattered Rebirth. Ela também cobre habilidades, magias, recursos de combate, loja, inventário, equipamento, persistência, múltiplas fichas e exclusão definitiva.
+
+```bash
+npm install
+npx playwright install chromium
+npm test
+```
+
 ## Regras abertas
 
 Este projeto usa uma adaptação em português das regras abertas do SRD 5.2.1.
