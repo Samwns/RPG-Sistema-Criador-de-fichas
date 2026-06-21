@@ -1905,6 +1905,7 @@ function usePower(power, button = null) {
   writeResourceNumber(mana, currentEnergy - profile.manaCost);
   touchResource('energy');
   refreshResourceDisplay();
+  setResourceMessage(`${power.name}: rolando... ${getEnergyLabel()} restante: ${mana.value}.`);
   saveDraftSoon();
   const type = power.effectType || 'damage';
   if (type === 'utility') {

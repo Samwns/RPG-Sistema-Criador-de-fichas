@@ -543,13 +543,11 @@ function playCollisionSound(impact) {
 
 function finishRoll() {
   if (!pendingRoll || isHolding) return;
-  const forced = performance.now() - Number(pendingRoll.startedAt || 0) > 2500;
-  if (!forced && !diceAreSettled()) {
+  if (!diceAreSettled()) {
     clearTimeout(resultFallbackTimer);
     resultFallbackTimer = window.setTimeout(finishRoll, 260);
     return;
   }
-  if (forced) freezeDice();
   syncDiceMeshes();
   const snapshot = getCurrentRollSnapshot();
   if (!snapshot) return;
@@ -568,14 +566,6 @@ function diceAreSettled() {
     body.sleepState === CANNON.Body.SLEEPING
     || (body.velocity.length() < .16 && body.angularVelocity.length() < .16 && body.position.y < 3.8)
   ));
-}
-
-function freezeDice() {
-  diceObjects.forEach(({ body }) => {
-    body.velocity.setZero();
-    body.angularVelocity.setZero();
-    body.sleep();
-  });
 }
 
 function syncDiceMeshes() {

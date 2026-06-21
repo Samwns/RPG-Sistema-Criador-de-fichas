@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test';
 
 async function clearApplication(page) {
-  await page.goto('/');
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
   await page.evaluate(() => localStorage.clear());
-  await page.reload();
-  await page.waitForLoadState('networkidle');
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await expect(page.locator('#equipmentShop .shop-item')).toHaveCount(20);
 }
 
 async function setValue(page, selector, value, eventName = 'input') {
