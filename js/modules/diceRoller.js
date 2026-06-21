@@ -124,7 +124,7 @@ function syncAnimationLoop() {
 
 export function rollDice({ sides = 20, count = 1, modifier = 0, label = "", onComplete = null } = {}) {
   const normalized = normalizeSides(sides);
-  rollSpecs([{ sides: normalized, count: Math.max(1, Number(count) || 1) }], modifier, label, onComplete);
+  return rollSpecs([{ sides: normalized, count: Math.max(1, Number(count) || 1) }], modifier, label, onComplete);
 }
 
 export function rollDicePool() {
@@ -135,13 +135,14 @@ export function rollDicePool() {
 }
 
 function rollSpecs(specs, modifier, label, onComplete, modifierLabel = "") {
-  if (!world || !scene) return;
+  if (!world || !scene) return false;
   createDiceSet(specs);
   pendingRoll = { specs, modifier, label, onComplete, modifierLabel, startedAt: performance.now() };
   lastLiveTotal = null;
   setBadge(specs);
   updateLiveResult(true);
   throwDice();
+  return true;
 }
 
 function normalizeSides(sides) {
@@ -494,7 +495,7 @@ function throwDice() {
   });
   window.setTimeout(() => { needsResultCheck = true; }, 650);
   clearTimeout(resultFallbackTimer);
-  resultFallbackTimer = window.setTimeout(finishRoll, 4200);
+  resultFallbackTimer = window.setTimeout(finishRoll, 2200);
 }
 
 function getAudioContext() {
@@ -542,7 +543,7 @@ function playCollisionSound(impact) {
 
 function finishRoll() {
   if (!pendingRoll || isHolding) return;
-  const forced = performance.now() - Number(pendingRoll.startedAt || 0) > 12000;
+  const forced = performance.now() - Number(pendingRoll.startedAt || 0) > 2500;
   if (!forced && !diceAreSettled()) {
     clearTimeout(resultFallbackTimer);
     resultFallbackTimer = window.setTimeout(finishRoll, 260);

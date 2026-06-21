@@ -544,6 +544,23 @@ function writeSavedCharacters(saved, { backup = true } = {}) {
   localStorage.setItem('savedCharacters', JSON.stringify(saved));
 }
 
+function removeCharacterFromLocalCopies(character) {
+  if (!character) return;
+  const matches = candidate => candidate && (
+    (character.id && candidate.id === character.id)
+    || (!character.id && normalizeCharacterKey(candidate) === normalizeCharacterKey(character))
+  );
+  ['savedCharacters', 'savedCharactersBackup', 'deletedCharactersBackup', 'savedCharactersCorrupted'].forEach(key => {
+    const remaining = parseCharacterCollection(localStorage.getItem(key)).filter(candidate => !matches(candidate));
+    if (remaining.length) localStorage.setItem(key, JSON.stringify(remaining));
+    else localStorage.removeItem(key);
+  });
+  ['lastCharacterDraft', 'lastCharacterDraftBackup'].forEach(key => {
+    const draft = getStoredJson(key, null);
+    if (matches(draft)) localStorage.removeItem(key);
+  });
+}
+
 function recoverSavedCharacters() {
   const current = readSavedCharacters();
   const candidates = [
@@ -1259,13 +1276,22 @@ function useInventoryItem(itemId) {
 
 function buyEquipment(itemId, currency = 'points') {
   const item = getEquipmentCatalog().find(entry => entry.id === itemId);
-  if (!item || inventory.includes(itemId)) return;
+  if (!item) return;
+  if (inventory.includes(itemId)) {
+    setResourceMessage(`${item.name} já está no inventário.`);
+    return;
+  }
   if (currency === 'gold') {
     const gold = getCurrentGold();
     const price = getGoldCost(item);
-    if (gold < price) return;
+    if (gold < price) {
+      setResourceMessage(`Gold insuficiente para ${item.name}: faltam ${price - gold}.`);
+      return;
+    }
     setCurrentGold(gold - price);
   } else if (getEquipmentSpent() + item.cost > getEquipmentBudget()) {
+    const missing = getEquipmentSpent() + item.cost - getEquipmentBudget();
+    setResourceMessage(`Pontos insuficientes para ${item.name}: faltam ${missing}. Você também pode comprar com gold.`);
     return;
   }
   inventory.push(itemId);
@@ -1340,7 +1366,7 @@ function renderEquipment() {
       <h4>${item.name}</h4>
       <p>${item.description}</p>
       ${renderItemTags(item)}
-      <div class="shop-price-row"><b>${item.cost} pts · ${goldCost} gold</b></div>
+      <div class="shop-price-row"><b>${item.cost} pts · ${goldCost} gold</b><span class="shop-buy-actions"></span></div>
     `;
     const pointButton = document.createElement('button');
     pointButton.type = 'button';
@@ -1352,7 +1378,7 @@ function renderEquipment() {
     goldButton.textContent = owned ? 'Comprado' : 'Gold';
     goldButton.disabled = owned || goldCost > gold;
     goldButton.addEventListener('click', () => buyEquipment(item.id, 'gold'));
-    card.querySelector('div').append(pointButton, goldButton);
+    card.querySelector('.shop-buy-actions').append(pointButton, goldButton);
     shop.appendChild(card);
   });
 
@@ -1877,21 +1903,27 @@ function usePower(power, button = null) {
     saveDraftSoon();
     return;
   }
-  rollDice({
+  const completePower = ({ results, total }) => {
+    if (type === 'heal') updateResource('heal', total);
+    if (type === 'mana') updateResource('restoreMana', total);
+    const action = type === 'damage' ? 'dano' : type === 'heal' ? 'cura' : getEnergyLabel().toLowerCase();
+    const defense = profile.save && profile.save !== 'nenhuma' ? ` · Resistência ${profile.save}${profile.negation ? ` (${profile.negation})` : ''}` : '';
+    elements.rollResult.innerHTML = `<span class="dice-icon">${results.join(', ')}</span><span>${power.name}: ${total} ${action}${defense}</span>`;
+    refreshResourceDisplay();
+    setResourceMessage(`${power.name}: ${total} ${action}. ${profile.actionCost}. ${getEnergyLabel()} restante: ${mana.value}.${defense}`);
+    saveDraftSoon();
+  };
+  const rolling = rollDice({
     sides: profile.die,
     count: profile.diceCount,
     modifier: profile.bonus,
     label: power.name,
-    onComplete: ({ results, total }) => {
-      if (type === 'heal') updateResource('heal', total);
-      if (type === 'mana') updateResource('restoreMana', total);
-      const action = type === 'damage' ? 'dano' : type === 'heal' ? 'cura' : getEnergyLabel().toLowerCase();
-      const defense = profile.save && profile.save !== 'nenhuma' ? ` · Resistência ${profile.save}${profile.negation ? ` (${profile.negation})` : ''}` : '';
-      elements.rollResult.innerHTML = `<span class="dice-icon">${results.join(', ')}</span><span>${power.name}: ${total} ${action}${defense}</span>`;
-      refreshResourceDisplay();
-      setResourceMessage(`${power.name}: ${total} ${action}. ${profile.actionCost}. ${getEnergyLabel()} restante: ${mana.value}.${defense}`);
-    }
+    onComplete: completePower
   });
+  if (!rolling) {
+    const results = Array.from({ length: profile.diceCount }, () => Math.floor(Math.random() * profile.die) + 1);
+    completePower({ results, total: results.reduce((sum, result) => sum + result, profile.bonus) });
+  }
   if (button) animateRollButton(button);
   openDiceTab();
 }
@@ -2632,11 +2664,13 @@ function buySpell(spell) {
   if (getSpellSpent() + getSpellCost(spell) > getSpellBudget()) return;
   purchasedSpells.push(spell.name);
   renderSpellCatalog();
+  saveDraftSoon();
 }
 
 function sellSpell(spell) {
   purchasedSpells = purchasedSpells.filter(name => name !== spell.name);
   renderSpellCatalog();
+  saveDraftSoon();
 }
 
 function renderSpellCatalog() {
@@ -3077,23 +3111,26 @@ function saveCharacter() {
 function deleteCharacter(index) {
   const saved = readSavedCharacters();
   const deleted = saved[index];
-  storeCharacterBackup('deletedCharactersBackup', saved);
+  if (!deleted) return;
+  if (!window.confirm(`Excluir ${deleted.nome || 'este personagem'} definitivamente? Essa ação também remove os backups locais dessa ficha.`)) return;
   saved.splice(index, 1);
   if (deleted?.id === activeCharacterId) activeCharacterId = '';
-  writeSavedCharacters(saved);
+  writeSavedCharacters(saved, { backup: false });
+  removeCharacterFromLocalCopies(deleted);
   loadSavedCharacters();
+  const message = document.getElementById('savedRecoveryMessage');
+  if (message) message.textContent = `${deleted.nome || 'Personagem'} excluído definitivamente.`;
 }
 
 function clearAllCharacters() {
   const saved = readSavedCharacters();
   if (saved.length === 0) return;
-  if (!window.confirm(`Apagar as ${saved.length} ficha(s) salvas? Um backup local será mantido para recuperação.`)) return;
-  storeCharacterBackup('deletedCharactersBackup', saved);
-  localStorage.removeItem('savedCharacters');
+  if (!window.confirm(`Excluir definitivamente as ${saved.length} ficha(s) salvas e seus backups locais?`)) return;
+  ['savedCharacters', 'savedCharactersBackup', 'deletedCharactersBackup', 'savedCharactersCorrupted', 'lastCharacterDraft', 'lastCharacterDraftBackup'].forEach(key => localStorage.removeItem(key));
   activeCharacterId = '';
   loadSavedCharacters();
   const message = document.getElementById('savedRecoveryMessage');
-  if (message) message.textContent = 'Fichas removidas. O backup ainda pode ser restaurado em Recuperar fichas.';
+  if (message) message.textContent = 'Todas as fichas e seus backups locais foram excluídos definitivamente.';
 }
 
 function downloadTextFile(filename, content, type = 'application/json') {
@@ -3256,7 +3293,15 @@ function saveDraftNow() {
   if (previousDraft && (previousDraft.nome || previousDraft.id)) {
     localStorage.setItem('lastCharacterDraftBackup', JSON.stringify(previousDraft));
   }
-  localStorage.setItem('lastCharacterDraft', JSON.stringify(getCharacterData()));
+  const current = getCharacterData();
+  localStorage.setItem('lastCharacterDraft', JSON.stringify(current));
+  if (!activeCharacterId) return;
+  const saved = readSavedCharacters();
+  const index = saved.findIndex(character => character.id === activeCharacterId);
+  if (index < 0 || JSON.stringify(saved[index]) === JSON.stringify(current)) return;
+  saved[index] = current;
+  writeSavedCharacters(saved, { backup: false });
+  loadSavedCharacters();
 }
 
 function saveDraftSoon() {
