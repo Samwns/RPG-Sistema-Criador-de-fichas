@@ -311,7 +311,7 @@ export const classOptions = [
 ];
 
 export const shatteredRebirthClassOptions = [
-  "Gravebound", "Shard Knight", "Plague Warden", "Bell Seer", "Ashen Vagrant",
+  "Gravebound", "Shard Knight", "Plague Warden", "Bell Seer", "Ashen Vagrant", "Feiticeira",
   "Glass Monk", "Choir Butcher", "Pale Binder", "Shard Alchemist", "Wall Hunter", "Cinder Saint", "Blue Veil", "Red Penitent", "Yellow Exorcist", "Memory Thief", "Corpse Cartographer", "Mirror Pilgrim", "Ruin Confessor", "Bell Duelist", "Crystal Beggar"
 ];
 
@@ -340,7 +340,7 @@ export const classSystemTags = Object.fromEntries([
 
 const manualClassNames = new Set([
   "Bárbaro", "Guerreiro", "Paladino", "Patrulheiro", "Ladino", "Monge", "Bardo", "Clérigo", "Mago", "Feiticeiro", "Bruxo", "Druida",
-  "Gravebound", "Shard Knight", "Plague Warden", "Bell Seer", "Ashen Vagrant"
+  "Gravebound", "Shard Knight", "Plague Warden", "Bell Seer", "Ashen Vagrant", "Feiticeira"
 ]);
 
 export const classDisplayNames = {
@@ -483,7 +483,8 @@ export const classData = {
   "Shard Knight": { description: "Guerreiro que permite ao cristal formar placas, lâminas e reflexos sobre o corpo. Defende os caçados nas estradas enquanto luta para não virar monumento de dor.", multiclass: { any: ["for", "dex"] }, saves: ["for", "con"], hitDie: "d10", attackStat: "for/dex", attackDie: "1d10", weaponStyle: "Lâminas rachadas, escudos de vidro e duelos lentos", castingStat: "", subclasses: ["Bastião de Vidro", "Lâmina Escarlate", "Duelista do Espelho"], core: ["Guarda de Cristal", "Contra-Ataque de Farpas", "Passo Pesado", "Quebra-Estilhaços", "Coroa de Cortes"] },
   "Plague Warden": { description: "Cirurgião, carrasco e protetor que aprendeu a ouvir a praga no sangue. Seus sinos e cortes atrasam surtos, mas nunca oferecem cura definitiva.", multiclass: { all: ["sab"] }, saves: ["sab", "con"], hitDie: "d8", attackStat: "sab/dex", attackDie: "1d8", weaponStyle: "Ferramentas de contenção, sinos e lâminas cirúrgicas", castingStat: "sab", subclasses: ["Médico do Sino", "Coro Amarelo", "Cutelo da Misericórdia"], core: ["Sentir a Praga", "Silenciar o Tilintar", "Rito de Proteção", "Purificar Farpas", "Guarda Silenciosa"] },
   "Bell Seer": { description: "Vidente que interpreta a melodia presa nos cristais e encontra futuros em lembranças partidas. Quanto mais enxerga, menos distingue sua voz do coro.", multiclass: { all: ["int"] }, saves: ["int", "sab"], hitDie: "d6", attackStat: "int", attackDie: "1d6", weaponStyle: "Presságios, vidro ressonante e rituais mentais", castingStat: "int", subclasses: ["Oráculo Azul", "Coro Quebrado", "Cartógrafo dos Sonhos"], core: ["Ouvir o Vidro", "Conjuração de Eco", "Mapa de Memórias", "Visão Fraturada", "Destino Interrompido"] },
-  "Ashen Vagrant": { description: "Herege das estradas que sobrevive com nomes roubados, cinza nas roupas e rotas que guardas esqueceram. Ajuda Fragmentados a escapar das muralhas e valas.", multiclass: { all: ["dex"] }, saves: ["dex", "car"], hitDie: "d8", attackStat: "dex/car", attackDie: "1d6", weaponStyle: "Adagas, truques sujos e mobilidade de estrada", castingStat: "car", subclasses: ["Herege da Estrada", "Exilado das Muralhas", "Trapaceiro das Cinzas"], core: ["Passo do Caçado", "Rosto Emprestado", "Sorte Apodrecida", "Escapar da Vala", "Retorno sem Nome"] }
+  "Ashen Vagrant": { description: "Herege das estradas que sobrevive com nomes roubados, cinza nas roupas e rotas que guardas esqueceram. Ajuda Fragmentados a escapar das muralhas e valas.", multiclass: { all: ["dex"] }, saves: ["dex", "car"], hitDie: "d8", attackStat: "dex/car", attackDie: "1d6", weaponStyle: "Adagas, truques sujos e mobilidade de estrada", castingStat: "car", subclasses: ["Herege da Estrada", "Exilado das Muralhas", "Trapaceiro das Cinzas"], core: ["Passo do Caçado", "Rosto Emprestado", "Sorte Apodrecida", "Escapar da Vala", "Retorno sem Nome"] },
+  "Feiticeira": { description: "Conjuradora inata marcada pelo vidro vivo. A praga responde à sua linhagem como magia bruta, alterando corpo e memória a cada surto.", multiclass: { all: ["car"] }, saves: ["con", "car"], hitDie: "d6", attackStat: "car", attackDie: "1d6", weaponStyle: "Magia inata, cristais ressonantes e metamagia estilhaçada", castingStat: "car", subclasses: ["Linhagem do Cristal Azul", "Sangue Escarlate", "Alma de Cinza Amarela"], core: ["Conjuração Estilhaçada", "Fonte da Praga", "Metamagia de Vidro", "Herança Desperta", "Renascimento Arcano"] }
 };
 
 Object.assign(

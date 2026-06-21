@@ -94,7 +94,8 @@ const casterManaByClass = {
   "Shard Knight": 1,
   "Plague Warden": 4,
   "Bell Seer": 5,
-  "Ashen Vagrant": 2
+  "Ashen Vagrant": 2,
+  Feiticeira: 6
 };
 
 const featurePowerOverrides = {
@@ -2593,6 +2594,7 @@ function renderClassBrowser(activeClass) {
     });
     browser.appendChild(button);
   });
+  window.requestAnimationFrame(() => browser._updateScrollControls?.());
 }
 
 function getAutomaticAbilities() {
@@ -3257,6 +3259,7 @@ function getPreparedSpellLines() {
 
 function buildPrintableSheetHtml() {
   const character = getCharacterData();
+  const primaryClass = classData[character.classe1] || {};
   const automatic = getAutomaticAbilities();
   const freeSpells = getFreeSpells();
   const items = inventory
@@ -3276,7 +3279,7 @@ function buildPrintableSheetHtml() {
   ].join('');
 
   return `
-    <main class="pdf-sheet">
+    <main class="pdf-sheet" style="--pdf-primary:${escapeHtml(themeColors.primary)};--pdf-secondary:${escapeHtml(themeColors.secondary)}">
       <header class="pdf-header">
         ${photo}
         <div>
@@ -3285,6 +3288,11 @@ function buildPrintableSheetHtml() {
           <strong>${escapeHtml(character.raca)} · ${escapeHtml(character.subraca)} · ${escapeHtml(getClassDisplayName(character.classe1))} ${escapeHtml(character.nivelC1)} · Nível ${escapeHtml(character.nivel)}</strong>
         </div>
       </header>
+      <section class="pdf-class-card">
+        <span>Classe principal</span>
+        <h2>${escapeHtml(getClassDisplayName(character.classe1))} ${escapeHtml(character.nivelC1)}</h2>
+        <p>${escapeHtml(primaryClass.description || primaryClass.weaponStyle || character.descricaoClasse || 'Classe registrada na ficha.')}</p>
+      </section>
       <h2>Status</h2>
       <section class="pdf-grid">
         <div><b>PV</b>${escapeHtml(document.getElementById('currentHp').value)} / ${getCalculatedMaxHp()}</div>
@@ -3605,7 +3613,42 @@ function setupInnerTabs() {
       document.querySelectorAll('[data-magic-section]').forEach(section => {
         section.classList.toggle('active', section.dataset.magicSection === button.dataset.magicTarget);
       });
+      button.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     });
+  });
+}
+
+function setupHorizontalScrollControls() {
+  document.querySelectorAll('.sheet-tabs, .system-tabs, .class-browser, .inner-tabs').forEach(scroller => {
+    if (scroller.parentElement?.classList.contains('scroll-nav')) return;
+    const shell = document.createElement('div');
+    shell.className = 'scroll-nav';
+    const previous = document.createElement('button');
+    const next = document.createElement('button');
+    previous.type = next.type = 'button';
+    previous.className = next.className = 'scroll-nav-button';
+    previous.textContent = '‹';
+    next.textContent = '›';
+    previous.setAttribute('aria-label', 'Voltar opções');
+    next.setAttribute('aria-label', 'Avançar opções');
+    scroller.parentNode.insertBefore(shell, scroller);
+    shell.append(previous, scroller, next);
+
+    const update = () => {
+      const maxScroll = Math.max(0, scroller.scrollWidth - scroller.clientWidth);
+      previous.disabled = scroller.scrollLeft <= 2;
+      next.disabled = scroller.scrollLeft >= maxScroll - 2;
+      shell.classList.toggle('has-overflow', maxScroll > 2);
+    };
+    const move = direction => {
+      scroller.scrollBy({ left: direction * Math.max(180, scroller.clientWidth * .72), behavior: 'smooth' });
+    };
+    previous.addEventListener('click', () => move(-1));
+    next.addEventListener('click', () => move(1));
+    scroller.addEventListener('scroll', update, { passive: true });
+    scroller._updateScrollControls = update;
+    new ResizeObserver(update).observe(scroller);
+    window.requestAnimationFrame(update);
   });
 }
 
@@ -3860,6 +3903,7 @@ function init() {
   renderSpellCatalog();
   document.getElementById('progressionClass').value = elements.classe1.value;
   renderClassProgression();
+  setupHorizontalScrollControls();
   const draft = JSON.parse(localStorage.getItem('lastCharacterDraft') || 'null');
   if (draft) {
     loadCharacter(draft);

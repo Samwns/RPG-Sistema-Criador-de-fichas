@@ -2,7 +2,7 @@ import { allClassOptions, classDisplayNames } from './mechanics.js';
 
 export const spellcastingClasses = [
   "Bardo", "Clérigo", "Druida", "Paladino", "Patrulheiro", "Feiticeiro", "Bruxo", "Mago",
-  "Plague Warden", "Bell Seer", "Ashen Vagrant"
+  "Plague Warden", "Bell Seer", "Ashen Vagrant", "Feiticeira"
 ];
 
 export const classGrantedSpells = {
@@ -16,7 +16,8 @@ export const classGrantedSpells = {
   Mago: [{ level: 1, spells: ["Luz", "Mãos Mágicas", "Mísseis Mágicos", "Escudo"] }, { level: 3, spells: ["Passo Nebuloso"] }, { level: 5, spells: ["Bola de Fogo"] }, { level: 11, spells: ["Desintegrar"] }],
   "Plague Warden": [{ level: 1, spells: ["Ouvir a Praga", "Sutura de Cristal"] }, { level: 3, spells: ["Círculo de Sinos"] }, { level: 5, spells: ["Purificação Dolorosa"] }],
   "Bell Seer": [{ level: 1, spells: ["Eco do Vidro", "Presságio Partido"] }, { level: 3, spells: ["Mapa de Memórias"] }, { level: 5, spells: ["Futuro Fraturado"] }],
-  "Ashen Vagrant": [{ level: 1, spells: ["Passo de Cinzas", "Rosto Emprestado"] }, { level: 3, spells: ["Manto da Muralha"] }, { level: 5, spells: ["Retorno sem Nome"] }]
+  "Ashen Vagrant": [{ level: 1, spells: ["Passo de Cinzas", "Rosto Emprestado"] }, { level: 3, spells: ["Manto da Muralha"] }, { level: 5, spells: ["Retorno sem Nome"] }],
+  Feiticeira: [{ level: 1, spells: ["Estouro Feiticeiro", "Orbe Cromático", "Escudo"] }, { level: 3, spells: ["Passo Nebuloso", "Imagem Espelhada"] }, { level: 5, spells: ["Bola de Fogo", "Acelerar"] }]
 };
 
 export const raceGrantedSpells = {
@@ -190,3 +191,42 @@ spellCatalog.push(
   { name: "Manto da Muralha", level: 2, school: "Ilusão", classes: ["Ashen Vagrant"], effect: "Oculta aliados de patrulhas e observadores." },
   { name: "Retorno sem Nome", level: 3, school: "Necromancia", classes: ["Ashen Vagrant"], effect: "Escapa de uma consequência social ou mortal imediata." }
 );
+
+spellCatalog.push(
+  { name: "Dança das Luzes", level: 0, school: "Evocação", classes: ["Bardo", "Feiticeiro", "Mago"], effect: "Cria pequenas luzes móveis sob controle." },
+  { name: "Consertar", level: 0, school: "Transmutação", classes: ["Bardo", "Clérigo", "Druida", "Feiticeiro", "Mago"], effect: "Repara uma quebra ou rasgo pequeno em um objeto." },
+  { name: "Amizade", level: 0, school: "Encantamento", classes: ["Bardo", "Feiticeiro", "Bruxo", "Mago"], effect: "Concede vantagem social breve com consequência posterior." },
+  { name: "Proteção contra Lâminas", level: 0, school: "Abjuração", classes: ["Bardo", "Feiticeiro", "Bruxo", "Mago"], effect: "Reduz temporariamente dano físico recebido." },
+  { name: "Alarme", level: 1, school: "Abjuração", classes: ["Mago"], effect: "Avisa quando uma criatura entra na área protegida." },
+  { name: "Compreender Idiomas", level: 1, school: "Adivinhação", classes: ["Bardo", "Feiticeiro", "Bruxo", "Mago"], effect: "Permite compreender idiomas falados e escritos." },
+  { name: "Disco Flutuante", level: 1, school: "Conjuração", classes: ["Mago"], effect: "Cria uma plataforma flutuante que transporta carga." },
+  { name: "Encontrar Familiar", level: 1, school: "Conjuração", classes: ["Mago"], effect: "Convoca um espírito familiar em forma animal." },
+  { name: "Identificar", level: 1, school: "Adivinhação", classes: ["Bardo", "Mago"], effect: "Revela propriedades de um objeto ou efeito mágico." },
+  { name: "Queda Suave", level: 1, school: "Transmutação", classes: ["Bardo", "Feiticeiro", "Mago"], effect: "Reduz a velocidade de queda de várias criaturas." },
+  { name: "Riso Horrível", level: 1, school: "Encantamento", classes: ["Bardo", "Mago"], effect: "Derruba e incapacita temporariamente uma criatura." },
+  { name: "Salto", level: 1, school: "Transmutação", classes: ["Druida", "Patrulheiro", "Feiticeiro", "Mago"], effect: "Amplia muito a distância dos saltos." },
+  { name: "Alterar-se", level: 2, school: "Transmutação", classes: ["Feiticeiro", "Mago"], effect: "Muda o corpo para adaptação, aparência ou arma natural." },
+  { name: "Arrombar", level: 2, school: "Transmutação", classes: ["Bardo", "Feiticeiro", "Mago"], effect: "Abre magicamente fechaduras e travas." },
+  { name: "Detectar Pensamentos", level: 2, school: "Adivinhação", classes: ["Bardo", "Feiticeiro", "Mago"], effect: "Lê pensamentos superficiais de criaturas próximas." },
+  { name: "Imagem Espelhada", level: 2, school: "Ilusão", classes: ["Feiticeiro", "Bruxo", "Mago"], effect: "Cria duplicatas ilusórias que confundem ataques." },
+  { name: "Nublar", level: 2, school: "Ilusão", classes: ["Feiticeiro", "Mago"], effect: "Deixa a imagem do conjurador borrada e difícil de atingir." },
+  { name: "Ver Invisibilidade", level: 2, school: "Adivinhação", classes: ["Bardo", "Feiticeiro", "Mago"], effect: "Permite enxergar criaturas e objetos invisíveis." },
+  { name: "Acelerar", level: 3, school: "Transmutação", classes: ["Feiticeiro", "Mago"], effect: "Aumenta velocidade, defesa e capacidade de ação." },
+  { name: "Forma Gasosa", level: 3, school: "Transmutação", classes: ["Feiticeiro", "Bruxo", "Mago"], effect: "Transforma uma criatura em névoa móvel." },
+  { name: "Lentidão", level: 3, school: "Transmutação", classes: ["Feiticeiro", "Mago"], effect: "Reduz movimento, defesa e ações de vários alvos." },
+  { name: "Proteção contra Energia", level: 3, school: "Abjuração", classes: ["Clérigo", "Druida", "Patrulheiro", "Feiticeiro", "Mago"], effect: "Concede resistência a um tipo de dano elemental." },
+  { name: "Respirar na Água", level: 3, school: "Transmutação", classes: ["Druida", "Patrulheiro", "Feiticeiro", "Mago"], effect: "Permite ao grupo respirar debaixo d'água." },
+  { name: "Olho Arcano", level: 4, school: "Adivinhação", classes: ["Mago"], effect: "Cria um sensor invisível móvel para exploração." },
+  { name: "Tempestade de Gelo", level: 4, school: "Evocação", classes: ["Druida", "Feiticeiro", "Mago"], effect: "Causa dano de frio e impacto em uma área." },
+  { name: "Conhecimento Lendário", level: 5, school: "Adivinhação", classes: ["Bardo", "Clérigo", "Mago"], effect: "Revela histórias e informações sobre um alvo importante." },
+  { name: "Sonho", level: 5, school: "Ilusão", classes: ["Bardo", "Bruxo", "Mago"], effect: "Envia uma mensagem ou pesadelo através dos sonhos." },
+  { name: "Contingência", level: 6, school: "Evocação", classes: ["Mago"], effect: "Prepara uma magia para disparar sob condição definida." },
+  { name: "Criar Mortos-Vivos", level: 6, school: "Necromancia", classes: ["Clérigo", "Bruxo", "Mago"], effect: "Cria servos mortos-vivos mais poderosos." },
+  { name: "Mansão Magnífica", level: 7, school: "Conjuração", classes: ["Bardo", "Mago"], effect: "Cria uma residência extradimensional segura." },
+  { name: "Labirinto", level: 8, school: "Conjuração", classes: ["Mago"], effect: "Exila temporariamente uma criatura em um labirinto planar." },
+  { name: "Parar o Tempo", level: 9, school: "Transmutação", classes: ["Feiticeiro", "Mago"], effect: "Concede turnos extras enquanto o restante do mundo fica suspenso." }
+);
+
+spellCatalog.forEach(spell => {
+  if (spell.classes.includes("Feiticeiro") && !spell.classes.includes("Feiticeira")) spell.classes.push("Feiticeira");
+});

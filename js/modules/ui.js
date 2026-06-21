@@ -201,6 +201,7 @@ export function setupTabs() {
       document.querySelectorAll('.system-panel').forEach(panel => panel.classList.remove('active'));
       button.classList.add('active');
       document.getElementById(button.dataset.systemTarget)?.classList.add('active');
+      button.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     });
   });
 }

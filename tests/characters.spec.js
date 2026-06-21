@@ -283,3 +283,78 @@ test('shows translated class labels and an expanded spell catalog', async ({ pag
   await expect(page.locator('#spellCatalog .spell-card').filter({ has: page.getByRole('heading', { name: 'Luz', exact: true }) })).toContainText('utilidade');
   await expect(page.locator('#spellCatalog .spell-card').filter({ has: page.getByRole('heading', { name: 'Raio de Fogo', exact: true }) })).toContainText('dano');
 });
+
+test('navigates horizontal tabs with arrows on desktop and mobile', async ({ page }) => {
+  const verifyMainNavigation = async () => {
+    const shell = page.locator('.scroll-nav').filter({ has: page.locator('.sheet-tabs') });
+    await expect(shell.getByRole('button', { name: 'Avançar opções' })).toBeVisible();
+    const before = await page.locator('.sheet-tabs').evaluate(element => element.scrollLeft);
+    await shell.getByRole('button', { name: 'Avançar opções' }).click();
+    await expect.poll(() => page.locator('.sheet-tabs').evaluate(element => element.scrollLeft)).toBeGreaterThan(before);
+  };
+
+  await page.setViewportSize({ width: 1000, height: 800 });
+  await verifyMainNavigation();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await expect(page.locator('#equipmentShop .shop-item')).toHaveCount(20);
+  await verifyMainNavigation();
+  expect(await page.locator('.sheet-tabs').evaluate(element => getComputedStyle(element).flexWrap)).toBe('nowrap');
+
+  await page.locator('[data-target="tab-livros"]').click();
+  const systemShell = page.locator('.scroll-nav').filter({ has: page.locator('.system-tabs') });
+  await expect(systemShell.getByRole('button', { name: 'Avançar opções' })).toBeEnabled();
+  await systemShell.getByRole('button', { name: 'Avançar opções' }).click();
+  await expect.poll(() => page.locator('.system-tabs').evaluate(element => element.scrollLeft)).toBeGreaterThan(0);
+
+  await page.locator('[data-target="tab-progressao"]').click();
+  const classShell = page.locator('.scroll-nav').filter({ has: page.locator('.class-browser') });
+  await expect(classShell.getByRole('button', { name: 'Avançar opções' })).toBeEnabled();
+  await classShell.getByRole('button', { name: 'Avançar opções' }).click();
+  await expect.poll(() => page.locator('.class-browser').evaluate(element => element.scrollLeft)).toBeGreaterThan(0);
+
+  await page.locator('[data-target="tab-magia"]').click();
+  const magicShell = page.locator('.scroll-nav').filter({ has: page.locator('.inner-tabs') });
+  await expect(magicShell.getByRole('button', { name: 'Voltar opções' })).toBeVisible();
+  await expect(magicShell.getByRole('button', { name: 'Avançar opções' })).toBeVisible();
+});
+
+test('offers the SR sorceress and the complete expanded magic lists', async ({ page }) => {
+  await setValue(page, '#sistema', 'SR', 'change');
+  await expect(page.locator('#classe1 option')).toContainText(['Feiticeira']);
+  await setValue(page, '#classe1', 'Feiticeira', 'change');
+  await setValue(page, '#nivel', 20, 'change');
+  await setValue(page, '#nivelC1', 20);
+  expect(await page.inputValue('#castingStat')).toBe('car');
+  await setValue(page, '#spellClassFilter', 'Feiticeira', 'change');
+  await openTab(page, 'tab-magia');
+  await page.locator('[data-magic-target="magic-shop"]').click();
+  expect(await page.locator('#spellCatalog .spell-card').count()).toBeGreaterThan(75);
+
+  await openTab(page, 'tab-ficha');
+  await setValue(page, '#sistema', 'D&D', 'change');
+  await setValue(page, '#classe1', 'Mago', 'change');
+  await setValue(page, '#nivelC1', 20);
+  await setValue(page, '#spellClassFilter', 'Mago', 'change');
+  await openTab(page, 'tab-magia');
+  await page.locator('[data-magic-target="magic-shop"]').click();
+  expect(await page.locator('#spellCatalog .spell-card').count()).toBeGreaterThan(90);
+});
+
+test('keeps the printable sheet layout identical across viewport sizes', async ({ page }) => {
+  const renderPdfWidth = async width => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.emulateMedia({ media: 'print' });
+    await page.evaluate(() => {
+      window.print = () => {};
+      document.querySelector('#exportPdf').click();
+    });
+    await expect(page.locator('#printSheet .pdf-class-card')).toContainText('Classe principal');
+    return page.locator('#printSheet .pdf-sheet').evaluate(element => element.getBoundingClientRect().width);
+  };
+
+  const desktopWidth = await renderPdfWidth(1280);
+  const mobileWidth = await renderPdfWidth(390);
+  expect(Math.abs(desktopWidth - mobileWidth)).toBeLessThan(1);
+  expect(desktopWidth).toBeGreaterThan(700);
+});
