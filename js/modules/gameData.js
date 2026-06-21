@@ -1,7 +1,8 @@
 import { allClassOptions, classDisplayNames } from './mechanics.js';
 
 export const spellcastingClasses = [
-  "Bardo", "Clérigo", "Druida", "Paladino", "Patrulheiro", "Feiticeiro", "Bruxo", "Mago"
+  "Bardo", "Clérigo", "Druida", "Paladino", "Patrulheiro", "Feiticeiro", "Bruxo", "Mago",
+  "Plague Warden", "Bell Seer", "Ashen Vagrant"
 ];
 
 export const classGrantedSpells = {
@@ -12,7 +13,10 @@ export const classGrantedSpells = {
   Patrulheiro: [{ level: 2, spells: ["Golpe Enredante", "Falar com Animais"] }, { level: 5, spells: ["Passos sem Pegadas"] }],
   Feiticeiro: [{ level: 1, spells: ["Estouro Feiticeiro", "Orbe Cromático", "Escudo"] }, { level: 3, spells: ["Passo Nebuloso"] }, { level: 5, spells: ["Bola de Fogo"] }],
   Bruxo: [{ level: 1, spells: ["Rajada Mística", "Maldição", "Repreensão Infernal"] }, { level: 3, spells: ["Escuridão"] }, { level: 5, spells: ["Contramágica"] }],
-  Mago: [{ level: 1, spells: ["Luz", "Mãos Mágicas", "Mísseis Mágicos", "Escudo"] }, { level: 3, spells: ["Passo Nebuloso"] }, { level: 5, spells: ["Bola de Fogo"] }, { level: 11, spells: ["Desintegrar"] }]
+  Mago: [{ level: 1, spells: ["Luz", "Mãos Mágicas", "Mísseis Mágicos", "Escudo"] }, { level: 3, spells: ["Passo Nebuloso"] }, { level: 5, spells: ["Bola de Fogo"] }, { level: 11, spells: ["Desintegrar"] }],
+  "Plague Warden": [{ level: 1, spells: ["Ouvir a Praga", "Sutura de Cristal"] }, { level: 3, spells: ["Círculo de Sinos"] }, { level: 5, spells: ["Purificação Dolorosa"] }],
+  "Bell Seer": [{ level: 1, spells: ["Eco do Vidro", "Presságio Partido"] }, { level: 3, spells: ["Mapa de Memórias"] }, { level: 5, spells: ["Futuro Fraturado"] }],
+  "Ashen Vagrant": [{ level: 1, spells: ["Passo de Cinzas", "Rosto Emprestado"] }, { level: 3, spells: ["Manto da Muralha"] }, { level: 5, spells: ["Retorno sem Nome"] }]
 };
 
 export const raceGrantedSpells = {
@@ -63,7 +67,7 @@ allClassOptions.forEach(className => {
       className,
       name,
       cost,
-      description: `${className}: ${description}`
+      description: `${localizedClassName}: ${description}`
     });
   });
 });
@@ -127,3 +131,62 @@ export const spellCatalog = [
   { name: "Desejo", level: 9, school: "Conjuração", classes: ["Feiticeiro", "Mago"], effect: "Replica magias ou altera a realidade sob risco." },
   { name: "Palavra de Poder: Curar", level: 9, school: "Encantamento", classes: ["Bardo", "Clérigo"], effect: "Restauração extrema e remoção de condições." }
 ];
+
+spellCatalog.push(
+  { name: "Raio de Fogo", level: 0, school: "Evocação", classes: ["Feiticeiro", "Mago"], effect: "Causa dano de fogo à distância." },
+  { name: "Toque Arrepiante", level: 0, school: "Necromancia", classes: ["Feiticeiro", "Bruxo", "Mago"], effect: "Causa dano necrótico e dificulta cura." },
+  { name: "Chicote de Espinhos", level: 0, school: "Transmutação", classes: ["Druida"], effect: "Causa dano e puxa o alvo." },
+  { name: "Chama Sagrada", level: 0, school: "Evocação", classes: ["Clérigo"], effect: "Causa dano radiante contra DEX." },
+  { name: "Prestidigitação", level: 0, school: "Transmutação", classes: ["Bardo", "Feiticeiro", "Mago"], effect: "Produz pequenos efeitos mágicos utilitários." },
+  { name: "Ilusão Menor", level: 0, school: "Ilusão", classes: ["Bardo", "Feiticeiro", "Bruxo", "Mago"], effect: "Cria um som ou imagem ilusória breve." },
+  { name: "Mensagem", level: 0, school: "Transmutação", classes: ["Bardo", "Feiticeiro", "Mago"], effect: "Envia uma frase curta em segredo." },
+  { name: "Resistência", level: 0, school: "Abjuração", classes: ["Clérigo", "Druida"], effect: "Fortalece uma salvaguarda por pouco tempo." },
+  { name: "Armadura Arcana", level: 1, school: "Abjuração", classes: ["Feiticeiro", "Mago"], effect: "Cria proteção mágica sem armadura." },
+  { name: "Bênção", level: 1, school: "Encantamento", classes: ["Clérigo", "Paladino"], effect: "Fortalece ataques e salvaguardas de aliados." },
+  { name: "Comando", level: 1, school: "Encantamento", classes: ["Clérigo", "Paladino"], effect: "Obriga uma criatura a seguir uma ordem curta." },
+  { name: "Enfeitiçar Pessoa", level: 1, school: "Encantamento", classes: ["Bardo", "Druida", "Feiticeiro", "Bruxo", "Mago"], effect: "Torna um humanoide amistoso temporariamente." },
+  { name: "Onda Trovejante", level: 1, school: "Evocação", classes: ["Bardo", "Druida", "Feiticeiro", "Mago"], effect: "Causa dano trovejante e empurra em área." },
+  { name: "Névoa Obscurecente", level: 1, school: "Conjuração", classes: ["Druida", "Patrulheiro", "Feiticeiro", "Mago"], effect: "Cria uma área fortemente obscurecida." },
+  { name: "Palavra Curativa", level: 1, school: "Evocação", classes: ["Bardo", "Clérigo", "Druida"], effect: "Cura um aliado à distância." },
+  { name: "Ajuda", level: 2, school: "Abjuração", classes: ["Clérigo", "Paladino"], effect: "Aumenta temporariamente a vida máxima de aliados." },
+  { name: "Imobilizar Pessoa", level: 2, school: "Encantamento", classes: ["Bardo", "Clérigo", "Druida", "Feiticeiro", "Bruxo", "Mago"], effect: "Paralisa um humanoide que falhar na resistência." },
+  { name: "Invisibilidade", level: 2, school: "Ilusão", classes: ["Bardo", "Feiticeiro", "Bruxo", "Mago"], effect: "Deixa uma criatura invisível até agir agressivamente." },
+  { name: "Levitação", level: 2, school: "Transmutação", classes: ["Feiticeiro", "Mago"], effect: "Eleva uma criatura ou objeto verticalmente." },
+  { name: "Raio Ardente", level: 2, school: "Evocação", classes: ["Feiticeiro", "Mago"], effect: "Dispara vários raios que causam dano de fogo." },
+  { name: "Silêncio", level: 2, school: "Ilusão", classes: ["Bardo", "Clérigo", "Patrulheiro"], effect: "Impede som e conjuração verbal em uma área." },
+  { name: "Teia", level: 2, school: "Conjuração", classes: ["Feiticeiro", "Mago"], effect: "Cria terreno difícil que pode restringir criaturas." },
+  { name: "Animar Mortos", level: 3, school: "Necromancia", classes: ["Clérigo", "Mago"], effect: "Ergue um servo morto-vivo sob controle." },
+  { name: "Clarividência", level: 3, school: "Adivinhação", classes: ["Bardo", "Clérigo", "Feiticeiro", "Mago"], effect: "Permite observar magicamente um lugar distante." },
+  { name: "Medo", level: 3, school: "Ilusão", classes: ["Bardo", "Feiticeiro", "Bruxo", "Mago"], effect: "Amedronta criaturas em uma área cônica." },
+  { name: "Padrão Hipnótico", level: 3, school: "Ilusão", classes: ["Bardo", "Feiticeiro", "Bruxo", "Mago"], effect: "Incapacita criaturas fascinadas pelo padrão." },
+  { name: "Revivificar", level: 3, school: "Necromancia", classes: ["Clérigo", "Paladino"], effect: "Traz de volta uma criatura morta recentemente." },
+  { name: "Voo", level: 3, school: "Transmutação", classes: ["Feiticeiro", "Bruxo", "Mago"], effect: "Concede deslocamento de voo temporário." },
+  { name: "Confusão", level: 4, school: "Encantamento", classes: ["Bardo", "Druida", "Feiticeiro", "Mago"], effect: "Desorganiza as ações de criaturas em área." },
+  { name: "Invisibilidade Maior", level: 4, school: "Ilusão", classes: ["Bardo", "Feiticeiro", "Mago"], effect: "Mantém invisibilidade mesmo durante ataques." },
+  { name: "Metamorfose", level: 4, school: "Transmutação", classes: ["Bardo", "Druida", "Feiticeiro", "Mago"], effect: "Transforma uma criatura em outra forma." },
+  { name: "Muralha de Fogo", level: 4, school: "Evocação", classes: ["Druida", "Feiticeiro", "Mago"], effect: "Cria uma barreira que causa dano de fogo." },
+  { name: "Coluna de Chamas", level: 5, school: "Evocação", classes: ["Clérigo"], effect: "Causa dano de fogo e radiante em uma coluna." },
+  { name: "Criar Passagem", level: 5, school: "Transmutação", classes: ["Mago"], effect: "Abre uma passagem temporária em superfície sólida." },
+  { name: "Muralha de Força", level: 5, school: "Evocação", classes: ["Mago"], effect: "Cria uma barreira invisível quase impenetrável." },
+  { name: "Telecinésia", level: 5, school: "Transmutação", classes: ["Feiticeiro", "Mago"], effect: "Move criaturas e objetos com força mental." },
+  { name: "Globo de Invulnerabilidade", level: 6, school: "Abjuração", classes: ["Feiticeiro", "Mago"], effect: "Bloqueia magias de círculos inferiores." },
+  { name: "Relâmpago em Cadeia", level: 6, school: "Evocação", classes: ["Feiticeiro", "Mago"], effect: "Causa dano elétrico que salta entre alvos." },
+  { name: "Dedo da Morte", level: 7, school: "Necromancia", classes: ["Feiticeiro", "Bruxo", "Mago"], effect: "Causa enorme dano necrótico a uma criatura." },
+  { name: "Viagem Planar", level: 7, school: "Conjuração", classes: ["Clérigo", "Druida", "Feiticeiro", "Bruxo", "Mago"], effect: "Transporta o grupo para outro plano." },
+  { name: "Dominar Monstro", level: 8, school: "Encantamento", classes: ["Bardo", "Feiticeiro", "Bruxo", "Mago"], effect: "Controla as ações de uma criatura." },
+  { name: "Terremoto", level: 8, school: "Evocação", classes: ["Clérigo", "Druida", "Feiticeiro"], effect: "Devasta uma grande área com tremores." },
+  { name: "Chuva de Meteoros", level: 9, school: "Evocação", classes: ["Feiticeiro", "Mago"], effect: "Causa dano massivo de fogo e impacto em grandes áreas." },
+  { name: "Ressurreição Verdadeira", level: 9, school: "Necromancia", classes: ["Clérigo", "Druida"], effect: "Restaura completamente uma criatura morta." },
+  { name: "Ouvir a Praga", level: 0, school: "Adivinhação", classes: ["Plague Warden"], effect: "Detecta surtos, farpas e infectados próximos." },
+  { name: "Sutura de Cristal", level: 1, school: "Abjuração", classes: ["Plague Warden"], effect: "Cura feridas e estabiliza o crescimento de farpas." },
+  { name: "Círculo de Sinos", level: 2, school: "Abjuração", classes: ["Plague Warden", "Bell Seer"], effect: "Cria proteção contra medo e avanço da praga." },
+  { name: "Purificação Dolorosa", level: 3, school: "Necromancia", classes: ["Plague Warden"], effect: "Remove uma condição ao custo de dano controlado." },
+  { name: "Eco do Vidro", level: 0, school: "Adivinhação", classes: ["Bell Seer"], effect: "Revela uma lembrança presa em cristal próximo." },
+  { name: "Presságio Partido", level: 1, school: "Adivinhação", classes: ["Bell Seer"], effect: "Concede vantagem narrativa em uma decisão imediata." },
+  { name: "Mapa de Memórias", level: 2, school: "Adivinhação", classes: ["Bell Seer"], effect: "Reconstrói caminhos por lembranças fragmentadas." },
+  { name: "Futuro Fraturado", level: 3, school: "Adivinhação", classes: ["Bell Seer"], effect: "Permite evitar uma consequência prevista na cena." },
+  { name: "Passo de Cinzas", level: 0, school: "Conjuração", classes: ["Ashen Vagrant"], effect: "Move o conjurador por uma curta nuvem de cinzas." },
+  { name: "Rosto Emprestado", level: 1, school: "Ilusão", classes: ["Ashen Vagrant"], effect: "Imita aparência e gestos de outra pessoa." },
+  { name: "Manto da Muralha", level: 2, school: "Ilusão", classes: ["Ashen Vagrant"], effect: "Oculta aliados de patrulhas e observadores." },
+  { name: "Retorno sem Nome", level: 3, school: "Necromancia", classes: ["Ashen Vagrant"], effect: "Escapa de uma consequência social ou mortal imediata." }
+);

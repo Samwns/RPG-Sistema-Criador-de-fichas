@@ -12,6 +12,7 @@ import {
   legacySystemMap,
   raceSystemTags,
   classSystemTags,
+  classDisplayNames,
   distInputs,
   raceBonusInputs,
   computeProfBonus,
@@ -107,7 +108,16 @@ const featurePowerOverrides = {
   "Punição Divina": { effectType: "damage", die: 8, diceCount: 2, manaCost: 2, actionCost: "Ao acertar", duration: "Instantâneo" },
   "Imposição das Mãos": { effectType: "heal", die: 6, diceCount: 2, manaCost: 1, actionCost: "Ação", duration: "Instantâneo" },
   "Canalizar Divindade": { effectType: "utility", manaCost: 2, actionCost: "Ação", duration: "Cena" },
-  "Forma Selvagem": { effectType: "utility", manaCost: 2, actionCost: "Ação bônus", duration: "Cena" }
+  "Forma Selvagem": { effectType: "utility", manaCost: 2, actionCost: "Ação bônus", duration: "Cena" },
+  "Herança Desperta": { effectType: "utility", manaCost: 1, actionCost: "Livre antes do teste", duration: "1 teste" },
+  "Carne Imortal": { effectType: "utility", manaCost: 0, actionCost: "Passivo", duration: "Sempre ativo" },
+  "Erguer do Cadáver": { effectType: "utility", manaCost: 1, actionCost: "Ação bônus", duration: "Instantâneo" },
+  "Dívida da Sepultura": { effectType: "utility", manaCost: 1, actionCost: "Reação", duration: "1 teste" },
+  "Resistência ao Estilhaço": { effectType: "utility", manaCost: 0, actionCost: "Passivo", duration: "Sempre ativo" },
+  "Última Memória": { effectType: "utility", manaCost: 1, actionCost: "Reação", duration: "1 teste" },
+  "Contra-Ataque de Farpas": { effectType: "damage", die: 10, diceCount: 1, manaCost: 1, actionCost: "Reação", duration: "Instantâneo" },
+  "Quebra-Estilhaços": { effectType: "damage", die: 10, diceCount: 2, manaCost: 2, actionCost: "Ação", duration: "Instantâneo" },
+  "Santo do Cadáver": { effectType: "utility", manaCost: 1, actionCost: "Reação", duration: "1 rodada" }
 };
 
 const spellSaveBySchool = {
@@ -471,6 +481,15 @@ function getCurrentClassOptions() {
   return allClassOptions.filter(name => classSystemTags[name]?.includes(system));
 }
 
+function getClassDisplayName(className) {
+  return classDisplayNames[className] || className;
+}
+
+function getClassSelectOptions(classes, { includeAll = false } = {}) {
+  const options = classes.map(className => ({ value: className, label: getClassDisplayName(className) }));
+  return includeAll ? [{ value: 'Todas', label: 'Todas' }, ...options] : options;
+}
+
 function ensureSelectValue(select, fallbackOptions) {
   const options = fallbackOptions.filter(Boolean);
   if (!options.length) return;
@@ -488,14 +507,14 @@ function refreshSystemOptions({ preserve = true } = {}) {
   else ensureSelectValue(elements.raca, currentRaces);
 
   [elements.classe1, elements.classe2, elements.classe3].forEach((select, index) => {
-    populateSelect(select, currentClasses);
+    populateSelect(select, getClassSelectOptions(currentClasses));
     if (currentClasses.includes(previousClasses[index])) select.value = previousClasses[index];
     else ensureSelectValue(select, currentClasses);
   });
 
-  populateSelect(document.getElementById('progressionClass'), currentClasses);
+  populateSelect(document.getElementById('progressionClass'), getClassSelectOptions(currentClasses));
   ensureSelectValue(document.getElementById('progressionClass'), currentClasses);
-  populateSelect(document.getElementById('abilityClassFilter'), ['Todas', ...currentClasses]);
+  populateSelect(document.getElementById('abilityClassFilter'), getClassSelectOptions(currentClasses, { includeAll: true }));
   applySelectedRaceBonuses();
   updateClassProgression();
   renderSystemMode();
@@ -601,6 +620,7 @@ function getClassHitDieSides(className) {
 function getAutoPowerProfile(power = {}) {
   const override = featurePowerOverrides[power.name] || featurePowerOverrides[power.description] || {};
   const merged = { ...override, ...power };
+  const effectType = getPowerEffectType(merged);
   const level = Math.max(1, Number(elements.nivel.value) || 1);
   const className = elements.classe1.value;
   const classDie = getClassAttackDie(classData[className]);
@@ -621,11 +641,21 @@ function getAutoPowerProfile(power = {}) {
     diceCount,
     bonus,
     manaCost,
-    actionCost: merged.actionCost || (merged.effectType === 'utility' ? 'Ação' : 'Ação'),
-    duration: merged.duration || (merged.effectType === 'utility' ? 'Cena' : 'Instantâneo'),
+    actionCost: merged.actionCost || 'Ação',
+    duration: merged.duration || (effectType === 'utility' ? 'Cena' : 'Instantâneo'),
     save: merged.save || '',
     negation: merged.negation || ''
   };
+}
+
+function getPowerEffectType(power = {}) {
+  const override = featurePowerOverrides[power.name] || featurePowerOverrides[power.description] || {};
+  if (power.effectType || override.effectType) return power.effectType || override.effectType;
+  if ((power.die && power.die !== 'auto') || Number(power.diceCount) > 0) return 'damage';
+  const name = String(power.name || '');
+  if (/golpe|ataque furtivo|punição|rajada|sopro|retaliação|contra-ataque|quebra-estilhaços|desintegrar/i.test(name)
+    && !/ataque extra/i.test(name)) return 'damage';
+  return 'utility';
 }
 
 function escapeHtml(value = '') {
@@ -924,6 +954,13 @@ function getSkillCost(skill) {
   return Math.max(1, Number(skill?.cost) || 1);
 }
 
+function getAbilityPurchaseCost(ability) {
+  const baseCost = getSkillCost(ability);
+  if (ability.className === 'Geral') return baseCost;
+  const characterClasses = new Set(getClassBuild().map(entry => entry.className));
+  return characterClasses.has(ability.className) ? baseCost : baseCost * 2;
+}
+
 function getSkillSpent() {
   return purchasedSkills.reduce((sum, skill) => sum + getSkillCost(skill), 0);
 }
@@ -1108,7 +1145,7 @@ function saveSkillFromEditor() {
 
 function buyCatalogAbility(ability) {
   const message = document.getElementById('skillMessage');
-  const cost = getSkillCost(ability);
+  const cost = getAbilityPurchaseCost(ability);
   if (purchasedSkills.some(skill => skill.name === ability.name)) {
     message.textContent = 'Essa habilidade já foi comprada.';
     return;
@@ -1124,7 +1161,7 @@ function buyCatalogAbility(ability) {
     photo: '',
     cost,
     origin: ability.className === 'Geral' ? 'Personalizada' : 'Classe',
-    effectType: ability.effectType || 'damage',
+    effectType: getPowerEffectType(ability),
     die: ability.die || 'auto',
     diceCount: ability.diceCount || 0,
     bonus: ability.bonus || 0,
@@ -1148,11 +1185,12 @@ function renderAbilityCatalog() {
   container.innerHTML = '';
   options.forEach(ability => {
     const owned = purchasedSkills.some(skill => skill.name === ability.name);
-    const cost = getSkillCost(ability);
+    const cost = getAbilityPurchaseCost(ability);
+    const outsideClass = ability.className !== 'Geral' && !getClassBuild().some(entry => entry.className === ability.className);
     const canAfford = getSkillSpent() + cost <= getSkillLimit();
     const card = document.createElement('article');
     card.className = 'spell-card';
-    card.innerHTML = `<span>${ability.className} · Custo ${cost} ponto${cost > 1 ? 's' : ''}</span><h4>${ability.name}</h4><p>${ability.description}</p><small>${formatPowerMeta(ability)}</small>`;
+    card.innerHTML = `<span>${getClassDisplayName(ability.className)} · Custo ${cost} ponto${cost > 1 ? 's' : ''}${outsideClass ? ' · fora da sua linha de classe' : ''}</span><h4>${ability.name}</h4><p>${ability.description}</p><small>${formatPowerMeta({ ...ability, effectType: getPowerEffectType(ability) })}</small>`;
     const button = document.createElement('button');
     button.type = 'button';
     button.textContent = owned ? 'Comprada' : 'Comprar';
@@ -1557,7 +1595,7 @@ function renderClassCombatStats() {
   const attackBonus = getAttributeModifier(attackAttribute) + proficiency + getPassiveAttackBonus();
   const damageDie = getClassAttackDie(data);
   const damageBonus = getAttributeModifier(attackAttribute);
-  document.getElementById('classCombatTitle').textContent = `${elements.classe1.value}: ataque base`;
+  document.getElementById('classCombatTitle').textContent = `${getClassDisplayName(elements.classe1.value)}: ataque base`;
   document.getElementById('combatAttackStat').textContent = formatAttributeLabel(data.attackStat);
   document.getElementById('combatAttackDie').textContent = compactValueLabel(data.attackDie);
   container.innerHTML = `
@@ -1578,9 +1616,9 @@ function renderClassCombatStats() {
       sides: 20,
       count: 1,
       modifier: attackBonus,
-      label: `Ataque base de ${elements.classe1.value}`,
+      label: `Ataque base de ${getClassDisplayName(elements.classe1.value)}`,
       onComplete: ({ results, total }) => {
-        elements.rollResult.innerHTML = `<span class="dice-icon">${results[0]}</span><span>${elements.classe1.value}: ataque ${total}</span>`;
+        elements.rollResult.innerHTML = `<span class="dice-icon">${results[0]}</span><span>${getClassDisplayName(elements.classe1.value)}: ataque ${total}</span>`;
       }
     });
     animateRollButton(attackButton);
@@ -1594,9 +1632,9 @@ function renderClassCombatStats() {
       sides: damageDie,
       count: 1,
       modifier: damageBonus,
-      label: `Dano base de ${elements.classe1.value}`,
+      label: `Dano base de ${getClassDisplayName(elements.classe1.value)}`,
       onComplete: ({ results, total }) => {
-        elements.rollResult.innerHTML = `<span class="dice-icon">${results[0]}</span><span>${elements.classe1.value}: dano ${total}</span>`;
+        elements.rollResult.innerHTML = `<span class="dice-icon">${results[0]}</span><span>${getClassDisplayName(elements.classe1.value)}: dano ${total}</span>`;
       }
     });
     animateRollButton(damageButton);
@@ -1716,7 +1754,7 @@ function touchResource(type) {
 function formatPowerEffect(power) {
   const profile = getAutoPowerProfile(power);
   const labels = { damage: 'dano', heal: 'cura', mana: getEnergyLabel().toLowerCase(), utility: 'utilidade' };
-  const type = power.effectType || featurePowerOverrides[power.name]?.effectType || 'damage';
+  const type = getPowerEffectType(power);
   const save = profile.save && profile.save !== 'nenhuma' ? ` · teste ${profile.save}` : '';
   const negation = profile.negation ? ` · ${profile.negation}` : '';
   if (type === 'utility') return `${labels.utility} · ${profile.actionCost} · ${profile.duration}${save}${negation}`;
@@ -1914,6 +1952,7 @@ function usePower(power, button = null) {
     elements.rollResult.innerHTML = `<span class="dice-icon">✓</span><span>${power.name}: usado${defense}</span>`;
     if (button) animateRollButton(button);
     saveDraftSoon();
+    openDiceTab();
     return;
   }
   const completePower = ({ results, total }) => {
@@ -2497,7 +2536,7 @@ function renderClassProgression() {
   if (!data || !overview || !progression) return;
   renderClassBrowser(className);
   overview.innerHTML = `
-    <div><p class="panel-kicker">Dado de vida ${data.hitDie}</p><h3>${className}</h3></div>
+    <div><p class="panel-kicker">Dado de vida ${data.hitDie}</p><h3>${getClassDisplayName(className)}</h3></div>
     ${data.description ? `<p class="system-rule full-width">${data.description}</p>` : ''}
     <div><b>Status de ataque</b><p>${formatAttributeLabel(data.attackStat)} · ${data.attackDie} · ${data.weaponStyle}</p></div>
     <div><b>Salvaguardas</b><p>Proficiência em ${data.saves.map(formatAttributeLabel).join(' e ')}</p></div>
@@ -2547,7 +2586,7 @@ function renderClassBrowser(activeClass) {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = className === activeClass ? 'active' : '';
-    button.textContent = className;
+    button.textContent = getClassDisplayName(className);
     button.addEventListener('click', () => {
       document.getElementById('progressionClass').value = className;
       renderClassProgression();
@@ -2574,7 +2613,7 @@ function getAutomaticAbilities() {
     data.core.forEach((feature, index) => {
       const unlockLevel = [1, 2, 3, 5, 9][index] || 1;
       if (entry.level >= unlockLevel) {
-        abilities.push({ source: `${entry.className} ${entry.level}`, name: feature, description: describeFeature(feature) });
+        abilities.push({ source: `${getClassDisplayName(entry.className)} ${entry.level}`, name: feature, description: describeFeature(feature) });
       }
     });
     if (entry.level >= 3 && entry.subclass) {
@@ -2596,17 +2635,17 @@ function renderAutomaticAbilities() {
   abilities.forEach(ability => {
     const card = document.createElement('article');
     card.className = 'spell-card owned';
-    card.innerHTML = `<span>${ability.source}</span><h4>${ability.name}</h4><p>${ability.description}</p><small>Liberada pela progressão, sem gastar pontos de compra. ${formatPowerMeta(ability)}</small>`;
-    const useButton = document.createElement('button');
-    useButton.type = 'button';
+    const override = featurePowerOverrides[ability.name] || featurePowerOverrides[ability.description] || {};
     const power = {
       name: ability.name,
       description: ability.description,
       origin: ability.source,
-      effectType: featurePowerOverrides[ability.name]?.effectType || featurePowerOverrides[ability.description]?.effectType || 'utility',
-      manaCost: featurePowerOverrides[ability.name]?.manaCost || featurePowerOverrides[ability.description]?.manaCost || 0,
-      ...(featurePowerOverrides[ability.name] || featurePowerOverrides[ability.description] || {})
+      ...override
     };
+    power.effectType = getPowerEffectType(power);
+    card.innerHTML = `<span>${ability.source}</span><h4>${ability.name}</h4><p>${ability.description}</p><small>Liberada pela progressão, sem gastar pontos de compra. ${formatPowerMeta(power)}</small>`;
+    const useButton = document.createElement('button');
+    useButton.type = 'button';
     markUseButton(useButton, power);
     useButton.addEventListener('click', () => usePower(power, useButton));
     card.appendChild(useButton);
@@ -2704,7 +2743,7 @@ function renderSpellCatalog() {
   });
   catalog.innerHTML = '';
   if (!spells.length) {
-    catalog.innerHTML = `<p class="system-rule">Nenhuma magia disponível. ${className} nível ${getClassLevel(className)} libera até o ${maxSpellLevel}º círculo.</p>`;
+    catalog.innerHTML = `<p class="system-rule">Nenhuma magia disponível. ${getClassDisplayName(className)} nível ${getClassLevel(className)} libera até o ${maxSpellLevel}º círculo.</p>`;
   }
   else {
     spells.forEach(spell => {
@@ -2774,7 +2813,7 @@ function inferSpellType(spell) {
   const text = `${spell.name} ${spell.effect || ''}`.toLowerCase();
   if (text.includes('curar') || text.includes('cura') || text.includes('restaura')) return 'heal';
   if (text.includes('recupera') && text.includes('mana')) return 'mana';
-  if (spell.level === 0 || spell.school === 'Evocação' || text.includes('dano') || text.includes('raio') || text.includes('bola')) return 'damage';
+  if (/dano|raio|relâmpago|bola de fogo|faca de gelo|chama sagrada|chicote de espinhos|zombaria viciosa|rajada mística|mísseis mágicos|repreensão infernal|arma espiritual|espíritos guardiões|cone de frio|desintegrar|tsunami|chuva de meteoros|punição ardente|golpe enredante|estouro feiticeiro|luz estelar|sopro do dragão|pico mental|esfera vitriólica/.test(text)) return 'damage';
   return 'utility';
 }
 
@@ -2919,7 +2958,7 @@ function renderClassReference() {
   grid.innerHTML = '';
   Object.entries(classData).forEach(([name, data]) => {
     const article = document.createElement('article');
-    article.innerHTML = `<h3>${name}</h3><b>${data.hitDie} · ATK ${formatAttributeLabel(data.attackStat)} · ${data.attackDie}</b><p>${data.description ? `${data.description} ` : ''}${data.weaponStyle}. ${data.core.map(feature => `${feature}: ${describeFeature(feature)}`).join(' ')}</p><small>Salvaguardas: ${data.saves.map(formatAttributeLabel).join(' e ')} · Conjuração: ${data.castingStat ? formatAttributeLabel(data.castingStat) : 'não conjurador base'} · Subclasses: ${data.subclasses.map(subclass => `${subclass} (${describeSubclass(subclass)})`).join(' · ')}</small>`;
+    article.innerHTML = `<h3>${getClassDisplayName(name)}</h3><b>${data.hitDie} · ATK ${formatAttributeLabel(data.attackStat)} · ${data.attackDie}</b><p>${data.description ? `${data.description} ` : ''}${data.weaponStyle}. ${data.core.map(feature => `${feature}: ${describeFeature(feature)}`).join(' ')}</p><small>Salvaguardas: ${data.saves.map(formatAttributeLabel).join(' e ')} · Conjuração: ${data.castingStat ? formatAttributeLabel(data.castingStat) : 'não conjurador base'} · Subclasses: ${data.subclasses.map(subclass => `${subclass} (${describeSubclass(subclass)})`).join(' · ')}</small>`;
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'inline-pill';
@@ -3067,7 +3106,7 @@ function loadSavedCharacters() {
     const details = document.createElement('div');
     details.innerHTML = `
       <p><strong>Raça:</strong> ${character.raca || '-'}</p>
-      <p><strong>Classe:</strong> ${character.classe1 || '-'}</p>
+      <p><strong>Classe:</strong> ${getClassDisplayName(character.classe1) || '-'}</p>
       <p><strong>História:</strong> ${character.historia ? character.historia.slice(0, 120) + '...' : '-'}</p>
     `;
     card.appendChild(details);
@@ -3243,7 +3282,7 @@ function buildPrintableSheetHtml() {
         <div>
           <p>Ficha exportada</p>
           <h1>${escapeHtml(character.nome || 'Novo personagem')}</h1>
-          <strong>${escapeHtml(character.raca)} · ${escapeHtml(character.subraca)} · ${escapeHtml(character.classe1)} ${escapeHtml(character.nivelC1)} · Nível ${escapeHtml(character.nivel)}</strong>
+          <strong>${escapeHtml(character.raca)} · ${escapeHtml(character.subraca)} · ${escapeHtml(getClassDisplayName(character.classe1))} ${escapeHtml(character.nivelC1)} · Nível ${escapeHtml(character.nivel)}</strong>
         </div>
       </header>
       <h2>Status</h2>
@@ -3574,12 +3613,12 @@ function init() {
   isRestoringCharacter = true;
   populateSelect(elements.raca, raceOptions);
   populateSelect(elements.origem, originOptions);
-  populateSelect(elements.classe1, allClassOptions);
-  populateSelect(elements.classe2, allClassOptions);
-  populateSelect(elements.classe3, allClassOptions);
-  populateSelect(document.getElementById('progressionClass'), allClassOptions);
-  populateSelect(document.getElementById('abilityClassFilter'), ['Todas', ...allClassOptions]);
-  populateSelect(document.getElementById('spellClassFilter'), spellcastingClasses);
+  populateSelect(elements.classe1, getClassSelectOptions(allClassOptions));
+  populateSelect(elements.classe2, getClassSelectOptions(allClassOptions));
+  populateSelect(elements.classe3, getClassSelectOptions(allClassOptions));
+  populateSelect(document.getElementById('progressionClass'), getClassSelectOptions(allClassOptions));
+  populateSelect(document.getElementById('abilityClassFilter'), getClassSelectOptions(allClassOptions, { includeAll: true }));
+  populateSelect(document.getElementById('spellClassFilter'), getClassSelectOptions(spellcastingClasses));
   document.getElementById('spellClassFilter').value = spellcastingClasses.includes(elements.classe1.value)
     ? elements.classe1.value
     : 'Mago';

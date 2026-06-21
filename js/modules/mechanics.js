@@ -344,6 +344,7 @@ const manualClassNames = new Set([
 ]);
 
 export const classDisplayNames = {
+  "Psi Warrior": "Guerreiro Psiônico",
   Gravebound: "Vinculado à Sepultura",
   "Shard Knight": "Cavaleiro do Estilhaço",
   "Plague Warden": "Guardião da Praga",
@@ -363,7 +364,44 @@ export const classDisplayNames = {
   "Mirror Pilgrim": "Peregrino do Espelho",
   "Ruin Confessor": "Confessor das Ruínas",
   "Bell Duelist": "Duelista do Sino",
-  "Crystal Beggar": "Mendigo de Cristal"
+  "Crystal Beggar": "Mendigo de Cristal",
+  "Dungeon Delver": "Explorador de Masmorras",
+  Torchbearer: "Portador da Tocha",
+  "Hex Ranger": "Patrulheiro da Maldição",
+  "Oathless Knight": "Cavaleiro sem Juramento",
+  "Grave Robber": "Saqueador de Túmulos",
+  "Witch Finder": "Caçador de Bruxas",
+  "Mold Druid": "Druida do Bolor",
+  "Iron Theurge": "Teurgo de Ferro",
+  "Cave Prophet": "Profeta das Cavernas",
+  "Relic Seeker": "Caçador de Relíquias",
+  "Rat Duelist": "Duelista dos Ratos",
+  "Old King": "Rei Antigo",
+  Netrunner: "Corredor da Rede",
+  Techie: "Técnico",
+  Medtech: "Médico Tecnológico",
+  Fixer: "Agenciador",
+  Nomad: "Nômade",
+  Rockerboy: "Roqueiro",
+  Corporate: "Corporativo",
+  Media: "Mídia",
+  "Chrome Monk": "Monge Cromado",
+  "Drone Shepherd": "Pastor de Drones",
+  "Street Witch": "Bruxa das Ruas",
+  "Black ICE Saint": "Santo do Gelo Negro",
+  Runesmith: "Ferreiro Rúnico",
+  Starcaller: "Invocador Estelar",
+  Voidblade: "Lâmina do Vazio",
+  "Moon Oracle": "Oráculo Lunar",
+  "Sun Herald": "Arauto Solar",
+  Spellbreaker: "Quebra-Feitiços",
+  "Fate Weaver": "Tecelão do Destino",
+  "Dream Knight": "Cavaleiro dos Sonhos",
+  "Soul Cartographer": "Cartógrafo de Almas",
+  "Leyline Warden": "Guardião das Linhas Místicas",
+  "Prism Duelist": "Duelista Prismático",
+  "Golem Binder": "Atador de Golens",
+  "Ink Sorcerer": "Feiticeiro da Tinta"
 };
 
 const shatteredClassThemes = [

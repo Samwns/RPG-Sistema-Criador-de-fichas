@@ -214,3 +214,72 @@ test('consumes one-use items, refunds sales and clamps combat resources', async 
   await page.getByRole('button', { name: /Recuperar/ }).click();
   expect(Number(await page.inputValue('#currentMana'))).toBe(Number(await page.locator('#maxMana').innerText()));
 });
+
+test('runs automatic utility abilities visibly and damage abilities with dice', async ({ page }) => {
+  await setValue(page, '#sistema', 'Outro', 'change');
+  await setValue(page, '#raca', 'Golem Arcano', 'change');
+  await setValue(page, '#classe1', 'Gravebound', 'change');
+  await setValue(page, '#nivel', 8, 'change');
+  await setValue(page, '#nivelC1', 8);
+  await openTab(page, 'tab-habilidades');
+
+  const heritage = page.locator('#autoAbilities .spell-card').filter({ hasText: 'Herança Desperta' });
+  await expect(heritage).toContainText('utilidade');
+  await expect(heritage).not.toContainText('d12');
+  await heritage.getByRole('button', { name: /Usar/ }).click();
+  await expect(page.locator('#tab-dados')).toHaveClass(/active/);
+  await expect(page.locator('#rollResult')).toContainText('Herança Desperta: usado');
+
+  await openTab(page, 'tab-habilidades');
+  for (const name of ['Carne Imortal', 'Erguer do Cadáver', 'Dívida da Sepultura', 'Resistência ao Estilhaço', 'Santo do Cadáver']) {
+    const ability = page.locator('#autoAbilities .spell-card').filter({ hasText: name });
+    await expect(ability).not.toContainText('d12');
+  }
+  await expect(page.locator('#autoAbilities .spell-card').filter({ hasText: 'Carne Imortal' })).toContainText('Passivo');
+
+  await openTab(page, 'tab-ficha');
+  await setValue(page, '#sistema', 'SR', 'change');
+  await setValue(page, '#classe1', 'Shard Knight', 'change');
+  await setValue(page, '#nivel', 5, 'change');
+  await setValue(page, '#nivelC1', 5);
+  await openTab(page, 'tab-habilidades');
+  const counter = page.locator('#autoAbilities .spell-card').filter({ hasText: 'Contra-Ataque de Farpas' });
+  await expect(counter).toContainText('1d10');
+  await counter.getByRole('button', { name: /Usar/ }).click();
+  await expect(page.locator('#rollResult')).toContainText('Rolando... Contra-Ataque de Farpas · d10');
+});
+
+test('charges more for abilities outside the character class line', async ({ page }) => {
+  await setValue(page, '#nivel', 5, 'change');
+  await setValue(page, '#nivelC1', 5);
+  await setValue(page, '#distFor', 15);
+  await openTab(page, 'tab-habilidades');
+
+  const barbarian = page.locator('#abilityCatalog .spell-card').filter({ hasText: 'Investida Furiosa' });
+  const fighter = page.locator('#abilityCatalog .spell-card').filter({ hasText: 'Golpe Preciso' });
+  await expect(barbarian).toContainText('Custo 1 ponto');
+  await expect(fighter).toContainText('Custo 2 pontos');
+  await expect(fighter).toContainText('fora da sua linha de classe');
+  await fighter.getByRole('button', { name: 'Comprar' }).click();
+  await expect(page.locator('#skillUsed')).toHaveText('2');
+});
+
+test('shows translated class labels and an expanded spell catalog', async ({ page }) => {
+  await setValue(page, '#sistema', 'SR', 'change');
+  const labels = await page.locator('#classe1 option').allTextContents();
+  expect(labels).toContain('Vinculado à Sepultura');
+  expect(labels).toContain('Cavaleiro do Estilhaço');
+  expect(labels).not.toContain('Gravebound');
+  expect(labels).not.toContain('Shard Knight');
+
+  await setValue(page, '#sistema', 'D&D', 'change');
+  await setValue(page, '#classe1', 'Mago', 'change');
+  await setValue(page, '#nivel', 20, 'change');
+  await setValue(page, '#nivelC1', 20);
+  await setValue(page, '#spellClassFilter', 'Mago', 'change');
+  await openTab(page, 'tab-magia');
+  await page.locator('[data-magic-target="magic-shop"]').click();
+  expect(await page.locator('#spellCatalog .spell-card').count()).toBeGreaterThan(45);
+  await expect(page.locator('#spellCatalog .spell-card').filter({ has: page.getByRole('heading', { name: 'Luz', exact: true }) })).toContainText('utilidade');
+  await expect(page.locator('#spellCatalog .spell-card').filter({ has: page.getByRole('heading', { name: 'Raio de Fogo', exact: true }) })).toContainText('dano');
+});

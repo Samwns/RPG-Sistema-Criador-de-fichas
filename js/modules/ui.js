@@ -2,6 +2,7 @@ import {
   raceOptions,
   originOptions,
   classOptions,
+  classDisplayNames,
   distInputs,
   raceBonusInputs,
   computeProfBonus,
@@ -74,7 +75,11 @@ export const elements = {
 };
 
 export function populateSelect(select, options) {
-  select.innerHTML = options.map(option => `<option value="${option}">${option}</option>`).join('');
+  select.innerHTML = options.map(option => {
+    const value = typeof option === 'object' ? option.value : option;
+    const label = typeof option === 'object' ? option.label : option;
+    return `<option value="${value}">${label}</option>`;
+  }).join('');
 }
 
 export function updateBudgetText(remainingData) {
@@ -148,7 +153,7 @@ export function renderSummary() {
   const characterMeta = [
     elements.raca.value,
     document.getElementById('subraca')?.value,
-    elements.classe1.value,
+    classDisplayNames[elements.classe1.value] || elements.classe1.value,
     `nível ${elements.nivel.value || 1}`
   ].filter(Boolean).join(' · ');
 
